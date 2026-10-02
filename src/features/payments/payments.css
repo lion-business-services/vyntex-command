@@ -1,0 +1,17 @@
+.payments-kpis{margin-bottom:16px}
+.payments-tabs{margin-bottom:12px}
+.payments-date{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--text-2)}
+.payments-date .input{width:auto;min-height:38px;padding:6px 9px;font-size:14px;font-weight:500;color:var(--text)}
+.payments-ref{margin-left:8px}
+.payments-name{font-weight:700;text-decoration:none}.payments-name:hover{text-decoration:underline}
+.payments-sub{font-weight:500}
+.payments-pad{padding:0 18px 14px}
+.payments-rowact{width:1%;white-space:nowrap}
+@media (max-width:720px){
+  .payments-date{flex:1 1 140px}
+  .payments-date .input{flex:1;min-width:0}
+  table.tbl.stackable td.payments-rowact{width:100%;justify-content:flex-end;padding-top:6px}
+}
+/* totals row stacks like the rest of the table on phones */
+@media (max-width:720px){table.payments-tbl tfoot{display:block;width:100%;border-top:1px solid var(--line-strong)}table.payments-tbl tfoot td{border-top:0}}
+.payments-kpis button.kpi{display:flex;flex-direction:column;justify-content:flex-start}

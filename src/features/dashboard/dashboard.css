@@ -1,0 +1,106 @@
+/* Dashboard. The chamfered KPI tile is the one signature element; everything below it stays quiet. */
+.dash-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px 24px;flex-wrap:wrap;margin-bottom:16px}
+.dash-head>div:first-child{flex:1 1 300px;min-width:0}
+.dash-head h1{margin-bottom:3px}
+.dash-head p{color:var(--text-2)}
+.dash-date{color:var(--text);font-weight:650}
+.dash-actions{display:flex;gap:8px;flex-wrap:wrap;flex:none;max-width:100%}
+
+.dash-tour{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:16px;border:1px solid var(--accent-line);border-radius:var(--radius);background:var(--accent-soft)}
+.dash-tour-ico{flex:none;width:22px;height:22px;color:var(--accent)}
+.dash-tour b{display:block}
+
+.dash-kpis{display:grid;grid-template-columns:repeat(var(--n,6),minmax(0,1fr));gap:12px;margin-bottom:16px}
+.dash-kpis .kpi .k{line-height:1.3;padding-right:10px}
+.dash-kpis .kpi .v{white-space:nowrap;overflow-wrap:normal;font-size:clamp(21px,1.72vw,25px)}
+.dash-kpis .kpi .v.long{font-size:clamp(17px,1.4vw,20px);line-height:1.6}
+.dash-kpis .kpi .h{margin-top:1px;line-height:1.35}
+/* label, value and hint line up across the row whatever the label length; rows collapse when nobody needs them */
+@supports (grid-template-rows:subgrid){
+  .dash-kpis .kpi{display:grid;grid-template-rows:subgrid;grid-row:span 3;row-gap:0}
+  .dash-kpis .kpi .k{align-self:end}
+  .dash-kpi-note{grid-row:span 3}
+}
+@supports not (grid-template-rows:subgrid){.dash-kpis .kpi .k{min-height:2.6em;display:flex;align-items:flex-end}}
+.dash-kpi-note{grid-column:span var(--hidden,1);display:flex;align-items:center;margin:0;padding:12px 14px;border:1px dashed var(--line-strong);border-radius:var(--radius);color:var(--text-3)}
+@media (max-width:1279px){.dash-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.dash-kpis .kpi .v{font-size:25px}.dash-kpis .kpi .v.long{font-size:21px}.dash-kpi-note{grid-column:1/-1}}
+@media (max-width:560px){.dash-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.dash-kpis .kpi{padding:12px 13px}.dash-kpis .kpi .v{font-size:22px}.dash-kpis .kpi .v.long{font-size:18px}}
+
+.dash-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;align-items:start}
+.dash-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:1279px){
+  .dash-grid{display:flex;flex-direction:column;align-items:stretch}
+  .dash-col{display:contents}
+  .dash-o1{order:1}.dash-o2{order:2}.dash-o3{order:3}.dash-o4{order:4}.dash-o5{order:5}.dash-o6{order:6}
+}
+.dash .card-h h2 .count{font-family:var(--font-body)}
+.dash-h-sub{font:600 12.5px/1 var(--font-body);color:var(--text-3);letter-spacing:0}
+.dash-more{display:inline-block;margin-top:8px;color:var(--accent);font-weight:650;text-underline-offset:3px}
+button.dash-more{margin-top:10px}
+.dash-more.pad{margin:0;padding:10px 18px 14px}
+.dash-link{font-weight:700;text-decoration:none}.dash-link:hover{text-decoration:underline}
+.dash-link-a{color:var(--accent);font-weight:650;text-underline-offset:3px}
+
+/* needs attention: one row per kind of problem, each line a link to its record */
+.dash-att{display:grid;grid-template-columns:186px minmax(0,1fr);gap:0 14px;padding:5px 0;border-top:1px solid var(--line)}
+.dash-att:first-child{border-top:0;padding-top:0}
+.dash-att:last-child{padding-bottom:0}
+.dash-att h3{display:flex;align-items:baseline;gap:8px;font:700 13px/1.35 var(--font-body);color:var(--text-2);padding:7px 0}
+.dash-att h3 .dot{flex:none;transform:translateY(-1px)}
+.dash-att-n{color:var(--text-3);font-weight:650}
+.dash-att-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-att ul,.dash-day ul,.dash-pipe,.dash-auto ul{list-style:none;margin:0;padding:0}
+.dash-att-item{display:flex;align-items:baseline;gap:12px;margin:0 -8px;padding:6px 8px;border-radius:var(--radius-s);text-decoration:none;font-size:14px}
+.dash-att-item:hover,.dash-ev:hover,.dash-pipe-row:hover,.dash-auto-row:hover{background:var(--surface-2)}
+.dash-att .dash-more{margin:2px 0 6px}
+@media (max-width:640px){.dash-att-item{display:block;padding-right:8px}.dash-att-t{display:block;white-space:normal}.dash-att-t b{display:block}.dash-att-c{font-size:13px}.dash-att-c>span{display:none}.dash-att-c::after{content:" "}.dash-att-m{display:block;white-space:normal}.dash-att{grid-template-columns:minmax(0,1fr);padding:8px 0}.dash-att h3{padding:0 0 1px}.dash-att-item{padding-left:24px}.dash-att .dash-more{margin-left:16px}}
+.dash-clear{display:flex;gap:12px;align-items:flex-start}
+.dash-clear svg{flex:none;width:22px;height:22px;color:var(--ok);margin-top:1px}
+.dash-quiet{display:grid;gap:4px;justify-items:start}
+.dash-quiet .btn{margin-top:8px}
+.dash-quiet.pad{padding:4px 18px 18px}
+
+/* active jobs */
+.dash-jobs .dash-sub{font-weight:500}
+.dash-recv{min-width:190px}
+.dash-recv>div{width:100%}
+.dash-recv .bar{height:6px}
+.dash-recv-t{display:flex;justify-content:space-between;gap:10px;margin-top:5px;font-variant-numeric:tabular-nums}
+@media (max-width:720px){.dash-recv{min-width:0;padding-top:6px!important}}
+
+/* coming up */
+.dash-day{display:grid;grid-template-columns:86px minmax(0,1fr);gap:0 10px;padding:8px 0;border-top:1px solid var(--line)}
+.dash-day:first-child{border-top:0;padding-top:0}
+.dash-day-h{font-size:12.5px;font-weight:700;color:var(--text-2);padding-top:7px}
+.dash-day-h.now{color:var(--accent)}
+.dash-ev{display:flex;align-items:flex-start;gap:9px;margin:0 -8px;padding:6px 8px;border-radius:var(--radius-s);text-decoration:none;font-size:14px}
+.dash-ev .dot{margin-top:7px}
+.dash-ev b,.dash-auto-row b{display:block;font-weight:650;overflow-wrap:anywhere}
+.dash-ev-s{display:block;overflow-wrap:anywhere}
+@media (max-width:420px){.dash-day{grid-template-columns:minmax(0,1fr)}.dash-day-h{padding:0 0 2px}}
+
+/* pipeline: one hue, length carries the value */
+.dash-pipe-row{display:grid;grid-template-columns:minmax(0,10.5em) 1.6em minmax(40px,1fr) minmax(4.6em,auto);align-items:center;gap:10px;margin:0 -8px;padding:7px 8px;border-radius:var(--radius-s);text-decoration:none;font-size:14px}
+.dash-pipe-l{font-weight:650;line-height:1.3;overflow-wrap:anywhere}
+.dash-pipe-n{text-align:right;color:var(--text-2);font-variant-numeric:tabular-nums}
+.dash-pipe-bar{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.dash-pipe-bar i{display:block;height:100%;min-width:2px;border-radius:99px;background:var(--accent)}
+.dash-pipe-v{text-align:right;font-weight:650;font-variant-numeric:tabular-nums}
+.dash-pipe-total{display:flex;justify-content:space-between;gap:10px;margin-top:8px;padding-top:10px;border-top:1px solid var(--line)}
+
+/* handled for you */
+.dash-auto{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.dash-auto h3{display:flex;align-items:center;gap:7px;font-size:14px}
+.dash-auto h3 svg{width:15px;height:15px;color:var(--violet)}
+.dash-auto ul{margin-top:6px}
+.dash-auto-row{display:flex;align-items:flex-start;gap:10px;margin:0 -8px;padding:6px 8px;border-radius:var(--radius-s);text-decoration:none;font-size:14px}
+
+@media (max-width:560px){
+  .dash-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .dash-actions>:last-child:nth-child(odd){grid-column:1/-1}
+  /* task rows: let the due date drop under the title instead of squeezing it */
+  .dash-today .item{flex-wrap:wrap;row-gap:2px}
+  .dash-today .item>.grow{flex-basis:calc(100% - 48px)}
+  .dash-today .item>.grow~span{margin-left:36px}
+  .dash-tour{flex-wrap:wrap;align-items:flex-start}.dash-tour .grow{flex-basis:calc(100% - 80px)}.dash-tour-ico{margin-top:2px}
+}

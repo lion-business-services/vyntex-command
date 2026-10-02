@@ -1,0 +1,20 @@
+# Secrets: every environment file stays out of Git, except the example that has no values.
+.env
+.env.*
+!.env.example
+
+# Installed packages and build output (both are recreated by commands in README.md).
+node_modules/
+dist/
+
+# Local tool folders and leftovers.
+.vercel/
+supabase/.temp/
+supabase/.branches/
+*.log
+.DS_Store
+Thumbs.db
+tests/.qa-*.json
+tests/.pack-facts.json
+preview/
+dist.building/

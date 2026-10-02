@@ -1,0 +1,40 @@
+.compliance-kpis{margin-bottom:16px}
+.compliance-year{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--text-2)}
+.compliance-year .input{width:auto;min-height:38px;padding:6px 10px;font-weight:650;font-size:14px;color:var(--text)}
+.compliance-rule{padding:0 18px 14px;max-width:96ch}
+.compliance-name{font-weight:700;text-decoration:none}.compliance-name:hover{text-decoration:underline}
+.compliance-trade{font-weight:500}
+.compliance-tbl th{white-space:normal;vertical-align:bottom}
+@media (min-width:1181px){.compliance-tbl td.t1{min-width:190px}}
+.compliance-rest{margin-top:16px}
+.compliance-svc{margin-top:8px}
+.compliance-svc .item{align-items:flex-start;flex-wrap:wrap}
+.compliance-svc .item .grow{flex:1 1 220px}
+.compliance-also{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-top:6px}
+.compliance-attn{align-items:center}
+.compliance-attn .dot{align-self:flex-start;margin-top:7px}
+.compliance-demo{margin-top:12px}
+@media (max-width:1180px){.compliance-miss{justify-content:flex-end}}
+/* the report prints on white paper whatever theme is on screen */
+@media print{
+  .compliance-page{--surface:#fff;--surface-2:#fff;--surface-3:#eef1f5;--line:#dee4ec;--line-strong:#c5cfdb;--text:#0b121d;--text-2:#465264;--text-3:#667284;
+    --ok:#0e7a4b;--ok-soft:transparent;--warn:#8a5a00;--warn-soft:transparent;--bad:#b4232f;--bad-soft:transparent;--info:#1d5fa8;--info-soft:transparent;--neutral-soft:transparent;--accent:#00789a;color:var(--text)}
+  .compliance-page .kpi::after,.compliance-page .kpi::before{display:none}
+  .compliance-page .card{break-inside:avoid}
+}
+/* totals row stacks like the rest of the table on phones */
+@media (max-width:720px){table.compliance-tbl tfoot{display:block;width:100%;border-top:1px solid var(--line-strong)}table.compliance-tbl tfoot td{border-top:0}}
+/* laptops and tablets: the wide table becomes two columns of cards instead of scrolling sideways */
+@media (min-width:721px) and (max-width:1180px){
+  table.compliance-tbl thead{display:none}
+  table.compliance-tbl,table.compliance-tbl tfoot,table.compliance-tbl tr,table.compliance-tbl td{display:block;width:100%}
+  table.compliance-tbl tbody{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  table.compliance-tbl tbody tr{border-bottom:1px solid var(--line);padding:12px 16px}
+  table.compliance-tbl tbody tr:nth-child(odd){border-right:1px solid var(--line)}
+  table.compliance-tbl tfoot tr{padding:10px 16px;display:flex;flex-wrap:wrap;gap:4px 28px}
+  table.compliance-tbl tfoot td{width:auto;border:0}
+  table.compliance-tbl td{border:0;padding:2px 0;text-align:left!important;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+  table.compliance-tbl td[data-label]::before{content:attr(data-label);font-size:12px;color:var(--text-3);font-weight:650;flex:none}
+  table.compliance-tbl td.t1{display:block;font-size:15px;padding-bottom:4px}
+  table.compliance-tbl td:empty{display:none}
+}

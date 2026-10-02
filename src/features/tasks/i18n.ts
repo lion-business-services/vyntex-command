@@ -1,0 +1,36 @@
+import type { Dict } from '@/i18n';
+
+export const dict: Dict = {
+  en: {
+    'tasks.sub': 'Everything that has to get done, who has it and when it is due.',
+    'tasks.new': 'New task', 'tasks.view': 'View', 'tasks.view.board': 'Board', 'tasks.view.list': 'List',
+    'tasks.search': 'Search tasks',
+    'tasks.who.all': 'Everyone', 'tasks.who.me': 'Me ({name})', 'tasks.who.office': 'Office',
+    'tasks.job.all': 'All {jobs}',
+    'tasks.pri.all': 'All priorities',
+    'tasks.due.all': 'Any due date', 'tasks.due.overdue': 'Overdue', 'tasks.due.today': 'Due today', 'tasks.due.week': 'Due this week',
+    'tasks.sum.open': '{n} open', 'tasks.sum.overdue': '{n} overdue', 'tasks.sum.today': '{n} due today',
+    'tasks.empty': 'No tasks yet', 'tasks.emptyHint': 'Add the first one, or let an automation rule create them when a lead is won or a {job} is completed.',
+    'tasks.drop': 'Drop a task here', 'tasks.moveTo': 'Move to', 'tasks.moved': 'Moved to {status}',
+    'tasks.auto': 'Automation', 'tasks.autoHint': 'Created by an automation rule',
+    'tasks.showAll': 'Show all {n}', 'tasks.showLess': 'Show fewer',
+    'tasks.g.overdue': 'Overdue', 'tasks.g.today': 'Today', 'tasks.g.upcoming': 'Upcoming', 'tasks.g.nodate': 'No due date', 'tasks.g.done': 'Completed',
+    'tasks.gone': 'That task does not exist any more.', 'tasks.leadTag': 'Lead',
+  },
+  es: {
+    'tasks.sub': 'Todo lo que hay que hacer, quién lo tiene y para cuándo.',
+    'tasks.new': 'Nueva tarea', 'tasks.view': 'Vista', 'tasks.view.board': 'Tablero', 'tasks.view.list': 'Lista',
+    'tasks.search': 'Buscar tareas',
+    'tasks.who.all': 'Todo el equipo', 'tasks.who.me': 'Yo ({name})', 'tasks.who.office': 'Oficina',
+    'tasks.job.all': 'Cualquier {job}',
+    'tasks.pri.all': 'Todas las prioridades',
+    'tasks.due.all': 'Cualquier fecha', 'tasks.due.overdue': 'Atrasadas', 'tasks.due.today': 'Vencen hoy', 'tasks.due.week': 'Vencen esta semana',
+    'tasks.sum.open': '{n} abiertas', 'tasks.sum.overdue': '{n} atrasadas', 'tasks.sum.today': '{n} vencen hoy',
+    'tasks.empty': 'Aún no hay tareas', 'tasks.emptyHint': 'Agregue la primera, o deje que una regla de automatización las cree al ganar un prospecto o al completar un {job}.',
+    'tasks.drop': 'Suelte una tarea aquí', 'tasks.moveTo': 'Mover a', 'tasks.moved': 'Movida a {status}',
+    'tasks.auto': 'Automatización', 'tasks.autoHint': 'Creada por una regla de automatización',
+    'tasks.showAll': 'Ver las {n}', 'tasks.showLess': 'Ver menos',
+    'tasks.g.overdue': 'Atrasadas', 'tasks.g.today': 'Hoy', 'tasks.g.upcoming': 'Próximas', 'tasks.g.nodate': 'Sin fecha', 'tasks.g.done': 'Completadas',
+    'tasks.gone': 'Esa tarea ya no existe.', 'tasks.leadTag': 'Prospecto',
+  },
+};

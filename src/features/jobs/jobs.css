@@ -1,0 +1,88 @@
+/* Jobs module. Only tokens from the design system, so both themes work. */
+.jobs-sum{margin:-4px 0 12px}
+.jobs-name{font-weight:700;text-decoration:none}.jobs-name:hover{text-decoration:underline}
+.jobs-under{display:block;font-weight:500}
+.jobs-dates{display:inline-flex;flex-direction:column;gap:1px;align-items:flex-start}
+.jobs-span{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+.jobs-span svg{width:13px;height:13px;color:var(--text-3);flex:none}
+.jobs-rep{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap}
+.jobs-rep svg{width:12px;height:12px}
+.jobs-profit{display:inline-flex;flex-direction:column;gap:5px;align-items:flex-end;min-width:104px}
+.jobs-profit .bar{width:100%;height:4px}
+.jobs-due,.jobs-warn{color:var(--warn);font-weight:700}
+.jobs-table td.num{white-space:nowrap}
+
+/* board */
+.jobs-board{grid-auto-columns:minmax(236px,1fr)}
+.jobs-board .kcard{display:grid;gap:4px;position:relative}
+.jobs-board .kcard:active{cursor:grabbing}
+.jobs-board .jobs-dates{flex-direction:row;gap:8px;flex-wrap:wrap;align-items:center;color:var(--text-3)}
+.jobs-move select{width:100%;margin-top:6px;min-height:30px;padding:3px 8px;font-size:12.5px;font-weight:650;background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--text-2)}
+.jobs-drop{text-align:center;padding:14px 6px;border:1px dashed var(--line-strong);border-radius:var(--radius-s)}
+
+/* one job: header */
+.jobs-client{color:var(--text);font-weight:650;text-underline-offset:3px}
+.jobs-statusctl{display:inline-flex;align-items:center;gap:8px}
+.jobs-statusctl select{min-height:38px;padding:7px 10px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--radius-s);font-weight:650;max-width:100%}
+.jobs-where{display:flex;gap:8px 14px;align-items:center;flex-wrap:wrap;margin:-8px 0 16px;color:var(--text-2);font-size:14px}
+.jobs-addr{display:inline-flex;gap:6px;align-items:center;min-width:0;overflow-wrap:anywhere}
+.jobs-addr svg{width:15px;height:15px;color:var(--text-3);flex:none}
+.jobs-auto{margin-bottom:16px}
+.jobs-auto-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.jobs-auto-h b{min-width:0;padding-top:3px}
+.jobs-auto b svg{width:15px;height:15px;color:var(--accent);vertical-align:-2px;margin-right:6px}
+.jobs-auto ul{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.jobs-auto li{display:flex;gap:6px 10px;align-items:center;flex-wrap:wrap}
+.jobs-auto-sub{flex-basis:100%}
+
+/* overview */
+.jobs-figs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 18px}
+.jobs-fig .k{font-size:12.5px;color:var(--text-2);font-weight:650;line-height:1.3;min-height:2.6em;display:flex;align-items:flex-end;padding-bottom:2px}
+.jobs-fig .v{font-family:var(--font-display);font-size:20px;font-weight:700;line-height:1.3;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.jobs-fig .v.warn{color:var(--warn)}
+.jobs-fig .h{font-size:12px;color:var(--text-3)}
+.jobs-bar{margin-top:14px;display:grid;gap:8px}
+.jobs-k.s1{background:var(--info)}.jobs-k.s2{background:var(--violet)}.jobs-k.s3{background:var(--ok)}.jobs-k.s4{background:var(--accent)}
+.jobs-prose{white-space:pre-wrap;overflow-wrap:anywhere}
+.jobs-visits{display:grid;gap:6px;justify-items:start;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
+/* tables inside cards */
+.jobs-acts{width:1%;white-space:nowrap}
+.jobs-flags{margin-top:4px}
+.jobs-none{padding:4px 18px 14px}
+.jobs-foot{padding:10px 18px 14px;border-top:1px solid var(--line)}
+.jobs-sumrow{display:flex;justify-content:space-between;gap:12px;padding:10px 66px 10px 18px;border-top:1px solid var(--line);font-size:14px}
+.jobs-sumrow b{font-variant-numeric:tabular-nums}
+.jobs-sumrow+.jobs-sumrow{border-top:0;padding-top:0}
+
+/* documents */
+.jobs-docs{display:flex;flex-direction:column}
+.jobs-doc{display:flex;gap:12px;align-items:center;padding:12px 18px;border-top:1px solid var(--line);text-decoration:none;color:inherit;flex-wrap:wrap}
+.jobs-doc:hover{background:var(--surface-2)}
+.jobs-doc>svg{width:18px;height:18px;color:var(--text-3);flex:none}
+.jobs-doc .grow{min-width:140px}
+
+/* log */
+.jobs-portal{display:flex;gap:8px 12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
+/* forms */
+.jobs-newclient{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius-s);padding:12px;background:var(--surface-2)}
+.jobs-newclient .field input{background:var(--surface)}
+.jobs-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.jobs-total b{font-family:var(--font-display);font-size:18px;font-variant-numeric:tabular-nums}
+
+@media (max-width:1100px){.jobs-figs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:720px){
+  .jobs-dates,.jobs-profit{align-items:flex-end}
+  .jobs-board .jobs-dates{align-items:center}
+  .jobs-under{font-size:12.5px}
+  .jobs-statusctl{flex:1 1 100%}.jobs-statusctl select{flex:1}
+  table.tbl.stackable td.jobs-acts{width:100%;justify-content:flex-end;padding-top:6px}
+  .jobs-profit .bar{width:104px}
+  .jobs-sumrow{padding-left:14px;padding-right:14px}
+  table.tbl.stackable.jobs-stack tfoot{display:block;width:100%;border-top:1px solid var(--line-strong)}
+  table.tbl.stackable.jobs-stack tfoot td{border-top:0}
+}
+.jobs-seg{align-self:flex-start}
+.jobs-filters .searchbox{min-width:min(100%,260px)}
+@media (max-width:560px){.jobs-seg{display:grid;grid-template-columns:1fr 1fr;align-self:stretch}.jobs-seg button{justify-content:center}}

@@ -1,0 +1,183 @@
+{
+  "product": "VYNTEX BUILD",
+  "owner": "VYNTEX, LLC",
+  "version": "2026-09-26h",
+  "notes": "Single source of truth for VYNTEX BUILD plans. Use for Stripe (test mode first), the VYNTEX Command Center and the catalog page. Do not change prices without Daysi's approval.",
+  "plans": [
+    {
+      "id": "foundation",
+      "name": "Foundation",
+      "name_es": "Cimiento",
+      "monthly_usd": 59,
+      "yearly_usd": 708,
+      "yearly_free_months": 0,
+      "setup_usd": 299,
+      "users": 1,
+      "welcome_credit": null,
+      "features": [
+        "Every core feature: leads, jobs, subs, payments, tasks, calendar",
+        "Contracts, invoices and 1099 report",
+        "Google Calendar: send items (Add to Google)"
+      ],
+      "support": "Email or WhatsApp, 1 business day"
+    },
+    {
+      "id": "builder",
+      "name": "Builder",
+      "name_es": "Constructor",
+      "most_popular": true,
+      "monthly_usd": 119,
+      "yearly_usd": 1309,
+      "yearly_free_months": 1,
+      "setup_usd": 499,
+      "users": 5,
+      "welcome_credit": {
+        "amount_usd": 100,
+        "applies_to": "Setup fee of another VYNTEX service (website, branding, social media, etc.)",
+        "expires_days": 90,
+        "excludes": "Not valid on VYNTEX BUILD / VYNTEX CLEAN: not on their setup, monthly fees or add-ons (including the Client Portal)"
+      },
+      "features": [
+        "Everything in Foundation",
+        "Subcontractor portal",
+        "W-9 and insurance uploads with alerts",
+        "Google Calendar: automatic two-way sync",
+        "Email contracts and invoices",
+        "Daily morning reminder email",
+        "Automatic client emails at every stage (each email on/off, plus per-client opt-out)"
+      ],
+      "support": "Same business day"
+    },
+    {
+      "id": "master_builder",
+      "name": "Master Builder",
+      "name_es": "Maestro Constructor",
+      "monthly_usd": 169,
+      "yearly_usd": 1690,
+      "yearly_free_months": 2,
+      "setup_usd": 599,
+      "users": "unlimited",
+      "welcome_credit": {
+        "amount_usd": 250,
+        "applies_to": "Setup fee of Social Media Management (or another VYNTEX service (website, branding, social media, etc.))",
+        "expires_days": 90,
+        "yearly_plan_condition": "On yearly billing, the credit requires a 12-month Social Media Management plan",
+        "excludes": "Not valid on VYNTEX BUILD / VYNTEX CLEAN: not on their setup, monthly fees or add-ons (including the Client Portal)"
+      },
+      "features": [
+        "Everything in Builder",
+        "Profit reports by job, type of work and month",
+        "Website estimate form feeds Leads",
+        "W-9 collection done for them (up to 25 subs per year)",
+        "1099 preparation: first 10 forms per year free, then $15 each",
+        "1099 e-file and mail: $10 per form",
+        "2 business review calls per year",
+        "Automatic client emails, with templates set up during setup"
+      ],
+      "support": "Priority phone"
+    }
+  ],
+  "add_ons": [
+    {
+      "id": "client_portal",
+      "name": "VYNTEX Client Portal",
+      "price": "Quoted in consultation (do not publish a price)",
+      "billing": "Setup + monthly, separate invoice line, 12-month term",
+      "available_with": "Builder, Master Builder and any VYNTEX service",
+      "status": "Not built yet"
+    },
+    {
+      "id": "extra_user_foundation",
+      "name": "Extra user (Foundation)",
+      "price_usd": 15,
+      "billing": "monthly, per user"
+    },
+    {
+      "id": "1099_prep",
+      "name": "1099 organization and preparation (Foundation or Builder)",
+      "price_usd": 15,
+      "billing": "per form, invoiced at year end"
+    },
+    {
+      "id": "1099_efile_mail",
+      "name": "1099 e-file and mail to subcontractor",
+      "price_usd": 10,
+      "billing": "per form, invoiced at year end"
+    },
+    {
+      "id": "training",
+      "name": "Extra training session",
+      "price_usd": 75,
+      "billing": "one-time"
+    },
+    {
+      "id": "data_entry",
+      "name": "Data entry",
+      "price_usd": 45,
+      "billing": "per hour"
+    },
+    {
+      "id": "custom",
+      "name": "Custom report or feature",
+      "price": "Quoted per request"
+    },
+    {
+      "id": "sms",
+      "name": "Text-message reminders",
+      "price": "Through VYNTEX CRM (GHL); usage rebilled, never included in a plan"
+    }
+  ],
+  "rules": [
+    "Welcome credits are one-time, not cash, apply only to the setup fee of ANOTHER VYNTEX service (website, branding, social media, etc.), expire in 90 days, require an active paid subscription, and cannot be combined. They can never be used on VYNTEX BUILD / VYNTEX CLEAN (setup, monthly fees or add-ons).",
+    "All usage (texts, calls, extra storage) is pass-through, never included.",
+    "Every item is a separate invoice line: subscription, setup, add-ons, usage.",
+    "1099 work is performed by Lion Business Services and requires the customer's written consent to share subcontractor payment data.",
+    "Do not turn on Stripe Tax until Daysi confirms the tax setup.",
+    "Automatic client emails are service emails only (no marketing). Fair use: up to 2,000 emails per company per month. Each company verifies its own sending domain (SPF/DKIM); until then, send from a VYNTEX address with the company name and reply-to set to the company email.",
+    "No 2.9% service fee line on VYNTEX BUILD or any industry edition: VYNTEX absorbs processing fees.",
+    "Payment methods: cards, Apple Pay/Google Pay and ACH bank debit (recommended for subscriptions). Klarna, Afterpay and Affirm stay turned off.",
+    "Plan names: VYNTEX BUILD = Foundation / Builder / Master Builder. Every other industry = Essential / Pro / Elite (Esencial / Pro / Élite)."
+  ],
+  "other_industries": {
+    "products": [
+      "VYNTEX CLEAN",
+      "VYNTEX LANDSCAPE",
+      "VYNTEX WASH",
+      "VYNTEX HAUL",
+      "VYNTEX SNOW",
+      "VYNTEX TURNOVER",
+      "VYNTEX EVENTS"
+    ],
+    "notes": "Reusable plan names for every industry except VYNTEX BUILD (Foundation/Builder/Master Builder). Same prices, features, add-ons and rules as VYNTEX BUILD.",
+    "plans": [
+      {
+        "id": "essential",
+        "name": "Essential",
+        "name_es": "Esencial",
+        "same_features_as": "foundation",
+        "monthly_usd": 59,
+        "yearly_usd": 708,
+        "setup_usd": 299
+      },
+      {
+        "id": "pro",
+        "name": "Pro",
+        "name_es": "Pro",
+        "most_popular": true,
+        "same_features_as": "builder",
+        "monthly_usd": 119,
+        "yearly_usd": 1309,
+        "setup_usd": 499
+      },
+      {
+        "id": "elite",
+        "name": "Elite",
+        "name_es": "Élite",
+        "same_features_as": "master_builder",
+        "monthly_usd": 169,
+        "yearly_usd": 1690,
+        "setup_usd": 599
+      }
+    ]
+  }
+}

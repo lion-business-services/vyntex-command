@@ -1,0 +1,68 @@
+/* Documents. The paper is always white with dark ink, in either theme, because it is what gets printed:
+   its colours are fixed on purpose and scoped to .docs-paper. Everything around it uses the theme tokens. */
+.docs-sum{margin:-4px 0 12px;display:flex;gap:6px 14px;flex-wrap:wrap}
+.docs-name{font-weight:700;text-decoration:none}.docs-name:hover{text-decoration:underline}
+.docs-edited{margin-left:6px}
+.docs-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,1fr);gap:16px;align-items:start}
+@media (max-width:1180px){.docs-layout{grid-template-columns:minmax(0,1fr)}}
+.docs-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:10px}
+.docs-tools .grp{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.docs-hint{margin-bottom:10px}
+
+.docs-paper{--pk:#16202E;--pk2:#55627A;--ph:#0B1B33;--pl:#D5DCE6;--pbg:#F5F7FA;--pbad:#9E1F29;max-width:860px;margin:0 auto;overflow-wrap:anywhere}
+.docs-paper [data-key]{white-space:pre-wrap}
+.docs-paper [contenteditable="true"]{cursor:text;min-height:1.2em}
+.docs-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:2px solid var(--ph);padding-bottom:14px;margin-bottom:16px}
+.docs-co{display:flex;gap:12px;align-items:flex-start;min-width:0}
+.docs-co img{max-height:52px;max-width:120px;object-fit:contain;flex:none}
+.docs-co b{display:block;font-family:var(--font-display);font-size:15.5px;color:var(--ph);line-height:1.25}
+.docs-co span{display:block;font-size:12.5px;color:var(--pk2)}
+.docs-headr{text-align:right;min-width:0;max-width:52%}
+.docs-headr h2{margin-bottom:4px}
+.docs-headr span{display:block;font-size:12.5px;color:var(--pk2)}
+.docs-paper p{margin:0 0 8px}
+.docs-paper .strong{font-weight:800;color:var(--ph)}
+.docs-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:6px 0 4px}
+.docs-two h4{margin-top:8px}
+.docs-amounts{width:100%;border-collapse:collapse;margin:14px 0 6px;font-variant-numeric:tabular-nums}
+.docs-amounts td{padding:9px 0;border-top:1px solid var(--pl);border-bottom:1px solid var(--pl);vertical-align:top}
+.docs-amounts td:last-child{text-align:right;white-space:nowrap;padding-left:16px}
+.docs-amounts tr.tot td{font-weight:800;font-size:15.5px;color:var(--ph);border-top:2px solid var(--ph);border-bottom:2px solid var(--ph)}
+.docs-paidnote{text-align:right;font-weight:800;font-size:12.5px;color:var(--ph);margin:0 0 8px}
+.docs-sigs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:30px;margin-top:26px;break-inside:avoid}
+.docs-sig .ink{height:58px;display:flex;align-items:flex-end;padding:0 4px 3px;border-bottom:1.5px solid var(--pk)}
+.docs-sig .ink img{max-height:54px;max-width:100%;display:block}
+.docs-sig .ink i{font-family:Georgia,'Times New Roman',serif;font-size:21px;color:var(--ph);line-height:1.1}
+.docs-sig p{margin:5px 0 0;font-size:13px}
+.docs-sig .demo{font-size:11.5px;font-weight:800;color:var(--pk2)}
+.docs-notice{margin-top:22px;border:1px solid var(--pk2);border-left:4px solid var(--pk2);background:var(--pbg);padding:10px 12px;font-size:12.5px;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.docs-notice.void{margin:0 0 16px;border-color:var(--pbad);color:var(--pbad);font-weight:800}
+@media (max-width:640px){
+  .docs-head{flex-direction:column;gap:10px}.docs-headr{text-align:left;max-width:none}
+  .docs-two,.docs-sigs{grid-template-columns:minmax(0,1fr);gap:8px}.docs-sigs{gap:18px}
+}
+
+/* side panel */
+.docs-side .card-h{margin-bottom:8px}
+.docs-steps{margin:12px 0 4px}
+.docs-steps li.wait::before{border-color:var(--line-strong)}
+.docs-steps li.wait{color:var(--text-3)}
+.docs-figs{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 16px;font-size:14px;margin:0 0 12px}
+.docs-figs dt{color:var(--text-2)}.docs-figs dd{margin:0;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.docs-figs .tot{font-size:16px;border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
+
+/* demo signing page */
+.docs-signview{max-height:46vh;overflow-y:auto;border:1px solid var(--line-strong);border-radius:8px;margin:12px 0 16px;background:var(--surface-3)}
+.docs-signview .docs-paper{box-shadow:none;border-radius:0;padding:24px 22px;font-size:13px}
+.docs-pad{display:block;width:100%;height:150px;background:#fff;border:1.5px dashed var(--line-strong);border-radius:8px;touch-action:none;cursor:crosshair}
+.docs-pad:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.docs-padbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
+
+@media print{
+  .docs-layout{display:block}
+  .docs-paper{max-width:none;font-size:12.5px}
+  .docs-paper [contenteditable="true"]{outline:0}
+  /* a toast must never end up on a printed document */
+  .toasts{display:none!important}
+}
+.docs-tools .seg button:disabled{opacity:.55;cursor:not-allowed}
