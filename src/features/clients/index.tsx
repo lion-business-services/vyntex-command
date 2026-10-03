@@ -16,6 +16,7 @@ import { addOnViews } from '@/lib/pricing-view';
 import { planName } from '@/lib/pricing';
 import { money, money2, sum } from '@/lib/money';
 import { deleteClient, setEmailOptOut } from './actions';
+import '@/features/leads/work.css';
 import './clients.css';
 
 type Sort = 'name' | 'newest' | 'balance';
@@ -47,10 +48,10 @@ function ClientList() {
 
   return (
     <>
-      <PageHeader title={t('nav.clients')} sub={t('clients.sub')} actions={<Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)} data-testid="clients-new">{t('clients.new')}</Button>} />
+      <PageHeader title={t('nav.clients')} sub={t('clients.sub')} actions={<Button variant={data.clients.length ? 'primary' : 'default'} icon={<LuPlus />} onClick={() => setForm(true)} data-testid="clients-new">{t('clients.new')}</Button>} />
 
       {!data.clients.length ? (
-        <Empty title={t('clients.empty')} action={<Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)}>{t('clients.new')}</Button>}>{t('clients.emptyHint')}</Empty>
+        <Card className="work-none"><Empty title={t('clients.empty')} action={<Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)}>{t('clients.new')}</Button>}>{t('clients.emptyHint')}</Empty></Card>
       ) : (
         <>
           <div className="filters clients-filters">
@@ -68,7 +69,7 @@ function ClientList() {
           </p>
 
           {!rows.length ? (
-            <Empty title={t('common.noResults')} action={<Button onClick={() => setQ('')}>{t('common.clearFilters')}</Button>} />
+            <Card className="work-none"><Empty title={t('common.noResults')} action={<Button onClick={() => setQ('')}>{t('common.clearFilters')}</Button>} /></Card>
           ) : (
             <Card flush>
               <div className="table-wrap">
@@ -183,7 +184,7 @@ function ClientDetail({ id }: { id: string }) {
                 <Stat label={t('clients.col.received')} value={money(m.received)} />
                 <Stat label={t('clients.col.balance')} value={money(m.owes)} attention={m.owes > 0.005} hint={m.owes > 0.005 ? undefined : m.billed > m.received + 0.005 ? t('clients.notDue') : m.billed > 0 ? t('clients.paidUp') : undefined} />
               </div>
-              <p className="xs dim clients-note">{t('clients.moneyNote')}</p>
+              <p className="xs muted clients-note">{t('clients.moneyNote')}</p>
             </section>
           )}
 

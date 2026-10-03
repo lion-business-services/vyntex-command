@@ -113,10 +113,10 @@ export function Tour({ onClose }: { onClose: () => void }) {
       {box && <div className="tour-spot" style={{ top: box.top, left: box.left, width: box.width, height: box.height }} aria-hidden="true" />}
       {!box && <div className="tour-dim" aria-hidden="true" />}
       <div className={'tour-card' + (style ? '' : dock)} style={style} role="dialog" aria-label={t('tour.label')} ref={card} tabIndex={-1} data-testid="tour-card" data-step={step.id}>
-        <div className="tour-h"><span className="xs dim">{t('tour.step', { n: i + 1, total: steps.length })}</span><IconButton size="sm" label={t('tour.skip')} onClick={onClose}><LuX /></IconButton></div>
+        <div className="tour-h"><span className="tour-n">{t('tour.step', { n: i + 1, total: steps.length })}</span><IconButton size="sm" label={t('tour.skip')} onClick={onClose}><LuX /></IconButton></div>
         <h2>{t(`tour.${step.id}.title`, { company: data.company.name })}</h2>
         <p>{t(bodyKey)}</p>
-        <div className="tour-bar" aria-hidden="true"><span style={{ width: `${((i + 1) / steps.length) * 100}%` }} /></div>
+        <div className="tour-bar" aria-hidden="true">{steps.map((st, n) => <span key={st.id} className={n < i ? 'done' : n === i ? 'on' : undefined} />)}</div>
         <div className="tour-f">
           {i > 0 ? <Button variant="ghost" size="sm" onClick={() => setI(i - 1)} data-testid="tour-back">{t('tour.back')}</Button> : <Button variant="ghost" size="sm" onClick={onClose}>{t('tour.skip')}</Button>}
           {last ? (

@@ -58,7 +58,7 @@ A pack (`src/packs/<id>/pack.ts`) is data: the product name as sold, the words u
 ### Adding a ninth industry
 
 1. Copy an existing folder to `src/packs/<new-id>/` and edit `pack.ts` and `seed.ts`.
-2. Add one line to the registry in `src/packs/index.ts`.
+2. Add one line to the registry in `src/packs/index.ts`, and one line to the sample-data loaders in `src/packs/seeds.ts` (each edition's sample business is downloaded on demand; the type checker asks for the line).
 
 Those two steps are all the app needs. Three small data entries keep everything else in agreement, and the checks tell you if one is missing:
 

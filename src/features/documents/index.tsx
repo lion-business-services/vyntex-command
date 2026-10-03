@@ -1,9 +1,9 @@
 // Documents: estimates, agreements and invoices written from each job. One description of the document (model.ts)
 // feeds the screen, the printout and the PDF. E-signature is a demo simulation and is labelled as one everywhere.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { LuCircleCheck, LuDownload, LuEraser, LuFilePlus, LuMail, LuPenLine, LuPrinter, LuRotateCcw, LuSend, LuSignature, LuType } from 'react-icons/lu';
+import { LuDownload, LuEraser, LuFilePlus, LuMail, LuPenLine, LuPrinter, LuRotateCcw, LuSend, LuSignature, LuType } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
-import { A, go, PREVIEW } from '@/app/router';
+import { A, currentUrl, go, PREVIEW } from '@/app/router';
 import { BackLink } from '@/app/Shell';
 import type { PageProps } from '@/app/routes';
 import { act } from '@/store/store';
@@ -19,6 +19,7 @@ import { money2 } from '@/lib/money';
 import { greetName } from '@/features/messages/templates';
 import { clearSignature, newDocument, prepareDocEmail, recordSignature } from './actions';
 import { buildDoc, editKey, editableBlocks, hasEdits, type DocModel, type TextBlock } from './model';
+import { SuccessCheck, useBecame } from './success';
 import './documents.css';
 
 const KINDS: DocKind[] = ['estimate', 'contract', 'invoice'];
@@ -40,7 +41,7 @@ function DocList() {
   const [q, setQ] = useState('');
   const [kind, setKind] = useState<'' | DocKind>('');
   const [status, setStatus] = useState<'' | DocStatus>('');
-  const [form, setForm] = useState(false);
+  const [form, setForm] = useState(() => currentUrl().includes('new=1'));
 
   const rows = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -73,13 +74,13 @@ function DocList() {
       )}
 
       {!data.docs.length ? (
-        <Card><Empty title={t('docs.empty')} action={<Button variant="primary" onClick={() => setForm(true)}>{t('docs.new')}</Button>}>{t('docs.emptyHint')}</Empty></Card>
+        <Card className="docs-none"><Empty title={t('docs.empty')} action={<Button variant="primary" onClick={() => setForm(true)}>{t('docs.new')}</Button>}>{t('docs.emptyHint')}</Empty></Card>
       ) : !rows.length ? (
-        <Card><Empty title={t('common.noResults')} action={<Button onClick={clear}>{t('common.clearFilters')}</Button>} /></Card>
+        <Card className="docs-none"><Empty title={t('common.noResults')} action={<Button onClick={clear}>{t('common.clearFilters')}</Button>} /></Card>
       ) : (
         <Card flush>
           <div className="table-wrap">
-            <table className="tbl stackable" data-testid="docs-table">
+            <table className="tbl stackable docs-tbl" data-testid="docs-table">
               <thead><tr><th>{t('docs.col.doc')}</th><th>{t('docs.col.title')}</th><th>{t('docs.col.client')}</th><th>{t('docs.col.job')}</th><th>{t('docs.col.status')}</th><th>{t('docs.col.updated')}</th></tr></thead>
               <tbody>
                 {rows.map((d) => {
@@ -89,7 +90,7 @@ function DocList() {
                       <td className="t1"><A to={`/documents/${d.id}`} className="docs-name">{d.number}</A>{hasEdits(d) && <span className="docs-edited"><Badge tone="warn" outline>{t('docs.edited')}</Badge></span>}<div className="xs dim">{t('doc.kind.' + d.kind)}</div></td>
                       <td data-label={t('docs.col.title')}>{d.title}</td>
                       <td data-label={t('docs.col.client')}>{client ? <A to={`/clients/${client.id}`}>{client.name}</A> : null}</td>
-                      <td data-label={t('docs.col.job')}>{job ? <A to={`/jobs/${job.id}`}>{job.number}</A> : <span className="dim small">{t('docs.noJob')}</span>}</td>
+                      <td data-label={t('docs.col.job')} className="docs-job">{job ? <A to={`/jobs/${job.id}`}>{job.number}</A> : <span className="dim small">{t('docs.noJob')}</span>}</td>
                       <td data-label={t('docs.col.status')}><span className="row tight nowrap"><DocStatusBadge status={d.status} />{d.esign && d.status !== 'draft' && d.status !== 'void' && <span className="xs dim">{t('docs.demoMark')}</span>}</span></td>
                       <td data-label={t('docs.col.updated')} className="small muted nowrap">{date(d.updated)}</td>
                     </tr>
@@ -194,11 +195,13 @@ function DocDetail({ id }: { id: string }) {
   if (!doc) return <Empty title={t('docs.notFound')} action={<A to="/documents" className="btn">{t('docs.back')}</A>} />;
   const job = byId(data.jobs, doc.jobId);
   const client = byId(data.clients, doc.clientId);
-  if (!model || !job) return <><BackLink to="/documents">{t('docs.back')}</BackLink><Card><Empty title={t('docs.jobGone')} action={<A to="/documents" className="btn">{t('docs.back')}</A>} /></Card></>;
+  if (!model || !job) return <><BackLink to="/documents">{t('docs.back')}</BackLink><Card className="docs-none"><Empty title={t('docs.jobGone')} action={<A to="/documents" className="btn">{t('docs.back')}</A>} /></Card></>;
 
   const kindLabel = t('doc.kind.' + doc.kind);
   const isVoid = doc.status === 'void';
   const signed = doc.esign?.status === 'signed';
+  // one primary action per view: when the side panel asks for the next step (send or sign, or record a payment), the PDF button steps down
+  const nextStep = !isVoid && (doc.kind === 'invoice' ? can('money') && jobMoney(data, job).clientOwes > 0.005 : !signed);
   const stop = () => { setEditing(false); setRev((n) => n + 1); };
 
   const save = () => {
@@ -267,7 +270,7 @@ function DocDetail({ id }: { id: string }) {
                 {model.edited && <Button size="sm" variant="ghost" icon={<LuRotateCcw />} onClick={restore} data-testid="docs-restore">{t('docs.restore')}</Button>}
                 {!isVoid && <Button size="sm" icon={<LuPenLine />} onClick={() => setEditing(true)} data-testid="docs-edit">{t('docs.edit')}</Button>}
                 <Button size="sm" icon={<LuPrinter />} onClick={() => window.print()} data-testid="docs-print">{t('docs.print')}</Button>
-                <Button size="sm" variant="primary" icon={<LuDownload />} onClick={pdf} disabled={busy} data-testid="docs-pdf">{busy ? t('docs.pdfMaking') : t('docs.pdf')}</Button>
+                <Button size="sm" variant={nextStep ? 'default' : 'primary'} icon={<LuDownload />} onClick={pdf} disabled={busy} data-testid="docs-pdf">{busy ? t('docs.pdfMaking') : t('docs.pdf')}</Button>
               </div>
             )}
           </div>
@@ -306,8 +309,10 @@ function PayCard({ job, onPay }: { job: Job; onPay?: () => void }) {
   const { t, data } = useApp();
   const m = jobMoney(data, job);
   const paid = m.price > 0 && m.clientOwes <= 0.005;
+  const justPaid = useBecame(paid);
+  const due = !!onPay && !paid && m.clientOwes > 0.005;
   return (
-    <Card title={t('docs.pay.title')} actions={paid ? <Badge tone="ok"><LuCircleCheck aria-hidden="true" />{t('docs.pay.paid')}</Badge> : undefined}>
+    <Card className={due ? 'raised' : undefined} title={t('docs.pay.title')} actions={paid ? <Badge tone="ok"><SuccessCheck draw={justPaid} size={13} />{t('docs.pay.paid')}</Badge> : undefined}>
       {onPay && (
         <dl className="docs-figs">
           <dt>{t('docs.pay.price')}</dt><dd>{money2(m.price)}</dd>
@@ -315,7 +320,7 @@ function PayCard({ job, onPay }: { job: Job; onPay?: () => void }) {
           <dt className="tot">{t('docs.pay.balance')}</dt><dd className="tot">{money2(m.clientOwes)}</dd>
         </dl>
       )}
-      {onPay && !paid && m.clientOwes > 0.005 && <Button variant="primary" onClick={onPay} data-testid="docs-pay">{t('docs.pay.record')}</Button>}
+      {due && <Button variant="primary" onClick={onPay} data-testid="docs-pay">{t('docs.pay.record')}</Button>}
       <p className="xs dim" style={{ marginTop: onPay ? 10 : 0 }}>{t('docs.pay.auto')}</p>
     </Card>
   );
@@ -335,8 +340,9 @@ function ESignCard({ doc, client, onOpen }: { doc: DocRecord; client?: Client; o
     setErr(false); setAgain(false); toast(t('docs.esign.sentToast'));
   };
   const steps: [string, string | undefined][] = es ? [['sent', es.sentAt], ['viewed', es.viewedAt], ['signed', es.signedAt]] : [];
+  const justSigned = useBecame(es?.status === 'signed');
   return (
-    <Card title={<><LuSignature aria-hidden="true" />{t('docs.esign.title')}</>} actions={<><PlanBadge feature="esignature" /><DemoTag /></>}>
+    <Card className={es?.status === 'signed' ? undefined : 'raised'} title={<><LuSignature aria-hidden="true" />{t('docs.esign.title')}</>} actions={<><PlanBadge feature="esignature" /><DemoTag /></>}>
       <p className="small muted">{t('docs.esign.intro')}</p>
       {!es || again ? (
         <div className="stack tight" style={{ marginTop: 12 }}>
@@ -355,7 +361,7 @@ function ESignCard({ doc, client, onOpen }: { doc: DocRecord; client?: Client; o
           </ol>
           <p className="small muted" style={{ margin: '10px 0' }}>{t('docs.esign.to', { name: es.signerName })}{es.signerEmail ? ` · ${es.signerEmail}` : ''}</p>
           {es.status === 'signed'
-            ? <p className="small">{t('docs.esign.signedNote')}</p>
+            ? <p className="small docs-signed" data-testid="docs-signed"><SuccessCheck draw={justSigned} /><span>{t('docs.esign.signedNote')}</span></p>
             : <Button variant="primary" block icon={<LuPenLine />} onClick={onOpen} data-testid="docs-sign-open" style={{ whiteSpace: 'normal' }}>{t('docs.esign.openSign')}</Button>}
           <div style={{ marginTop: 10 }}><button type="button" className="linkbtn small" onClick={() => setAgain(true)} data-testid="docs-send-again">{t('docs.esign.again')}</button></div>
         </>

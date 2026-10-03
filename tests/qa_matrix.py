@@ -83,7 +83,7 @@ async def run(pack, lang, size_name, w, h, browser, results):
                 if mm: add('BUILD word in this edition: ' + wd, text[max(0, mm.start() - 40):mm.end() + 30].replace('\n', ' '))
         if lang == 'es':
             hits = []
-            es_text = re.sub(r'Google Calendar|Add to Google|VYNTEX [A-Z]+|Sample [A-Z][\w&\' -]+|W-9|[A-Z][a-z]+ [A-Z][a-z]+ (LLC|Inc|Co)\b', ' ', text)
+            es_text = re.sub(r'Google Calendar|Add to Google|VYNTEX [A-Z]+|Sample [A-Z][\w&\' -]+|W-9|, Unit \w+(?=,)|[A-Z][a-z]+ [A-Z][a-z]+ (LLC|Inc|Co)\b', ' ', text)
             for mm in EN_RE.finditer(es_text):
                 ctxt = es_text[max(0, mm.start() - 25):mm.end() + 25].replace('\n', ' ')
                 hits.append(mm.group(0) + ' :: ' + ctxt)

@@ -1,7 +1,6 @@
 // VYNTEX TURNOVER: industry pack for property turnover & make-ready.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
-import { seed } from './seed';
 
 export const turnoverPack: IndustryPack = {
   id: "turnover",
@@ -185,5 +184,4 @@ export const turnoverPack: IndustryPack = {
     { en: "Pay the subcontractors", es: "Pagar a los subcontratistas", dueIn: 3, for: 'owner' },
   ],
   compliance: true,
-  seed,
 };

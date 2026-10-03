@@ -55,7 +55,7 @@ function samplePerson(d: DemoState) {
 
 export default function AutomationsPage(_: PageProps) {
   const { t, data, pack, lang, can, standing, date, dateTime } = useApp();
-  const [fresh, setFresh] = useState<{ leadId: string; name: string; ran: boolean } | null>(null);
+  const [fresh, setFresh] = useState<{ leadId: string; name: string; ran: boolean; tick: number } | null>(null);
   const [all, setAll] = useState(false);
   const freshRef = useRef<HTMLLIElement | null>(null);
 
@@ -80,7 +80,7 @@ export default function AutomationsPage(_: PageProps) {
     const type = pack.serviceTypes[0]?.id ?? 'other';
     const lead = act(createLead, { ...person, type, source: 'website', pri: 'medium', ownerId: '', value: null, firstNote: t('auto.try.note', { service: t('ty_' + type) }) });
     const ran = getSnapshot().data.automation.runs.some((r) => r.ref?.type === 'lead' && r.ref.id === lead.id);
-    setFresh({ leadId: lead.id, name: lead.name, ran });
+    setFresh((was) => ({ leadId: lead.id, name: lead.name, ran, tick: (was?.tick ?? 0) + 1 }));
     toast(t(ran ? 'auto.try.done' : 'auto.try.off', { lead: lead.name }));
   };
   useEffect(() => { if (fresh?.ran) freshRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, [fresh]);
@@ -89,6 +89,9 @@ export default function AutomationsPage(_: PageProps) {
   const recordName = (ref?: Ref) => (!ref ? null : ref.type === 'lead' ? byId(data.leads, ref.id)?.name : ref.type === 'job' ? byId(data.jobs, ref.id)?.name : ref.type === 'client' ? byId(data.clients, ref.id)?.name : null) ?? null;
   const shownRuns = all ? runs : runs.slice(0, 6);
   const onCount = rules.filter(isOn).length;
+  // the rules that just ran for the sample lead: their steps light one after the other, in step with the new entry in "What ran"
+  const freshRuns = fresh ? runs.filter((r) => r.ref?.type === 'lead' && r.ref.id === fresh.leadId) : [];
+  const litRules = new Set(freshRuns.map((r) => r.ruleId));
 
   return (
     <div className="auto">
@@ -104,8 +107,9 @@ export default function AutomationsPage(_: PageProps) {
               const st = r.entitlement ? standing(r.entitlement) : null;
               const planKey = r.entitlement && t('auto.needsPlan.' + r.entitlement) !== 'auto.needsPlan.' + r.entitlement ? 'auto.needsPlan.' + r.entitlement : 'auto.needsPlan';
               const name = ruleName(r.id, t);
+              const lit = on && litRules.has(r.id);
               return (
-                <article key={r.id} className={cx('auto-rule', !on && 'off')} data-testid={`auto-rule-${r.id}`} aria-label={name}>
+                <article key={r.id} className={cx('auto-rule', !on && 'off', lit && 'lit')} data-testid={`auto-rule-${r.id}`} data-lit={lit || undefined} aria-label={name}>
                   <header>
                     <h3>{name}</h3>
                     {r.alwaysOn ? <Badge tone="ok">{t('auto.alwaysOn')}</Badge> : (
@@ -114,7 +118,7 @@ export default function AutomationsPage(_: PageProps) {
                       </button>
                     )}
                   </header>
-                  <div className="auto-flow">
+                  <div className="auto-flow" key={lit ? fresh?.tick : 'rest'} style={{ '--n': r.thens } as React.CSSProperties}>
                     <div className="auto-when">
                       <span className="auto-node" aria-hidden="true">{ICON[r.id] ?? <LuZap />}</span>
                       <div><span className="auto-cap">{t('auto.when')}</span><p>{ruleLine(`auto.${r.id}.when`, t, lang)}</p></div>
@@ -122,7 +126,7 @@ export default function AutomationsPage(_: PageProps) {
                     <div className="auto-then">
                       <span className="auto-cap">{t('auto.then')}</span>
                       <ol aria-label={t('auto.steps')}>
-                        {Array.from({ length: r.thens }, (_x, i) => <li key={i}><span className="auto-num" aria-hidden="true">{i + 1}</span><span>{ruleLine(`auto.${r.id}.then${i + 1}`, t, lang)}</span></li>)}
+                        {Array.from({ length: r.thens }, (_x, i) => <li key={i} style={{ '--i': i } as React.CSSProperties}><span className="auto-num" data-n={i + 1} aria-hidden="true">{i + 1}</span><span>{ruleLine(`auto.${r.id}.then${i + 1}`, t, lang)}</span></li>)}
                       </ol>
                     </div>
                   </div>
@@ -138,7 +142,7 @@ export default function AutomationsPage(_: PageProps) {
         </section>
 
         <aside className="auto-side">
-          <Card className="auto-try" title={<><LuSparkles aria-hidden="true" />{t('auto.tryIt')}</>}>
+          <Card className="auto-try premium" title={<><LuSparkles aria-hidden="true" />{t('auto.tryIt')}</>}>
             <p className="small muted">{t('auto.tryHint')}</p>
             <div className="row auto-try-row">
               <Button variant="primary" icon={<LuUserPlus aria-hidden="true" />} onClick={tryIt} data-testid="auto-try">{t(fresh ? 'auto.try.again' : 'auto.tryLead')}</Button>
@@ -149,7 +153,7 @@ export default function AutomationsPage(_: PageProps) {
 
           <Card title={<>{t('auto.history')}{runs.length > 0 && <span className="count">{runs.length}</span>}</>}>
             <div data-testid="auto-history">
-              {!runs.length ? <p className="small muted">{ruleLine('auto.historyEmpty', t, lang)}</p> : (
+              {!runs.length ? <p className="small muted auto-none"><LuZap aria-hidden="true" /><span>{ruleLine('auto.historyEmpty', t, lang)}</span></p> : (
                 <ol className="auto-runs">
                   {shownRuns.map((run) => {
                     const isFresh = !!fresh && run.ref?.type === 'lead' && run.ref.id === fresh.leadId;
@@ -157,7 +161,7 @@ export default function AutomationsPage(_: PageProps) {
                     return (
                       <li key={run.id} className={cx('auto-run', isFresh && 'fresh')} ref={isFresh ? freshRef : undefined} data-run={run.ruleId} data-fresh={isFresh || undefined}>
                         <div className="auto-run-h"><b>{ruleName(run.ruleId, t)}</b>{isFresh ? <Badge tone="accent">{t('auto.justNow')}</Badge> : <time className="xs dim">{dateTime(run.at)}</time>}</div>
-                        <ul>{run.steps.map((s, i) => <li key={i}><LuCheck aria-hidden="true" /><span>{stepText(s, t, date)}</span></li>)}</ul>
+                        <ul>{run.steps.map((s, i) => <li key={i} style={isFresh ? ({ '--i': i } as React.CSSProperties) : undefined}><LuCheck aria-hidden="true" /><span>{stepText(s, t, date)}</span></li>)}</ul>
                         {run.ref && name && <A to={refPath(run.ref)} className="small auto-link">{t('auto.open', { name })}</A>}
                       </li>
                     );

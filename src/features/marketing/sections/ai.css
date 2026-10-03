@@ -1,0 +1,84 @@
+/* VYNTEX AI: three plain statements beside a conversation panel. The panel grows with the conversation, like a chat does,
+   so it never shows an empty area: each line is absent until its turn, then fades and rises into place. On a replay the
+   wrapper keeps the finished height, so nothing below moves. */
+.mks-ai-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:56px;align-items:start}
+.mks-ai-copy .mks-head{margin-bottom:28px}
+.mks-ai-truths{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.mks-ai-truths li{position:relative;padding:15px 0 15px 26px;border-bottom:1px solid var(--line)}
+.mks-ai-truths li::before{content:"";position:absolute;left:2px;top:22px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--accent);background:var(--bg)}
+.mks-ai-truths b{display:block;font:700 16px/1.3 var(--font-display);color:var(--text)}
+.mks-ai-truths span{display:block;margin-top:3px;font-size:14.5px;line-height:1.55;color:var(--text-2);max-width:46ch}
+.mks-ai-cta{margin-top:24px}
+
+.mks-ai-stage,.mks-ai-hold{min-width:0}
+.mks-ai-panel{padding:0;font-size:14px;line-height:1.45}
+.mks-ai-top{display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.mks-ai-top b{display:block;font:700 14.5px/1.2 var(--font-display);letter-spacing:.02em;color:var(--text)}
+.mks-ai-top small{display:block;font-size:12px;color:var(--text-3)}
+.mks-ai-top .btn{margin-right:10px}
+.mks-ai-mark{flex:none;width:32px;height:32px;display:grid;place-items:center;border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent)}
+.mks-ai-mark svg{width:16px;height:16px}
+.mks-ai-log{display:flex;flex-direction:column;gap:12px;padding:16px}
+.mks-ai-msg{display:flex;flex-direction:column;min-width:0}
+.mks-ai-msg.user{display:none;align-items:flex-end}
+.mks-ai-msg.user.in{display:flex;animation:mks-ai-in var(--motion-standard) var(--ease-vyntex) both}
+@keyframes mks-ai-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.mks-ai-msg.user p{max-width:88%;background:var(--surface-3);border:1px solid var(--line-strong);border-radius:12px 12px 3px 12px;padding:8px 12px;font-weight:600;color:var(--text);overflow-wrap:anywhere}
+.mks-ai-ghost{visibility:hidden}
+.mks-ai-caret{display:inline-block;width:1.5px;height:1.05em;margin:0 1px -2px;background:var(--accent)}
+.mks-ai-msg.bot{position:relative;align-items:stretch}
+.mks-ai-dots{display:none;gap:4px;padding:6px 2px 8px}
+.mks-ai-dots.on{display:flex}
+.mks-ai-dots i{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.mks-ai-dots.on i{animation:mks-ai-dot 900ms ease-in-out infinite}
+.mks-ai-dots.on i:nth-child(2){animation-delay:150ms}.mks-ai-dots.on i:nth-child(3){animation-delay:300ms}
+@keyframes mks-ai-dot{0%,100%{opacity:.25}40%{opacity:1}}
+
+.mks-ai-line{display:none}
+.mks-ai-line.in{display:block;animation:mks-ai-in var(--motion-standard) var(--ease-vyntex) both}
+p.mks-ai-line{color:var(--text);padding:2px 0 7px;font-weight:600}
+p.mks-ai-line.soft{color:var(--text-3);font-weight:500;font-size:13px}
+.mks-ai-row.in{display:flex}
+.mks-ai-row{align-items:center;gap:12px;padding:7px 12px;background:var(--surface-2);border:1px solid var(--line);border-top:0;color:inherit;text-decoration:none;min-width:0}
+.mks-ai-row.first{border-top:1px solid var(--line);border-radius:var(--radius-s) var(--radius-s) 0 0}
+.mks-ai-row.last{border-radius:0 0 var(--radius-s) var(--radius-s);margin-bottom:10px}
+.mks-ai-row.first.last{border-radius:var(--radius-s)}
+a.mks-ai-row:hover{background:var(--surface-3)}
+.mks-ai-row .t{display:block;font-weight:650;color:var(--text);overflow-wrap:anywhere}
+.mks-ai-row small{display:block;font-size:12px;color:var(--text-3);overflow-wrap:anywhere}
+.mks-ai-right{flex:none;font-size:12.5px;font-weight:650;color:var(--text-2);white-space:nowrap}
+.mks-ai-right.bad{color:var(--bad)}.mks-ai-right.warn{color:var(--warn)}
+p.mks-ai-rest{margin:0 0 10px;padding:6px 12px;background:var(--surface-2);border:1px solid var(--line);border-top:0;border-radius:0 0 var(--radius-s) var(--radius-s);font-size:12.5px;font-weight:650;color:var(--text-3)}
+
+.mks-ai-card{border:1px solid var(--accent-line);border-radius:var(--radius-s);background:linear-gradient(160deg,var(--cobalt-soft),transparent 55%),var(--surface-2);padding:13px 14px}
+.mks-ai-card h3{font:700 14.5px var(--font-display);color:var(--text);margin-bottom:9px}
+.mks-ai-card .kv{font-size:13.5px;gap:4px 16px}
+.mks-ai-wait{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);font-size:13px;font-weight:700;color:var(--warn)}
+.mks-ai-wait i{flex:none;width:8px;height:8px;border-radius:50%;background:var(--warn)}
+.mks-ai-panel[data-state="done"][data-live] .mks-ai-wait i{animation:mks-ai-dot 1800ms ease-in-out infinite}
+.mks-ai-foot{padding:11px 16px 14px;border-top:1px solid var(--line);font-size:12.5px;line-height:1.5;color:var(--text-3)}
+.mks-ai-more>span{flex-basis:100%}
+.mks-ai-more{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:22px;font-size:13px;color:var(--text-3)}
+.mks-ai-chip{display:inline-flex;align-items:center;min-height:32px;padding:4px 12px;border:1px solid var(--line-strong);border-radius:999px;color:var(--text-2);font-weight:600;text-decoration:none;transition:border-color var(--motion-fast) var(--ease-vyntex),color var(--motion-fast) var(--ease-vyntex)}
+.mks-ai-chip:hover{border-color:var(--accent-line);color:var(--text)}
+
+@media (max-width:980px){
+  .mks-ai-grid{grid-template-columns:minmax(0,1fr);gap:32px}
+}
+@media (max-width:520px){
+  .mks-ai-log{padding:14px 12px}
+  .mks-ai-row{padding:7px 10px;gap:8px;align-items:flex-start;flex-direction:column}
+  .mks-ai-right{white-space:normal}
+  .mks-ai-top small{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .mks-ai-line.in,.mks-ai-msg.user.in{animation:none}
+  .mks-ai-dots,.mks-ai-dots.on{display:none}
+  .mks-ai-panel .mks-ai-wait i{animation:none!important}
+}
+/* on paper the whole conversation is there, whether or not it has played */
+@media print{
+  .mks-ai-line,.mks-ai-msg.user{display:block!important;animation:none!important}
+  .mks-ai-msg.user,.mks-ai-row{display:flex!important}
+  .mks-ai-dots{display:none!important}
+}

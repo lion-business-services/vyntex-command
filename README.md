@@ -1,4 +1,6 @@
-# VYNTEX platform
+# VYNTEX Command
+
+The platform's name is VYNTEX Command, "the AI-Powered Business Operating Platform" (one setting: `src/config/brand.ts`).
 
 One business operations platform for small service companies: leads, clients, jobs, tasks, crews, calendar, documents, payments, reports and 1099 compliance. It is sold as eight industry editions (VYNTEX BUILD, CLEAN, LANDSCAPE, WASH, HAUL, SNOW, TURNOVER, EVENTS). All eight run on one codebase; an edition is a configuration folder, not a copy of the app.
 
@@ -12,7 +14,7 @@ One business operations platform for small service companies: leads, clients, jo
 | Customer database (`supabase/`) | Written and tested locally. Not created on Supabase yet. |
 | Customer workspaces (`/<company-slug>`) | Prepared (address rules, database, access rules). The sign-in screens and the connection between the pages and the database are not built yet. |
 
-**Nothing has been deployed.** No GitHub repository, Supabase project, Vercel project or DNS record was created. `docs/DEPLOYMENT.md` lists the steps for when the owner decides to go ahead.
+**State of hosting.** The code is in the GitHub repository `lion-business-services/VYNTEX-COMMAND` and a test copy runs on Vercel at https://vyntex-command.vercel.app/ (demo only: no database, no keys). No Supabase project, sending domain or DNS record exists yet. `docs/DEPLOYMENT.md` lists the remaining steps for when the owner decides to go ahead.
 
 ## Run it on your computer
 
@@ -51,6 +53,7 @@ node --env-file=.env.local scripts/serve.mjs
 | `npm run build` | The site builds. |
 | `npm run qa:facts` then `npm run qa:matrix` | Opens every page in every industry, in English and Spanish, on a desktop and a phone screen, and checks each one: no errors, no sideways scroll, no missing wording, no construction words in the other editions, no English left in Spanish. Needs Python with Playwright and the site running (`npm start`). |
 | `npm run qa:flows` | Walks the demo like a visitor in every industry: new lead, won lead to job, completed job to invoice, payment, PDF, demo signature, tasks, search, roles, plan badges, language, guided tour, reset, plus the pricing numbers against the pricing file and the request form. Same requirements. |
+| `python3 tests/qa_motion.py` | With motion reduced nothing animates and no text stays hidden; the keyboard reaches every control with a visible focus ring; the command palette works from the keyboard. |
 | `bash supabase/tests/run_local.sh` | The database rules hold: company isolation, the role matrix, encryption, audit log, consent. Needs PostgreSQL 15 or newer installed locally. Uses a throwaway local server and touches nothing online. |
 | `bash supabase/tests/mutation_check.sh` | The database test itself can be trusted: it breaks one rule at a time and confirms the test notices. Takes a few minutes. |
 
@@ -64,17 +67,19 @@ node --env-file=.env.local scripts/serve.mjs
 | `src/packs/<industry>/` | One folder per industry edition: wording, service types, documents, task templates, sample business. |
 | `src/platform/` | Which workspace an address belongs to (`mode.ts`) and the list of data operations a workspace provides (`gateway.ts`). |
 | `src/store/` | The demo's data, kept in the browser. |
+| `src/brand/` | The brand components: the V mark (flat and dimensional), the wordmark lockup, the circuit trace, the scroll reveal. |
+| `src/packs/seeds.ts` | Loads each edition's sample business on demand, so a visitor downloads one edition before the first screen and the rest in the background. |
 | `src/app/`, `src/ui/`, `src/features/` | The screens. |
 | `api/` | Server functions for Vercel. `api/_lib/` holds shared helpers and is not reachable from outside. |
 | `supabase/migrations/` | The customer database, as numbered SQL files to run in order. |
 | `supabase/seed.sql` | Reference data only: the eight industries. |
 | `supabase/tests/` | The local database tests. |
 | `scripts/` | Build, local server and the checks. `build-preview.mjs` makes an embeddable preview of the site (the page lives in memory instead of the address bar). |
-| `tests/` | The browser tests (`qa_matrix.py`, `qa_flows.py`) and small helpers. |
+| `tests/` | The browser tests (`qa_matrix.py`, `qa_flows.py`, `qa_motion.py`) and small helpers. |
 | `types-local/` | A stand-in for the React type package, used only by `npm run typecheck:local` where libraries cannot be downloaded. |
 | `vercel.json` | Hosting settings: build, address rewrites, security headers. |
 | `.env.example` | Every environment variable, explained, with no values. |
-| `docs/` | `CONVENTIONS.md` (how to write code here), `ARCHITECTURE.md`, `SECURITY.md`, `DEPLOYMENT.md`. |
+| `docs/` | `CONVENTIONS.md` (how to write code here, including the design system), `ARCHITECTURE.md`, `SECURITY.md`, `DEPLOYMENT.md`, `COMPLETION-REPORT.md` (first build), `REDESIGN-REPORT.md` (brand, interface and motion upgrade). |
 
 ## Rules that do not bend
 

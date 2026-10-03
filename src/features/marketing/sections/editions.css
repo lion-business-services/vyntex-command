@@ -1,0 +1,30 @@
+/* Industry editions: a ruled list, one row per edition. The selected edition carries the circuit edge. */
+.mks-ed-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--line-strong)}
+.mks-ed-row{position:relative;display:grid;grid-template-columns:minmax(0,270px) minmax(0,1fr) auto;gap:14px 32px;align-items:center;padding:18px 0 18px 18px;border-bottom:1px solid var(--line)}
+/* rows rise in together, 45ms apart, once the list is on screen */
+.mks-ed-list .mks-ed-row>*{opacity:0;transform:translateY(12px);transition:opacity var(--motion-reveal) var(--ease-vyntex) calc(var(--i,0) * 45ms),transform var(--motion-reveal) var(--ease-vyntex) calc(var(--i,0) * 45ms)}
+.mks-ed-list.in .mks-ed-row>*{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.mks-ed-list .mks-ed-row>*{opacity:1;transform:none;transition:none}}
+@media print{.mks-ed-row>*{opacity:1!important;transform:none!important;transition:none!important}}
+.mks-ed-row::before{content:"";position:absolute;left:0;top:18px;bottom:18px;width:2px;background:linear-gradient(180deg,var(--cyan),var(--blue));opacity:0}
+.mks-ed-row.on::before{opacity:1}
+.mks-ed-name h3{font-size:17px;line-height:1.2}
+.mks-ed-name span{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px;font-size:13.5px;font-weight:650;color:var(--text-2)}
+.mks-ed-name em{font-style:normal;font-size:11.5px;font-weight:750;color:var(--accent);border:1px solid var(--accent-line);border-radius:999px;padding:0 8px;line-height:19px}
+.mks-ed-about p{font-size:15.5px;line-height:1.45;color:var(--text)}
+
+.mks-ed-about .mks-ed-types{margin-top:5px;font-size:13.5px;color:var(--text-3)}
+.mks-ed-go{justify-self:end;white-space:nowrap;margin-right:6px}
+.mks-ed-more{margin-top:22px;font-size:15px;color:var(--text-2);max-width:70ch}
+.mks-ed-ask{color:var(--accent);font-weight:700;text-underline-offset:3px;white-space:nowrap}
+@media (max-width:860px){
+  .mks-ed-row{grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;padding-left:14px}
+  .mks-ed-about{grid-column:1/-1;grid-row:2}
+  .mks-ed-go{grid-column:2;grid-row:1}
+}
+@media (max-width:480px){
+  .mks-ed-row{gap:8px 12px;padding:16px 0 16px 14px}
+  .mks-ed-go{align-self:start;margin-right:0;width:40px;height:40px;justify-content:center;border:1px solid var(--line-strong);border-radius:50%}
+  .mks-ed-go span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .mks-ed-about p{font-size:15px}
+}

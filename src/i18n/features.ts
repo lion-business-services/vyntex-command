@@ -19,5 +19,7 @@ import { dict as tour } from '@/features/tour/i18n';
 import { dict as messages } from '@/features/messages/i18n';
 import { dict as compliance } from '@/features/compliance/i18n';
 import { dict as pricingCopy } from '@/lib/pricing-copy';
+import { dict as marketingSections } from '@/features/marketing/sections/i18n';
+import { dict as marketingPages } from '@/features/marketing/pages-i18n';
 
-export const featureDicts: Dict[] = [dashboard, leads, clients, jobs, tasks, calendar, team, documents, payments, reports, automations, assistant, settings, portal, marketing, tour, messages, compliance, pricingCopy];
+export const featureDicts: Dict[] = [dashboard, leads, clients, jobs, tasks, calendar, team, documents, payments, reports, automations, assistant, settings, portal, marketing, tour, messages, compliance, pricingCopy, marketingSections, marketingPages];

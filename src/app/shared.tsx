@@ -1,6 +1,6 @@
 // Pieces every feature reuses so statuses, badges, notes and history look and behave the same everywhere.
 import { useState, type ReactNode } from 'react';
-import { LuPhone, LuMapPin, LuPin, LuTrash2, LuSparkles, LuFlaskConical, LuLock, LuPlug } from 'react-icons/lu';
+import { LuPhone, LuMapPin, LuPin, LuTrash2, LuSparkles, LuFlaskConical, LuLock, LuPlug, LuZap } from 'react-icons/lu';
 import { Badge, Button, Card, Empty, IconButton, Seg, type Tone, cx, confirmDialog } from '@/ui';
 import { useApp } from './hooks';
 import { A, refPath } from './router';
@@ -160,14 +160,14 @@ export function TaskRow({ task, showJob, onEdit, actions }: { task: Task; showJo
   const done = task.status === 'done';
   return (
     <div className={cx('item', done && 'done')}>
-      <input type="checkbox" checked={done} onChange={() => act(toggleTask, task.id)} aria-label={`${t(done ? 'ts.done' : 'ts.todo')}: ${task.title}`} style={{ width: 18, height: 18, marginTop: 3, flex: 'none' }} />
+      <label className="tick"><input type="checkbox" checked={done} onChange={() => act(toggleTask, task.id)} aria-label={`${t(done ? 'ts.done' : 'ts.todo')}: ${task.title}`} /></label>
       <div className="grow">
         <div className="t">{onEdit ? <button type="button" className="linkbtn" style={{ color: 'inherit', textDecoration: 'none', textAlign: 'left', fontWeight: 650 }} onClick={onEdit}>{task.title}</button> : task.title} {!done && <PriorityBadge pri={task.pri} />} {!done && task.status !== 'todo' && <TaskStatusBadge status={task.status} />}</div>
         <div className="small muted">
           {showJob && job && <><A to={`/jobs/${job.id}`}>{byId(data.clients, job.clientId)?.name} · {job.name}</A> · </>}
           {showJob && !job && lead && <><A to={`/leads/${lead.id}`}>{lead.name}</A> · </>}
           {assigneeName(data, task.assignee) || t('common.unassigned')}
-          {task.auto && <> · <span title={t('common.automation')}>⚡ {t('common.automation')}</span></>}
+          {task.auto && <> · <span className="auto-by"><LuZap aria-hidden="true" />{t('common.automation')}</span></>}
         </div>
       </div>
       <DueBadge due={task.due} done={done} />

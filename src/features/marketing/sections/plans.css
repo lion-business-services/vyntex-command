@@ -1,0 +1,51 @@
+/* Included, add-on, usage, custom: four ruled columns of real examples. Then the three plans in one quiet panel. */
+.mks-pl-cats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 28px;border-top:1px solid var(--line-strong)}
+.mks-pl-cat{padding:20px 0 6px;min-width:0}
+.mks-pl-cat h3{line-height:1}
+.mks-pl-cat h3 .badge{font-size:12.5px;padding:3px 11px}
+.mks-pl-cat>p{margin:10px 0 12px;font-size:15px;line-height:1.5;color:var(--text);min-height:3em}
+.mks-pl-cat ul{list-style:none;margin:0;padding:0}
+.mks-pl-cat li{padding:9px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.4}
+.mks-pl-cat li>span{display:block;color:var(--text-2);overflow-wrap:anywhere}
+.mks-pl-cat li small{display:block;margin-top:2px;font-size:12.5px;color:var(--text-3)}
+.mks-pl-cat li .badge{vertical-align:1px}
+
+.mks-pl-preview{margin-top:44px;background:var(--surface);border:1px solid var(--line-strong);border-radius:var(--radius);box-shadow:var(--shadow-2)}
+.mks-pl-preview-h{display:flex;align-items:baseline;justify-content:space-between;gap:6px 24px;flex-wrap:wrap;padding:18px 24px;border-bottom:1px solid var(--line)}
+.mks-pl-preview-h h3{font:700 17px/1.3 var(--font-display);color:var(--text)}
+.mks-pl-preview-h h3 .mks-edition{font-size:15px;margin-left:4px}
+.mks-pl-preview-h p{font-size:13px;color:var(--text-3)}
+.mks-pl-plans{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.mks-pl-plan{position:relative;padding:22px 24px 24px;border-left:1px solid var(--line);min-width:0}
+.mks-pl-plan:first-child{border-left:0}
+.mks-pl-plan.popular{background:linear-gradient(180deg,var(--blue-soft),transparent 70%)}
+.mks-pl-plan.popular::before{content:"";position:absolute;left:-1px;right:-1px;top:-1px;height:2px;background:var(--grad-edge)}
+.mks-pl-plan-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:26px}
+.mks-pl-plan h4{font:700 16px/1.2 var(--font-display);color:var(--text)}
+.mks-pl-pop{font-size:11.5px;font-weight:750;color:var(--accent);border:1px solid var(--accent-line);border-radius:999px;padding:1px 9px;white-space:nowrap}
+.mks-pl-price{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin:12px 0 16px}
+.mks-pl-price b{font:700 38px/1 var(--font-display);letter-spacing:-.03em;color:var(--text);font-variant-numeric:tabular-nums}
+.mks-pl-price span{font-size:14px;color:var(--text-2)}
+.mks-pl-plan dl{margin:0}
+.mks-pl-plan dl div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.mks-pl-plan dt{color:var(--text-2)}
+.mks-pl-plan dd{margin:0;font-weight:700;color:var(--text);text-align:right}
+.mks-pl-foot{display:flex;align-items:center;justify-content:space-between;gap:14px 28px;flex-wrap:wrap;padding:16px 24px 18px;border-top:1px solid var(--line)}
+.mks-pl-foot p{flex:1;min-width:240px;max-width:62ch}
+
+@media (max-width:980px){
+  .mks-pl-cats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mks-pl-cat>p{min-height:0}
+}
+@media (max-width:720px){
+  .mks-pl-plans{grid-template-columns:minmax(0,1fr)}
+  .mks-pl-plan{border-left:0;border-top:1px solid var(--line);padding:18px 18px 20px}
+  .mks-pl-plan:first-child{border-top:0}
+  .mks-pl-plan.popular::before{left:0;right:0}
+  .mks-pl-preview-h,.mks-pl-foot{padding-left:18px;padding-right:18px}
+  .mks-pl-price b{font-size:32px}
+}
+@media (max-width:560px){
+  .mks-pl-cats{grid-template-columns:minmax(0,1fr)}
+  .mks-pl-foot .btn{width:100%}
+}

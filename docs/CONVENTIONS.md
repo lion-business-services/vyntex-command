@@ -78,9 +78,28 @@ export default function JobsPage({ id }: PageProps) {
 `can('<permission>')` from `useApp()` (see `src/domain/permissions.ts`). Owner sees everything; Manager has no Settings and no profit numbers (`can('profit')`); Office staff has no money, team, reports, automations or compliance. Workers only see the portal.
 Hide money and profit figures when the role lacks `money` / `profit`. Hide delete buttons when the role lacks `delete`.
 
-## Design system
+## Design system ("Metallic Intelligence")
 
-Dark first. Tokens are CSS variables in `src/ui/styles.css` (`--bg --surface --surface-2 --surface-3 --line --line-strong --text --text-2 --text-3 --accent --ok --warn --bad --info --violet` and their `-soft` versions). A light theme flips the same tokens, so **never hard-code a colour**; use the variables.
+Dark first: graphite surfaces, a chrome identity accent and one blue spectrum taken from the VYNTEX mark. Tokens are CSS variables in `src/ui/styles.css`. A light theme (pearl and ice, cobalt accent) flips the same tokens, so **never hard-code a colour and never type a new blue**; use the variables.
+
+* Surfaces and lines: `--bg --surface --surface-2 --surface-3 --surface-4 --line --line-strong --line-chrome`
+* Text: `--text --text-2 --text-3`. Chrome is for identity (the wordmark, a hairline), never for body text.
+* Blue spectrum: `--cobalt --blue --cyan --ice`. Interaction accent: `--accent` (cyan in dark, cobalt blue in light) with `--accent-2 --accent-soft --accent-line --accent-ink`. Cyan marks an action or the active item; it is not decoration.
+* Chrome: `--chrome-hi --chrome --chrome-lo`; gradients `--grad-chrome` (identity text), `--grad-brand` (blue to cyan to ice), `--grad-cta` (the primary button), `--grad-edge` (chrome to cyan hairline).
+* Status: `--ok --warn --bad --info --violet` and their `-soft` versions.
+* Depth: `--shadow --shadow-1 --shadow-2 --glow --glow-soft`.
+* Motion: `--motion-instant` 100ms, `--motion-fast` 180ms, `--motion-standard` 320ms, `--motion-reveal` 620ms, `--motion-cinematic` 1100ms, `--motion-ambient` 9s; easing `--ease-vyntex` and `--ease-spring` (short physical UI only). No other durations or curves.
+
+Three buttons: `.btn.primary` (the one main action of a view), `.btn` (secondary), `.btn.ghost` (tertiary). Four card levels: `.card` (section), `.card.raised` (focused or actionable), hoverable records (`.item.click`, `.kcard`, `tr.click`), `.card.premium` (VYNTEX AI, automation, a key call to action: lit edge and one cut corner). Not every card glows; the cut corner and the glow are for brand moments only.
+
+Brand components live in `src/brand/` (import from `@/brand`): `VMark`, `VMark3D` (the layered hero mark, no WebGL), `Lockup`, `CircuitTrace`, `Reveal` (the one scroll reveal), `useInView`, `usePrefersReducedMotion`, `Frame` (product window for the sales pages), `ScrollProgress`, `Arrow`.
+
+Motion rules:
+* The sales pages may impress. The workspace stays fast: hover lift of 1 to 2px, a lit border, a row highlight, a dialog transition. No ambient motion, parallax or 3D behind work screens.
+* Every animation answers one of: what changed, what is connected, what happened automatically, where to look, what to do next. Otherwise remove it.
+* Animate `transform` and `opacity` only (and `stroke-dashoffset` for traces). Pause loops that are off screen (`useInView().visible`).
+* With `prefers-reduced-motion: reduce` everything is static and complete. `tests/qa_motion.py` checks this.
+* The circuit line appears only where the idea is connection, automation or flow.
 
 Classes you can use directly: `.btn(.primary .ghost .outline .danger .sm .lg .block)`, `.iconbtn`, `.linkbtn`, `.card(.flush)`, `.card-h`, `.note(.warn .bad)`, `.badge(.ok .warn .bad .info .violet .accent .outline)`, `.dot`, `.count`, `.kpis` + `.kpi(.attn)`, `.field`, `.input`, `.fgrid`, `.check`, `.searchbox`, `.filters`, `.seg`, `.tabs`, `.table-wrap` + `table.tbl.stackable` (stacks into cards on phones; put `data-label` on each `td`, class `t1` on the title cell), `.list` + `.item(.click .done)`, `.avatar`, `.kv`, `.empty`, `.bar` + `.legend`, `.timeline`, `.kanban` + `.kcol` + `.kcard`, `.modal`, `.menu`, `.row(.tight .between .top .nowrap)`, `.stack(.tight)`, `.grid2`, `.grid3`, `.split`, `.muted .dim .small .xs .strong .num .pos .neg .nowrap .grow .clip .sr`, `.cut` (the chamfered brand corner; use it sparingly), `.paper` (printable document), `.no-print`.
 

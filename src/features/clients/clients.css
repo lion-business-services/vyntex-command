@@ -1,6 +1,7 @@
 .clients-filters .searchbox{max-width:460px;min-width:min(100%,300px)}
 .clients-sum{margin:-4px 0 12px}
-.clients-name{font-weight:700;text-decoration:none}.clients-name:hover{text-decoration:underline}
+.clients-sum b{font-family:var(--font-display);font-weight:650;font-variant-numeric:tabular-nums;color:var(--text)}
+.clients-name{font-weight:700;text-decoration:none}.clients-name:hover{text-decoration:underline;text-underline-offset:3px}
 .clients-who{display:flex;gap:8px;align-items:center;min-width:0}
 .clients-co{display:block;font-weight:500;overflow-wrap:anywhere}
 .clients-contact{display:flex;flex-direction:column;min-width:0}
@@ -23,8 +24,8 @@
 /* opt-out switch: a real checkbox with role="switch", drawn as a track */
 .clients-switch{display:flex;gap:11px;align-items:flex-start;cursor:pointer;font-size:14px;position:relative}
 .clients-switch input{position:absolute;opacity:0;width:40px;height:22px;margin:0;cursor:pointer}
-.clients-track{flex:none;width:40px;height:22px;border-radius:999px;background:var(--surface-3);border:1px solid var(--line-strong);position:relative;transition:background .12s,border-color .12s}
-.clients-track::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:var(--text-2);transition:transform .12s,background .12s}
+.clients-track{flex:none;width:40px;height:22px;border-radius:999px;background:var(--surface-3);border:1px solid var(--line-strong);position:relative;transition:background var(--motion-fast) var(--ease-vyntex),border-color var(--motion-fast) var(--ease-vyntex)}
+.clients-track::after{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:var(--text-2);transition:transform var(--motion-fast) var(--ease-spring),background var(--motion-fast) var(--ease-vyntex)}
 .clients-switch input:checked+.clients-track{background:var(--accent-soft);border-color:var(--accent)}
 .clients-switch input:checked+.clients-track::after{transform:translateX(18px);background:var(--accent)}
 .clients-switch input:focus-visible+.clients-track{outline:2px solid var(--accent);outline-offset:2px}
@@ -33,6 +34,12 @@
 .clients-portal .card-h h2{font-size:15.5px}
 
 @media (max-width:720px){
+  /* the switch row is a full-height touch target */
+  .clients-switch{min-height:40px;align-items:center}
+  .clients-filters select,.clients-filters .searchbox input{min-height:40px}
+  .clients-pad .btn,.clients-addr .btn,.clients-links .btn,.clients-portal .btn{min-height:40px}
   .clients-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* three figures on two columns: the balance takes the full second row instead of leaving a hole */
+  .clients-kpis>:last-child:nth-child(odd){grid-column:1/-1}
   .clients-contact{align-items:flex-end;text-align:right}
 }

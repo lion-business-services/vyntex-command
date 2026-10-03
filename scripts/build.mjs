@@ -31,6 +31,14 @@ function finish(meta) {
   if (!js || !css) throw new Error('build: entry files not found in the output');
   let html = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
   html = html.replace('/assets/app.css', `/assets/${css}`).replace('/assets/app.js', `/assets/${js}`);
+  // The files the entry script imports right away are announced in the page, so the browser fetches them alongside the entry
+  // instead of discovering them one round trip later. Pages and sample data that load on demand are left out.
+  const entryKey = Object.keys(meta.outputs).find((f) => path.basename(f) === js);
+  const eager = new Set();
+  const walk = (key) => { for (const im of meta.outputs[key]?.imports || []) if (im.kind === 'import-statement' && !eager.has(im.path)) { eager.add(im.path); walk(im.path); } };
+  walk(entryKey);
+  const hints = [...eager].map((f) => `<link rel="modulepreload" href="/assets/${path.basename(f)}">`).join('\n');
+  if (hints) html = html.replace('</head>', `${hints}\n</head>`);
   fs.writeFileSync(path.join(stage, 'index.html'), html);
   // the entry stylesheet already contains every page's styles; the per-page copies esbuild also writes are never loaded
   for (const f of fs.readdirSync(path.join(stage, 'assets'))) if (/^chunk-.*\.css$/.test(f)) fs.rmSync(path.join(stage, 'assets', f));

@@ -1,7 +1,6 @@
 // VYNTEX WASH: industry pack for pressure washing, windows & gutters.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
-import { seed } from './seed';
 
 export const washPack: IndustryPack = {
   id: "wash",
@@ -195,5 +194,4 @@ export const washPack: IndustryPack = {
     { en: "Offer a yearly or seasonal plan", es: "Ofrecer un plan anual o por temporada", dueIn: 7, for: 'owner', pri: 'low' },
   ],
   compliance: true,
-  seed,
 };

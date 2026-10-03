@@ -9,10 +9,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'vx-seed-')), 'seeds.mjs');
 buildSync({
-  stdin: { contents: `import { PACK_LIST } from '@/packs'; globalThis.__packs = PACK_LIST;`, resolveDir: root, loader: 'ts' },
+  stdin: { contents: `import { PACK_LIST } from '@/packs'; import { loadAllSeeds, seedOf } from '@/packs/seeds'; globalThis.__packs = PACK_LIST; globalThis.__seeds = { loadAllSeeds, seedOf };`, resolveDir: root, loader: 'ts' },
   bundle: true, format: 'esm', outfile: out, alias: { '@': path.join(root, 'src') }, loader: { '.json': 'json' }, logLevel: 'error', platform: 'node',
 });
 await import(pathToFileURL(out).href);
+await globalThis.__seeds.loadAllSeeds();
 const only = process.argv.slice(2);
 let bad = 0;
 const fail = (m) => { bad++; console.error('  ✗ ' + m); };
@@ -21,7 +22,7 @@ for (const pack of globalThis.__packs) {
   if (only.length && !only.includes(pack.id)) continue;
   for (const lang of ['en', 'es']) {
     let s;
-    try { s = pack.seed(lang); } catch (e) { console.log(`${pack.id} (${lang})`); fail(String(e.message || e)); continue; }
+    try { s = globalThis.__seeds.seedOf(pack.id)(lang); } catch (e) { console.log(`${pack.id} (${lang})`); fail(String(e.message || e)); continue; }
     const ids = (l) => new Set(l.map((x) => x.id));
     const c = ids(s.clients), w = ids(s.workers), j = ids(s.jobs), u = ids(s.users), types = new Set(pack.serviceTypes.map((t) => t.id));
     console.log(`${pack.id} (${lang}): ${s.leads.length} leads, ${s.clients.length} clients, ${s.jobs.length} jobs, ${s.tasks.length} tasks, ${s.workers.length} workers, ${s.workerPays.length} worker payments, ${s.docs.length} documents, ${s.activity.length} activity`);

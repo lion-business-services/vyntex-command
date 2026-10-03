@@ -1,0 +1,11 @@
+/* Success mark: a circuit line completes toward a node and the check draws inside it. Once, about 450 ms (2.5 x the fast token),
+   then it stays as a plain check. The resting state is the finished mark, so reduced motion shows it complete. */
+.okcheck{flex:none;display:inline-block;vertical-align:-4px;overflow:visible;color:var(--ok);--okcheck-t:var(--motion-fast)}
+.okcheck path,.okcheck circle{stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:100;stroke-dashoffset:0;vector-effect:non-scaling-stroke}
+.okcheck .l{opacity:0;stroke:var(--accent)}
+.okcheck .c{transform:rotate(180deg);transform-origin:10px 10px}
+.okcheck.draw .l{animation:okcheck-line calc(var(--okcheck-t) * 2.5) var(--ease-vyntex) both}
+.okcheck.draw .c{animation:okcheck-draw var(--okcheck-t) var(--ease-vyntex) calc(var(--okcheck-t) * .6) backwards}
+.okcheck.draw .k{animation:okcheck-draw var(--okcheck-t) var(--ease-vyntex) calc(var(--okcheck-t) * 1.5) backwards}
+@keyframes okcheck-draw{from{stroke-dashoffset:100}to{stroke-dashoffset:0}}
+@keyframes okcheck-line{0%{stroke-dashoffset:100;opacity:1}40%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}

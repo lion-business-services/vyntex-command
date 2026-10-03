@@ -17,6 +17,7 @@ import { money2 } from '@/lib/money';
 import { fmtDate, today } from '@/lib/dates';
 import { composeMessage, discardMessage, sendMessageDemo, updateMessage } from './actions';
 import { TEMPLATES, fillTemplate, type TemplateId } from './templates';
+import { SuccessCheck } from '@/features/documents/success';
 import './messages.css';
 
 type Tab = 'review' | 'sent' | 'all';
@@ -41,6 +42,8 @@ export default function MessagesPage(_: PageProps) {
   const [tab, setTab] = useState<Tab>('review');
   const [openId, setOpenId] = useState<string | null>(null);
   const [compose, setCompose] = useState<{ clientId?: string } | null>(null);
+  // the email that was just marked as sent: confirmed once above the list, with a way to open it
+  const [sentId, setSentId] = useState<string | null>(null);
 
   // links from other pages: /messages?open=<message id> and /messages?compose=<client id>
   useEffect(() => {
@@ -54,8 +57,11 @@ export default function MessagesPage(_: PageProps) {
   const counts = { review: data.messages.filter((m) => m.status === 'draft').length, sent: data.messages.filter((m) => m.status === 'demo').length, all: data.messages.length };
   const rows = useMemo(() => data.messages
     .filter((m) => (tab === 'review' ? m.status === 'draft' : tab === 'sent' ? m.status === 'demo' : true))
-    .sort((a, b) => b.at.localeCompare(a.at)), [data.messages, tab]);
+    // keyed on the whole data object: sending marks the message in place, so the list itself keeps its identity
+    .sort((a, b) => b.at.localeCompare(a.at)), [data, tab]);
   const open = byId(data.messages, openId ?? undefined);
+  const justSent = byId(data.messages, sentId ?? undefined);
+  const pick = (x: Tab) => { setTab(x); setSentId(null); };
   const emails = standing('clientEmails');
   const rule = publicRules(pack.id, lang, t).find((r) => r === t('price.r.emails'));
   const sms = addOnViews(pack.id, lang, t).find((a) => a.id === 'sms');
@@ -74,20 +80,27 @@ export default function MessagesPage(_: PageProps) {
 
       <div className="tabs" role="tablist" aria-label={t('messages.tabs')}>
         {TABS.map((x) => (
-          <button key={x} type="button" role="tab" aria-selected={tab === x} onClick={() => setTab(x)} data-testid={`messages-tab-${x}`}>
+          <button key={x} type="button" role="tab" aria-selected={tab === x} onClick={() => pick(x)} data-testid={`messages-tab-${x}`}>
             {t('messages.tab.' + x)}{counts[x] > 0 && <span className="count">{counts[x]}</span>}
           </button>
         ))}
       </div>
 
+      {justSent?.status === 'demo' && (
+        <p className="messages-done small" role="status" data-testid="messages-done">
+          <SuccessCheck draw /><span>{t('messages.done', { subject: justSent.subject })}</span>
+          <button type="button" className="linkbtn" onClick={() => setOpenId(justSent.id)}>{t('messages.doneSee')}</button>
+        </p>
+      )}
+
       {!data.messages.length ? (
-        <Card><Empty title={t('messages.empty')} action={<Button variant="primary" onClick={() => setCompose({})}>{t('messages.compose')}</Button>}>{t('messages.emptyHint')}</Empty></Card>
+        <Card className="messages-none"><Empty title={t('messages.empty')} action={<Button variant="primary" onClick={() => setCompose({})}>{t('messages.compose')}</Button>}>{t('messages.emptyHint')}</Empty></Card>
       ) : !rows.length ? (
-        <Card><Empty title={t(tab === 'review' ? 'messages.emptyReview' : 'messages.emptySent')} action={<Button onClick={() => setTab('all')}>{t('messages.showAll')}</Button>}>{t(tab === 'review' ? 'messages.emptyReviewHint' : 'messages.emptySentHint')}</Empty></Card>
+        <Card className="messages-none"><Empty title={t(tab === 'review' ? 'messages.emptyReview' : 'messages.emptySent')} action={<Button onClick={() => pick('all')}>{t('messages.showAll')}</Button>}>{t(tab === 'review' ? 'messages.emptyReviewHint' : 'messages.emptySentHint')}</Empty></Card>
       ) : (
         <Card flush>
           <div className="table-wrap">
-            <table className="tbl stackable" data-testid="messages-table">
+            <table className="tbl stackable messages-tbl" data-testid="messages-table">
               <thead><tr><th>{t('messages.col.to')}</th><th>{t('messages.col.subject')}</th><th>{t('messages.col.about')}</th><th>{t('messages.col.when')}</th>{tab === 'all' && <th>{t('messages.col.status')}</th>}</tr></thead>
               <tbody>
                 {rows.map((m) => {
@@ -115,8 +128,8 @@ export default function MessagesPage(_: PageProps) {
         {sms && <p className="small muted messages-sms" data-testid="messages-sms"><b>{t('messages.sms.title')}:</b> {sms.name}.{sms.note ? ` ${sms.note}` : ''} <PlanBadge feature="sms" detail /></p>}
       </div>
 
-      {open && <MessageModal key={open.id} message={open} onClose={() => setOpenId(null)} />}
-      {compose && <ComposeModal clientId={compose.clientId} onClose={() => setCompose(null)} />}
+      {open && <MessageModal key={open.id} message={open} onClose={() => setOpenId(null)} onSent={setSentId} />}
+      {compose && <ComposeModal clientId={compose.clientId} onClose={() => setCompose(null)} onSent={setSentId} />}
     </>
   );
 }
@@ -132,7 +145,7 @@ function AutoMark({ link }: { link: boolean }) {
 }
 
 /* ---------- review, send or discard one email ---------- */
-function MessageModal({ message, onClose }: { message: Message; onClose: () => void }) {
+function MessageModal({ message, onClose, onSent }: { message: Message; onClose: () => void; onSent: (id: string) => void }) {
   const { t, data, can, dateTime } = useApp();
   const [to, setTo] = useState(message.to);
   const [subject, setSubject] = useState(message.subject);
@@ -145,7 +158,7 @@ function MessageModal({ message, onClose }: { message: Message; onClose: () => v
   const send = () => {
     if (!ok()) { setErr(true); return; }
     act(updateMessage, message.id, { to, subject, body }); act(sendMessageDemo, message.id);
-    toast(t('messages.sentToast')); onClose();
+    onSent(message.id); toast(t('messages.sentToast')); onClose();
   };
   const discard = async () => { if (await confirmDialog(t('messages.discardConfirm'), t('messages.discard'), t('common.cancel'))) { act(discardMessage, message.id); toast(t('messages.discarded')); onClose(); } };
   const meta = (
@@ -167,7 +180,7 @@ function MessageModal({ message, onClose }: { message: Message; onClose: () => v
   }
   return (
     <Modal title={<>{t('messages.review.title')} <DemoTag /></>} onClose={onClose} labelClose={t('common.close')}
-      footer={<><Button variant="ghost" icon={<LuTrash2 />} onClick={discard} data-testid="messages-discard">{t('messages.discard')}</Button><span className="grow" /><Button onClick={save} data-testid="messages-save">{t('messages.saveDraft')}</Button><Button variant="primary" icon={<LuSend />} onClick={send} data-testid="messages-send">{t('messages.send')}</Button></>}>
+      footer={<><Button variant="ghost" className="messages-side" icon={<LuTrash2 />} onClick={discard} data-testid="messages-discard">{t('messages.discard')}</Button><span className="grow messages-sp" /><Button onClick={save} data-testid="messages-save">{t('messages.saveDraft')}</Button><Button variant="primary" icon={<LuSend />} onClick={send} data-testid="messages-send">{t('messages.send')}</Button></>}>
       <div className="stack tight">
         <Field label={a.name ? `${t('messages.f.to')}: ${a.name}` : t('messages.f.to')} error={err && !isEmail(to)}><input type="email" value={to} onChange={(e) => setTo(e.target.value)} data-testid="messages-to" /></Field>
         <Field label={t('messages.f.subject')} error={err && !subject.trim()}><input value={subject} onChange={(e) => setSubject(e.target.value)} data-testid="messages-subject" /></Field>
@@ -181,7 +194,7 @@ function MessageModal({ message, onClose }: { message: Message; onClose: () => v
 }
 
 /* ---------- write a new email to a client, optionally from a starter template ---------- */
-function ComposeModal({ clientId, onClose }: { clientId?: string; onClose: () => void }) {
+function ComposeModal({ clientId, onClose, onSent }: { clientId?: string; onClose: () => void; onSent: (id: string) => void }) {
   const { t, data, pack, lang, can } = useApp();
   const first = byId(data.clients, clientId) ?? data.clients[0];
   const [who, setWho] = useState(first?.id ?? '');
@@ -221,11 +234,11 @@ function ComposeModal({ clientId, onClose }: { clientId?: string; onClose: () =>
     return act(composeMessage, { to, subject, body, ref });
   };
   const save = () => { if (create()) { toast(t('messages.savedToast')); onClose(); } };
-  const send = () => { const m = create(); if (!m) return; act(sendMessageDemo, m.id); toast(t('messages.sentToast')); onClose(); };
+  const send = () => { const m = create(); if (!m) return; act(sendMessageDemo, m.id); onSent(m.id); toast(t('messages.sentToast')); onClose(); };
 
   return (
     <Modal title={<>{t('messages.new.title')} <DemoTag /></>} onClose={onClose} labelClose={t('common.close')}
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><span className="grow" /><Button onClick={save} data-testid="messages-save">{t('messages.saveDraft')}</Button><Button variant="primary" icon={<LuSend />} onClick={send} data-testid="messages-send">{t('messages.send')}</Button></>}>
+      footer={<><Button variant="ghost" className="messages-side" onClick={onClose}>{t('common.cancel')}</Button><span className="grow messages-sp" /><Button onClick={save} data-testid="messages-save">{t('messages.saveDraft')}</Button><Button variant="primary" icon={<LuSend />} onClick={send} data-testid="messages-send">{t('messages.send')}</Button></>}>
       <div className="fgrid">
         <Field label={t('messages.f.client')}><select value={who} onChange={(e) => pickClient(e.target.value)} data-testid="messages-client">{data.clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
         <Field label={`${t('messages.f.job')} (${t('common.optional')})`}><select value={jobId} onChange={(e) => pickJob(e.target.value)} data-testid="messages-job"><option value="">{t('messages.f.noJob')}</option>{jobs.map((j) => <option key={j.id} value={j.id}>{j.name}</option>)}</select></Field>

@@ -2,11 +2,14 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   LuLayoutDashboard, LuUserPlus, LuUsers, LuBriefcase, LuCalendarDays, LuListChecks, LuHardHat, LuFileText, LuWallet, LuChartColumn,
-  LuZap, LuSparkles, LuSettings, LuShieldCheck, LuSearch, LuBell, LuMenu, LuX, LuSun, LuMoon, LuRotateCcw, LuTag, LuCalendarCheck, LuCompass, LuFlaskConical, LuArrowLeft, LuChevronDown, LuPaintbrush, LuMail,
+  LuZap, LuSparkles, LuSettings, LuShieldCheck, LuSearch, LuBell, LuMenu, LuX, LuSun, LuMoon, LuRotateCcw, LuTag, LuCalendarCheck, LuCompass, LuArrowLeft, LuChevronDown, LuPaintbrush, LuMail,
+  LuPlus, LuCornerDownLeft, LuFilePlus2, LuCalendarPlus, LuCircleDollarSign, LuRadio, LuEye, LuLayers, LuShapes,
 } from 'react-icons/lu';
 import { useApp } from './hooks';
-import { A, Link, appPath, asset, go, navigate, refPath, useRoute } from './router';
-import { Avatar, Button, IconButton, Modal, cx, confirmDialog, toast } from '@/ui';
+import { A, Link, appPath, go, navigate, refPath, useRoute } from './router';
+import { Lockup } from '@/brand';
+import { ClientPaymentModal, TaskFormModal } from './forms';
+import { Avatar, IconButton, Modal, cx, confirmDialog, toast } from '@/ui';
 import { mutateQuiet as mutate, resetDemo, setLanguage, setPrefs, switchPack } from '@/store/store';
 import { PACK_LIST } from '@/packs';
 import { plansFor, planName, type PlanTier } from '@/lib/pricing';
@@ -23,6 +26,8 @@ function inkOn(hex: string): string {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#00161C' : '#FFFFFF';
 }
 
+const MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '');
+
 interface NavItem { to: string; label: string; icon: ReactNode; perm?: Permission; count?: number; countBad?: boolean; group: 'work' | 'business' | 'system' }
 
 export function Shell({ children, onTour }: { children: ReactNode; onTour: () => void }) {
@@ -32,6 +37,7 @@ export function Shell({ children, onTour }: { children: ReactNode; onTour: () =>
   const [menu, setMenu] = useState(false);
   const [search, setSearch] = useState(false);
   const [bell, setBell] = useState(false);
+  const [quick, setQuick] = useState<'task' | 'payment' | null>(null);
   const section = route.parts[1] || '';
 
   useEffect(() => { setMenu(false); setBell(false); }, [route.path]);
@@ -79,10 +85,13 @@ export function Shell({ children, onTour }: { children: ReactNode; onTour: () =>
       <a href="#main" className="skip">{t('app.skip')}</a>
       <div className={cx('scrim', menu && 'open')} onClick={() => setMenu(false)} />
       <aside className={cx('side', menu && 'open')} aria-label={t('nav.menu')}>
+        <div className="side-top">
+          <A to="" className="side-lock" aria-label={BRAND.platformName}><Lockup size="sm" /></A>
+          <IconButton label={t('nav.closeMenu')} className="hamb" onClick={() => setMenu(false)}><LuX /></IconButton>
+        </div>
         <div className="side-brand">
           <div className="logo">{data.company.logo ? <img src={data.company.logo} alt="" /> : data.company.initials}</div>
           <div className="grow"><b>{data.company.name}</b><small>{pack.product}</small></div>
-          <IconButton label={t('nav.closeMenu')} className="hamb" onClick={() => setMenu(false)}><LuX /></IconButton>
         </div>
         <nav className="nav">
           {groups.map((g) => {
@@ -100,8 +109,8 @@ export function Shell({ children, onTour }: { children: ReactNode; onTour: () =>
           })}
         </nav>
         <div className="side-foot">
-          <img src={asset('brand/vyntex-wordmark.jpg')} alt={BRAND.platformName} />
-          <span>{BRAND.promise[prefs.lang]}</span>
+          <span className="side-demo" title={t('demo.sample')}><i aria-hidden="true" />{t('demo.badge')} · {t('demo.sampleShort')}</span>
+          <span>{BRAND.descriptor[prefs.lang]}</span>
         </div>
       </aside>
 
@@ -110,11 +119,12 @@ export function Shell({ children, onTour }: { children: ReactNode; onTour: () =>
         <div className="topbar">
           <IconButton label={t('nav.menu')} className="hamb" onClick={() => setMenu(true)}><LuMenu /></IconButton>
           {!isWorker ? (
-            <button type="button" className="gs" onClick={() => setSearch(true)} aria-label={t('search.open')} data-testid="global-search">
-              <LuSearch aria-hidden="true" /><span className="clip">{t('search.placeholder')}</span><kbd>/</kbd>
+            <button type="button" className="gs" onClick={() => setSearch(true)} aria-label={t('cmd.placeholder')} data-testid="global-search">
+              <LuSearch aria-hidden="true" /><span className="clip">{t('cmd.placeholder')}</span><kbd>{MAC ? '⌘K' : 'Ctrl K'}</kbd>
             </button>
           ) : <span className="sp" />}
           <span className="sp" />
+          {!isWorker && can('assistant') && <IconButton label={t('cmd.ask')} className="ai" onClick={() => go('/assistant')} data-testid="topbar-ai"><LuSparkles /></IconButton>}
           <IconButton label={t(prefs.theme === 'dark' ? 'demo.light' : 'demo.dark')} onClick={() => setPrefs({ theme: prefs.theme === 'dark' ? 'light' : 'dark' })}>{prefs.theme === 'dark' ? <LuSun /> : <LuMoon />}</IconButton>
           {!isWorker && (
             <div style={{ position: 'relative' }}>
@@ -128,7 +138,9 @@ export function Shell({ children, onTour }: { children: ReactNode; onTour: () =>
         </div>
         <main className="content" id="main" tabIndex={-1}>{children}</main>
       </div>
-      {search && <GlobalSearch onClose={() => setSearch(false)} />}
+      {search && <CommandPalette onClose={() => setSearch(false)} modules={visible} onQuick={setQuick} />}
+      {quick === 'task' && <TaskFormModal onClose={() => setQuick(null)} />}
+      {quick === 'payment' && <ClientPaymentModal onClose={() => setQuick(null)} />}
     </div>
   );
 }
@@ -146,6 +158,7 @@ function DemoBar({ onTour }: { onTour: () => void }) {
   const { t, prefs, pack, data, lang, isWorker } = useApp();
   const plans = plansFor(pack.id);
   const narrow = useNarrow();
+  const roomy = !useNarrow('(max-width: 1319px)');
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const route = useRoute();
@@ -159,7 +172,7 @@ function DemoBar({ onTour }: { onTour: () => void }) {
   }, [open]);
   const reset = async () => { setOpen(false); if (await confirmDialog(t('demo.resetConfirm'), t('demo.reset'), t('common.cancel'), false)) { resetDemo(); go(''); toast(t('demo.resetDone')); } };
   const viewAs = (
-    <label><span>{t('demo.viewAs')}</span>
+    <label title={t('demo.viewAs')}><LuEye className="dm-i" aria-hidden="true" /><span className="dm-w">{t('demo.viewAs')}</span>
       <select value={prefs.viewAs} onChange={(e) => { setPrefs({ viewAs: e.target.value as ViewAs }); go(''); }} aria-label={t('demo.viewAs')} data-testid="viewas">
         <option value="owner">{t('role.owner')}</option><option value="manager">{t('role.manager')}</option><option value="staff">{t('role.staff')}</option>
         <optgroup label={t('role.worker')}>{data.workers.slice(0, 6).map((w) => <option key={w.id} value={`worker:${w.id}`}>{w.name}</option>)}</optgroup>
@@ -167,7 +180,7 @@ function DemoBar({ onTour }: { onTour: () => void }) {
     </label>
   );
   const plan = !isWorker && (
-    <label><span>{t('demo.plan')}</span>
+    <label title={t('demo.planHint')}><LuLayers className="dm-i" aria-hidden="true" /><span className="dm-w">{t('demo.plan')}</span>
       <select value={prefs.planTier} onChange={(e) => setPrefs({ planTier: Number(e.target.value) as PlanTier })} aria-label={t('demo.planHint')} data-testid="plan" title={t('demo.planHint')}>
         {plans.map((p) => <option key={p.id} value={p.tier}>{planName(p, lang)}</option>)}
       </select>
@@ -179,22 +192,23 @@ function DemoBar({ onTour }: { onTour: () => void }) {
     <div className="demobar no-print" role="region" aria-label={t('demo.controls')}>
       <div className="dm" ref={ref}>
         <button type="button" className="tag" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="dialog" title={t('demo.sample')} data-testid="demo-controls">
-          <LuFlaskConical aria-hidden="true" /><span className="dm-long">{t('demo.badge')}</span><span className="dm-short">{t('demo.badgeShort')}</span><LuChevronDown aria-hidden="true" />
+          <LuRadio aria-hidden="true" /><span className="dm-long">{t('demo.badge')}</span><span className="dm-short">{t('demo.badgeShort')}</span><LuChevronDown aria-hidden="true" />
         </button>
         {open && (
           <div className="dm-pop" role="dialog" aria-label={t('demo.controls')}>
             <p className="small muted">{t('demo.controlsHint')}</p>
             {narrow && <div className="dm-fields">{viewAs}{plan}</div>}
             <div className="dm-actions">
-              <button type="button" onClick={() => { setOpen(false); onTour(); }} data-testid="tour-start"><LuCompass aria-hidden="true" />{t('demo.tour')}</button>
+              {!roomy && <button type="button" onClick={() => { setOpen(false); onTour(); }} data-testid="tour-start"><LuCompass aria-hidden="true" />{t('demo.tour')}</button>}
               {!isWorker && <button type="button" onClick={() => { setOpen(false); go('/settings'); }} data-testid="personalize"><LuPaintbrush aria-hidden="true" />{t('demo.personalize')}</button>}
-              <button type="button" onClick={reset} data-testid="reset-demo"><LuRotateCcw aria-hidden="true" />{t('demo.reset')}</button>
+              {!roomy && <button type="button" onClick={reset} data-testid="reset-demo"><LuRotateCcw aria-hidden="true" />{t('demo.reset')}</button>}
             </div>
             {narrow && <div className="row">{pricing}{request}</div>}
           </div>
         )}
       </div>
-      <label className="dm-ind"><span>{t('demo.industry')}</span>
+      <span className="dm-sample">{t('demo.sampleShort')}</span>
+      <label className="dm-ind" title={t('demo.industry')}><LuShapes className="dm-i" aria-hidden="true" /><span className="dm-w">{t('demo.industry')}</span>
         <select value={pack.id} onChange={(e) => { switchPack(e.target.value as IndustryId); go(''); }} aria-label={t('demo.industry')} data-testid="industry">
           {PACK_LIST.map((p) => <option key={p.id} value={p.id}>{p.label[lang]}</option>)}
         </select>
@@ -206,6 +220,8 @@ function DemoBar({ onTour }: { onTour: () => void }) {
         <button type="button" aria-pressed={lang === 'es'} onClick={() => setLanguage('es')} data-testid="lang-es">ES</button>
       </div>
       <span className="sp" />
+      {roomy && <button type="button" className="btn sm ghost dm-act" onClick={onTour} data-testid="tour-start" title={t('demo.tour')} aria-label={t('demo.tour')}><LuCompass aria-hidden="true" /><span>{t('demo.tour')}</span></button>}
+      {roomy && <button type="button" className="btn sm ghost dm-act" onClick={reset} data-testid="reset-demo" title={t('demo.reset')} aria-label={t('demo.reset')}><LuRotateCcw aria-hidden="true" /><span>{t('demo.reset')}</span></button>}
       {!narrow && pricing}
       {!narrow && request}
     </div>
@@ -246,47 +262,73 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* ---------- global search ---------- */
-function GlobalSearch({ onClose }: { onClose: () => void }) {
+/* ---------- command palette: search every record, jump to any page, start the common actions, or ask the assistant ---------- */
+interface Hit { id: string; title: string; sub?: string; icon?: ReactNode; run: () => void }
+function CommandPalette({ onClose, modules, onQuick }: { onClose: () => void; modules: NavItem[]; onQuick: (k: 'task' | 'payment') => void }) {
   const { t, data, can } = useApp();
   const [q, setQ] = useState('');
   const [sel, setSel] = useState(0);
+  const open = (to: string) => () => { navigate(appPath(to)); onClose(); };
   const groups = useMemo(() => {
-    const s = q.trim().toLowerCase(); if (s.length < 2) return [];
+    const s = q.trim().toLowerCase();
+    const g: { key: string; hits: Hit[] }[] = [];
+    const push = (key: string, hits: Hit[], max = 6) => { if (hits.length) g.push({ key, hits: hits.slice(0, max) }); };
+    const actions: Hit[] = [
+      ...(can('tasks') ? [{ id: 'a-task', title: t('form.task.new'), icon: <LuPlus />, run: () => { onClose(); onQuick('task'); } }] : []),
+      ...(can('leads') ? [{ id: 'a-lead', title: t('cmd.newLead'), icon: <LuUserPlus />, run: open('/leads?new=1') }] : []),
+      ...(can('jobs') ? [{ id: 'a-job', title: t('newProject'), icon: <LuBriefcase />, run: open('/jobs?new=1') }] : []),
+      ...(can('documents') ? [{ id: 'a-doc', title: t('cmd.document'), icon: <LuFilePlus2 />, run: open('/documents?new=1') }] : []),
+      ...(can('money') ? [{ id: 'a-pay', title: t('cmd.payment'), icon: <LuCircleDollarSign />, run: () => { onClose(); onQuick('payment'); } }] : []),
+      ...(can('calendar') ? [{ id: 'a-cal', title: t('cmd.schedule'), icon: <LuCalendarPlus />, run: open('/calendar') }] : []),
+    ];
+    const pages: Hit[] = modules.map((n) => ({ id: 'p-' + n.to, title: n.label, icon: n.icon, run: open(n.to) }));
+    if (s.length < 2) {
+      push('cmd.actions', actions, 8);
+      if (can('assistant')) push('cmd.ai', [{ id: 'ai', title: t('cmd.ask'), sub: t('cmd.askHint'), icon: <LuSparkles />, run: open('/assistant') }]);
+      push('cmd.goto', pages, 20);
+      return g;
+    }
     const has = (...v: (string | undefined)[]) => v.some((x) => x && x.toLowerCase().includes(s));
-    const g: { key: string; hits: { id: string; title: string; sub: string; to: string }[] }[] = [];
-    const push = (key: string, hits: { id: string; title: string; sub: string; to: string }[]) => { if (hits.length) g.push({ key, hits: hits.slice(0, 6) }); };
-    if (can('leads')) push('leads', data.leads.filter((l) => has(l.name, l.phone, l.email, l.address, l.ticket, l.company)).map((l) => ({ id: l.id, title: l.name, sub: `${l.ticket} · ${t('ls_' + l.status)}`, to: `/leads/${l.id}` })));
-    if (can('clients')) push('clients', data.clients.filter((c) => has(c.name, c.phone, c.email, c.company, ...c.addresses)).map((c) => ({ id: c.id, title: c.name, sub: c.phone || c.email, to: `/clients/${c.id}` })));
-    if (can('jobs')) push('jobs', data.jobs.filter((j) => has(j.name, j.address, j.number, byId(data.clients, j.clientId)?.name)).map((j) => ({ id: j.id, title: j.name, sub: `${byId(data.clients, j.clientId)?.name ?? ''} · ${t('st_' + j.status)}`, to: `/jobs/${j.id}` })));
-    if (can('tasks')) push('tasks', data.tasks.filter((x) => has(x.title, x.description)).map((x) => ({ id: x.id, title: x.title, sub: `${assigneeName(data, x.assignee)} · ${t('ts.' + x.status)}`, to: `/tasks?task=${x.id}` })));
-    if (can('team')) push('workers', data.workers.filter((w) => has(w.name, w.trade, w.phone, w.email)).map((w) => ({ id: w.id, title: w.name, sub: w.trade, to: `/team/${w.id}` })));
-    if (can('documents')) push('docs', data.docs.filter((d) => has(d.title, d.number, byId(data.clients, d.clientId)?.name)).map((d) => ({ id: d.id, title: `${t('doc.kind.' + d.kind)} ${d.number}`, sub: `${d.title} · ${t('doc.status.' + d.status)}`, to: `/documents/${d.id}` })));
+    if (can('leads')) push('search.leads', data.leads.filter((l) => has(l.name, l.phone, l.email, l.address, l.ticket, l.company)).map((l) => ({ id: l.id, title: l.name, sub: `${l.ticket} · ${t('ls_' + l.status)}`, run: open(`/leads/${l.id}`) })));
+    if (can('clients')) push('search.clients', data.clients.filter((c) => has(c.name, c.phone, c.email, c.company, ...c.addresses)).map((c) => ({ id: c.id, title: c.name, sub: c.phone || c.email, run: open(`/clients/${c.id}`) })));
+    if (can('jobs')) push('search.jobs', data.jobs.filter((j) => has(j.name, j.address, j.number, byId(data.clients, j.clientId)?.name)).map((j) => ({ id: j.id, title: j.name, sub: `${byId(data.clients, j.clientId)?.name ?? ''} · ${t('st_' + j.status)}`, run: open(`/jobs/${j.id}`) })));
+    if (can('tasks')) push('search.tasks', data.tasks.filter((x) => has(x.title, x.description)).map((x) => ({ id: x.id, title: x.title, sub: `${assigneeName(data, x.assignee)} · ${t('ts.' + x.status)}`, run: open(`/tasks?task=${x.id}`) })));
+    if (can('team')) push('search.workers', data.workers.filter((w) => has(w.name, w.trade, w.phone, w.email)).map((w) => ({ id: w.id, title: w.name, sub: w.trade, run: open(`/team/${w.id}`) })));
+    if (can('documents')) push('search.docs', data.docs.filter((d) => has(d.title, d.number, byId(data.clients, d.clientId)?.name)).map((d) => ({ id: d.id, title: `${t('doc.kind.' + d.kind)} ${d.number}`, sub: `${d.title} · ${t('doc.status.' + d.status)}`, run: open(`/documents/${d.id}`) })));
+    push('cmd.goto', pages.filter((x) => has(x.title)));
+    push('cmd.actions', actions.filter((x) => has(x.title)));
+    if (can('assistant')) push('cmd.ai', [{ id: 'ai', title: t('cmd.askQ', { q: q.trim() }), icon: <LuSparkles />, run: open(`/assistant?q=${encodeURIComponent(q.trim())}`) }]);
     return g;
-  }, [q, data, t, can]);
+  }, [q, data, t, can, modules]); // eslint-disable-line react-hooks/exhaustive-deps
   const flat = groups.flatMap((g) => g.hits);
   useEffect(() => setSel(0), [q]);
-  const pick = (to: string) => { navigate(appPath(to)); onClose(); };
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' }); }, [sel]);
   const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); setSel((s) => Math.min(flat.length - 1, s + 1)); }
-    if (e.key === 'ArrowUp') { e.preventDefault(); setSel((s) => Math.max(0, s - 1)); }
-    if (e.key === 'Enter' && flat[sel]) { e.preventDefault(); pick(flat[sel].to); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setSel((n) => Math.min(flat.length - 1, n + 1)); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setSel((n) => Math.max(0, n - 1)); }
+    if (e.key === 'Enter' && flat[sel]) { e.preventDefault(); flat[sel].run(); }
   };
+  const records = groups.filter((g) => g.key.startsWith('search.')).length > 0;
   let i = -1;
   return (
-    <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }} onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}>
-      <div className="modal palette" role="dialog" aria-modal="true" aria-label={t('search.open')}>
-        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} placeholder={t('search.placeholder')} aria-label={t('search.placeholder')} data-testid="search-input" />
-        <div className="res" role="listbox">
-          {q.trim().length < 2 ? <p className="muted small" style={{ padding: 14 }}>{t('search.empty')}</p>
-            : !flat.length ? <p className="muted small" style={{ padding: 14 }}>{t('search.none', { q })}</p>
-            : groups.map((g) => (
-              <div key={g.key}>
-                <div className="grp">{t('search.' + g.key)}</div>
-                {g.hits.map((h) => { i++; const idx = i; return <button type="button" key={g.key + h.id} role="option" aria-selected={idx === sel} className="hit" onMouseEnter={() => setSel(idx)} onClick={() => pick(h.to)}><span className="grow clip strong">{h.title}</span><small className="clip" style={{ maxWidth: '45%' }}>{h.sub}</small></button>; })}
-              </div>
-            ))}
+    <div className="overlay cmd-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }} onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}>
+      <div className="modal palette" role="dialog" aria-modal="true" aria-label={t('cmd.title')}>
+        <div className="palette-in"><LuSearch aria-hidden="true" /><input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} placeholder={t('cmd.placeholder')} aria-label={t('cmd.placeholder')} data-testid="search-input" /><kbd>Esc</kbd></div>
+        <div className="res" role="listbox" ref={listRef}>
+          {q.trim().length >= 2 && !records && <p className="muted small" style={{ padding: '10px 14px 2px' }}>{t('search.none', { q })}</p>}
+          {groups.map((g) => (
+            <div key={g.key}>
+              <div className="grp">{t(g.key)}</div>
+              {g.hits.map((h) => { i++; const idx = i; return (
+                <button type="button" key={g.key + h.id} role="option" aria-selected={idx === sel} className={cx('hit', !g.key.startsWith('search.') && 'cmd')} onMouseEnter={() => setSel(idx)} onClick={h.run}>
+                  {h.icon && <span className="ic" aria-hidden="true">{h.icon}</span>}<span className="grow clip strong">{h.title}</span>{h.sub && <small className="clip" style={{ maxWidth: '45%' }}>{h.sub}</small>}
+                </button>
+              ); })}
+            </div>
+          ))}
         </div>
+        <div className="palette-f" aria-hidden="true"><span><kbd>↑</kbd><kbd>↓</kbd> {t('cmd.move')}</span><span><kbd><LuCornerDownLeft /></kbd> {t('cmd.open')}</span><span className="sp" /><span className="brand-text strong">{BRAND.platformName}</span></div>
       </div>
     </div>
   );

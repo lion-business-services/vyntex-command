@@ -107,7 +107,7 @@ export default function PaymentsPage(_: PageProps) {
       </div>
 
       {tab === 'received' && (
-        <Card flush>
+        <Card flush className="payments-list">
           {!allReceived.length ? <Empty title={t('payments.empty.received')} action={<Button variant="primary" onClick={() => setRecv('')}>{t('form.pay.record')}</Button>}>{t('payments.empty.receivedHint')}</Empty>
             : !received.length ? noMatch : (
               <div className="table-wrap">
@@ -133,7 +133,7 @@ export default function PaymentsPage(_: PageProps) {
       )}
 
       {tab === 'workers' && (
-        <Card flush>
+        <Card flush className="payments-list">
           {!allPaid.length ? <Empty title={t('payments.empty.workers')} action={<Button variant="primary" onClick={() => setPay('')}>{t('form.pay.worker')}</Button>}>{t('payments.empty.workersHint')}</Empty>
             : !paid.length ? noMatch : (
               <div className="table-wrap">
@@ -158,7 +158,7 @@ export default function PaymentsPage(_: PageProps) {
       )}
 
       {tab === 'expenses' && (
-        <Card flush>
+        <Card flush className="payments-list">
           {!allExpenses.length ? <Empty title={t('payments.empty.expenses')} action={<A to="/jobs" className="btn">{t('nav.jobs')}</A>}>{t('payments.empty.expensesHint')}</Empty>
             : !expenses.length ? noMatch : (
               <div className="table-wrap">

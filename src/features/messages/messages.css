@@ -1,5 +1,5 @@
 /* Messages */
-.messages-frame{display:grid;gap:6px;margin-bottom:18px}
+.messages-frame{display:grid;gap:6px;margin-bottom:20px}
 .messages-frame p{display:flex;gap:6px 8px;flex-wrap:wrap;align-items:center}
 .messages-open{background:none;border:0;padding:0;font-weight:700;color:inherit;text-align:left;overflow-wrap:anywhere}
 .messages-open:hover{text-decoration:underline}
@@ -7,10 +7,24 @@
 .messages-subj{overflow-wrap:anywhere}
 .messages-auto{text-decoration:none;margin-top:4px}
 a.messages-auto:hover{filter:brightness(1.12);text-decoration:underline}
-.messages-more{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:18px}
+.messages-more{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:20px}
 .messages-sms{padding:16px 2px;line-height:1.7}
 @media (max-width:860px){.messages-more{grid-template-columns:minmax(0,1fr)}}
 .messages-meta{display:flex;gap:8px 12px;flex-wrap:wrap;align-items:center}
 .messages-meta .messages-auto{margin-top:0}
 .messages-body{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-s);padding:12px 14px;margin-top:12px;font-size:14.5px}
 @media (max-width:720px){table.tbl.stackable td .messages-subj{text-align:right}}
+
+/* the email that was just marked as sent in the demo: one line above the list, with the check drawn once */
+.messages-done{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;margin:-4px 0 12px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius-s);background:var(--surface);overflow-wrap:anywhere}
+.messages-done span{flex:1;min-width:12ch}
+/* the name and the "Automation" mark are small on purpose; their tap area is not */
+.messages-open,.messages-auto{position:relative}
+.messages-open::after,a.messages-auto::after{content:"";position:absolute;inset:-9px -4px}
+/* phones: the three footer buttons share one row; the quiet one keeps its own width so the other two do not wrap */
+@media (max-width:560px){.messages-sp{display:none}.modal-f .btn.messages-side{flex:0 0 auto}}
+
+/* list: the address column keeps enough room so an email does not break mid-word on laptops and tablets */
+@media (min-width:721px){.messages-tbl td.t1{min-width:200px}}
+
+@media (pointer:coarse),(max-width:980px){.messages-none .btn{min-height:40px}}

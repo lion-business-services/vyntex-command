@@ -1,9 +1,21 @@
+/* Leads. Board refinements shared with the job and task boards live in board.css. */
 .leads-sum{margin:-4px 0 12px}
-.leads-name{font-weight:700;text-decoration:none}.leads-name:hover{text-decoration:underline}
+.leads-sum b{font-family:var(--font-display);font-weight:650;font-variant-numeric:tabular-nums;color:var(--text)}
+.leads-name{font-weight:700;text-decoration:none}.leads-name:hover{text-decoration:underline;text-underline-offset:3px}
 .leads-board{grid-auto-columns:minmax(232px,1fr)}
-.leads-board .kcard{display:grid;gap:4px}
-.leads-board .kcard:active{cursor:grabbing}
-.leads-move select{width:100%;margin-top:6px;min-height:30px;padding:3px 8px;font-size:12.5px;font-weight:650;background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--text-2)}
+.leads-board .kcard{display:grid;gap:3px}
 .leads-drop{text-align:center;padding:14px 6px;border:1px dashed var(--line-strong);border-radius:var(--radius-s)}
-.leads-next{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-.leads-outcome{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.leads-next{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.leads-outcome{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+@media (max-width:720px){
+  .leads-board{grid-auto-columns:minmax(248px,78vw)}
+  /* thumb-sized controls on the lead page */
+  .leads-next .btn,.leads-outcome .btn{min-height:40px}
+  .leads-filters select,.leads-filters .searchbox input{min-height:40px}
+  .leads-outcome .btn.primary{flex:1 1 100%}
+}
+/* phones: all four stages in view, two by two, instead of a strip that scrolls */
+@media (max-width:560px){
+  .leads-stage .seg{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .leads-stage .seg button{justify-content:center;min-height:40px}
+}

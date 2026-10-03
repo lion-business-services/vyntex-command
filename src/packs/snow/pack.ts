@@ -1,7 +1,6 @@
 // VYNTEX SNOW: industry pack for snow removal.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
-import { seed } from './seed';
 
 export const snowPack: IndustryPack = {
   id: "snow",
@@ -184,5 +183,4 @@ export const snowPack: IndustryPack = {
     { en: "Offer the renewal for next season", es: "Ofrecer la renovación para la próxima temporada", dueIn: 10, for: 'owner', pri: 'low' },
   ],
   compliance: true,
-  seed,
 };

@@ -1,6 +1,6 @@
 // Tasks: one board (five fixed columns) and one grouped list over the same filtered set.
 import { useEffect, useMemo, useState } from 'react';
-import { LuPlus, LuKanban, LuList, LuZap } from 'react-icons/lu';
+import { LuPlus, LuKanban, LuList, LuZap, LuArrowRightLeft, LuChevronDown } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
 import { A, appPath, navigate, useRoute } from '@/app/router';
 import type { PageProps } from '@/app/routes';
@@ -12,6 +12,8 @@ import { setTaskStatus } from '@/domain/actions';
 import { assigneeName, byId, isDueToday, isOpenTask, isOverdue } from '@/domain/selectors';
 import type { Priority, Task, TaskStatus } from '@/domain/types';
 import { addDays, today } from '@/lib/dates';
+import '@/features/leads/work.css';
+import '@/features/leads/board.css';
 import './tasks.css';
 
 const PRIORITIES: Priority[] = ['high', 'medium', 'low'];
@@ -84,11 +86,11 @@ export default function TasksPage(_: PageProps) {
           <Seg label={t('tasks.view')} value={view} onChange={(v) => navigate(appPath(pathFor(v)))} options={[
             { value: 'board', label: <><LuKanban aria-hidden="true" />{t('tasks.view.board')}</> }, { value: 'list', label: <><LuList aria-hidden="true" />{t('tasks.view.list')}</> }]} />
         </span>
-        <Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)} data-testid="tasks-new">{t('tasks.new')}</Button>
+        <Button variant={data.tasks.length ? 'primary' : 'default'} icon={<LuPlus />} onClick={() => setForm(true)} data-testid="tasks-new">{t('tasks.new')}</Button>
       </>} />
 
       {!data.tasks.length ? (
-        <Empty title={t('tasks.empty')} action={<Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)}>{t('tasks.new')}</Button>}>{t('tasks.emptyHint')}</Empty>
+        <Card className="work-none"><Empty title={t('tasks.empty')} action={<Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)}>{t('tasks.new')}</Button>}>{t('tasks.emptyHint')}</Empty></Card>
       ) : (
         <>
           <div className="filters tasks-filters">
@@ -120,7 +122,7 @@ export default function TasksPage(_: PageProps) {
           </p>
 
           {!rows.length ? (
-            <Empty title={t('common.noResults')} action={<Button onClick={clear}>{t('common.clearFilters')}</Button>} />
+            <Card className="work-none"><Empty title={t('common.noResults')} action={<Button onClick={clear}>{t('common.clearFilters')}</Button>} /></Card>
           ) : view === 'board' ? (
             <Board tasks={rows} onMove={move} onEdit={setEditId} />
           ) : (
@@ -141,6 +143,9 @@ function Board({ tasks, onMove, onEdit }: { tasks: Task[]; onMove: (task: Task, 
   const [over, setOver] = useState<TaskStatus | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [allDone, setAllDone] = useState(false);
+  /** The card that was just moved and where to, so it can settle once in its new column. */
+  const [landed, setLanded] = useState<{ id: string; to: TaskStatus } | null>(null);
+  const moveTo = (task: Task, to: TaskStatus) => { if (task.status !== to) setLanded({ id: task.id, to }); onMove(task, to); };
   return (
     <div className="kanban tasks-board" data-testid="tasks-board">
       {TASK_STATUSES.map((s) => {
@@ -149,14 +154,14 @@ function Board({ tasks, onMove, onEdit }: { tasks: Task[]; onMove: (task: Task, 
         return (
           <section key={s} className={cx('kcol', over === s && 'over')} aria-label={t('ts.' + s)} data-status={s}
             onDragOver={(e) => { e.preventDefault(); setOver(s); }} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(null); }}
-            onDrop={(e) => { e.preventDefault(); setOver(null); const task = tasks.find((x) => x.id === (e.dataTransfer.getData('text/plain') || dragging)); if (task) onMove(task, s); setDragging(null); }}>
+            onDrop={(e) => { e.preventDefault(); setOver(null); const task = tasks.find((x) => x.id === (e.dataTransfer.getData('text/plain') || dragging)); if (task) moveTo(task, s); setDragging(null); }}>
             <div className="kcol-h"><span className="row tight"><i className={cx('tasks-dot', s)} aria-hidden="true" />{t('ts.' + s)} <span className="count">{all.length}</span></span></div>
             <div className="kcol-b">
               {col.map((x) => {
                 const job = byId(data.jobs, x.jobId); const lead = byId(data.leads, x.leadId);
                 const who = assigneeName(data, x.assignee); const done = x.status === 'done';
                 return (
-                  <article key={x.id} className={cx('kcard tasks-card', done && 'done', dragging === x.id && 'drag')} draggable data-task={x.id}
+                  <article key={x.id} className={cx('kcard tasks-card', done && 'done', dragging === x.id && 'drag', landed?.id === x.id && landed.to === x.status && 'landed')} draggable data-task={x.id}
                     onDragStart={(e) => { e.dataTransfer.setData('text/plain', x.id); e.dataTransfer.effectAllowed = 'move'; setDragging(x.id); }} onDragEnd={() => { setDragging(null); setOver(null); }}>
                     <div className="row between nowrap top">
                       <button type="button" className="t tasks-title" onClick={() => onEdit(x.id)}>{x.title}</button>
@@ -169,8 +174,8 @@ function Board({ tasks, onMove, onEdit }: { tasks: Task[]; onMove: (task: Task, 
                       <DueBadge due={x.due} done={done} />
                     </div>
                     {x.auto && <span className="tasks-auto" title={t('tasks.autoHint')}><LuZap aria-hidden="true" />{t('tasks.auto')}</span>}
-                    <label className="tasks-move"><span className="sr">{t('tasks.moveTo')}</span>
-                      <select value={x.status} onChange={(e) => onMove(x, e.target.value as TaskStatus)} aria-label={`${t('tasks.moveTo')}: ${x.title}`}>
+                    <label className="tasks-move"><span><LuArrowRightLeft aria-hidden="true" />{t('tasks.moveTo')}<LuChevronDown aria-hidden="true" /></span>
+                      <select value={x.status} onChange={(e) => moveTo(x, e.target.value as TaskStatus)} aria-label={`${t('tasks.moveTo')}: ${x.title}`}>
                         {TASK_STATUSES.map((o) => <option key={o} value={o}>{o === x.status ? t('ts.' + o) : `${t('tasks.moveTo')}: ${t('ts.' + o)}`}</option>)}
                       </select>
                     </label>
@@ -204,7 +209,7 @@ function GroupedList({ tasks, onMove, onEdit }: { tasks: Task[]; onMove: (task: 
       {GROUPS.filter((g) => groups[g].length).map((g) => {
         const all = groups[g]; const shown = g === 'done' && !allDone ? all.slice(0, DONE_LIMIT) : all;
         return (
-          <Card key={g} title={<><span className={cx(g === 'overdue' && 'neg')}>{t('tasks.g.' + g)}</span> <span className="count">{all.length}</span></>} className="tasks-group">
+          <Card key={g} title={<><span className={cx(g === 'overdue' && 'neg')}>{t('tasks.g.' + g)}</span> <span className="count">{all.length}</span></>} className={cx('tasks-group', g === 'overdue' && 'raised')}>
             <div className="list" data-group={g}>
               {shown.map((x) => (
                 <TaskRow key={x.id} task={x} showJob onEdit={() => onEdit(x.id)} actions={

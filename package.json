@@ -16,7 +16,8 @@
     "test:db": "bash supabase/tests/run_local.sh",
     "qa:facts": "node tests/pack_facts.mjs",
     "qa:matrix": "python3 tests/qa_matrix.py",
-    "qa:flows": "python3 tests/qa_flows.py"
+    "qa:flows": "python3 tests/qa_flows.py",
+    "qa:motion": "python3 tests/qa_motion.py"
   },
   "dependencies": {
     "react": "^19.2.0",

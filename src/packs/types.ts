@@ -47,6 +47,6 @@ export interface IndustryPack {
   compliance: boolean;
   /** Grammar hints for sentence building. Spanish: set `job: 'f'` when the word for a job is feminine ("unidad"). */
   grammar?: { es?: { job?: 'm' | 'f' } };
-  /** Builds the sample business. Dates are relative to today so the demo always looks current. */
-  seed: (lang: Lang) => SeedData;
 }
+/** Builds the sample business of an edition. Dates are relative to today so the demo always looks current. Loaded on demand: see seeds.ts. */
+export type SeedFn = (lang: Lang) => SeedData;

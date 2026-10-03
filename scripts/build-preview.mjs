@@ -12,7 +12,7 @@ execFileSync(process.execPath, [path.join(root, 'scripts/build.mjs'), '--out', o
 const html = fs.readFileSync(path.join(out, 'index.html'), 'utf8');
 const css = html.match(/\/assets\/(app-[A-Z0-9]+\.css)/)[1];
 const js = html.match(/\/assets\/(app-[A-Z0-9]+\.js)/)[1];
-fs.writeFileSync(path.join(out, 'preview.html'), `<title>VYNTEX Platform Demo</title>
+fs.writeFileSync(path.join(out, 'preview.html'), `<title>VYNTEX Command Demo</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap">
 <link rel="stylesheet" href="assets/${css}">
 <style>:root{color-scheme:dark}body{background:#05070B}</style>

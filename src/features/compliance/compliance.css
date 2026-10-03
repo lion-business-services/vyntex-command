@@ -1,12 +1,12 @@
-.compliance-kpis{margin-bottom:16px}
+.compliance-kpis{margin-bottom:20px}
 .compliance-year{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--text-2)}
-.compliance-year .input{width:auto;min-height:38px;padding:6px 10px;font-weight:650;font-size:14px;color:var(--text)}
+.compliance-year .input{width:auto;min-height:40px;padding:6px 10px;font-weight:650;font-size:14px;color:var(--text)}
 .compliance-rule{padding:0 18px 14px;max-width:96ch}
 .compliance-name{font-weight:700;text-decoration:none}.compliance-name:hover{text-decoration:underline}
 .compliance-trade{font-weight:500}
 .compliance-tbl th{white-space:normal;vertical-align:bottom}
 @media (min-width:1181px){.compliance-tbl td.t1{min-width:190px}}
-.compliance-rest{margin-top:16px}
+.compliance-rest{margin-top:20px}
 .compliance-svc{margin-top:8px}
 .compliance-svc .item{align-items:flex-start;flex-wrap:wrap}
 .compliance-svc .item .grow{flex:1 1 220px}
@@ -15,10 +15,8 @@
 .compliance-attn .dot{align-self:flex-start;margin-top:7px}
 .compliance-demo{margin-top:12px}
 @media (max-width:1180px){.compliance-miss{justify-content:flex-end}}
-/* the report prints on white paper whatever theme is on screen */
+/* the report prints in the light theme (see reports/print.ts), so no colour is typed here for paper */
 @media print{
-  .compliance-page{--surface:#fff;--surface-2:#fff;--surface-3:#eef1f5;--line:#dee4ec;--line-strong:#c5cfdb;--text:#0b121d;--text-2:#465264;--text-3:#667284;
-    --ok:#0e7a4b;--ok-soft:transparent;--warn:#8a5a00;--warn-soft:transparent;--bad:#b4232f;--bad-soft:transparent;--info:#1d5fa8;--info-soft:transparent;--neutral-soft:transparent;--accent:#00789a;color:var(--text)}
   .compliance-page .kpi::after,.compliance-page .kpi::before{display:none}
   .compliance-page .card{break-inside:avoid}
 }
@@ -38,3 +36,9 @@
   table.compliance-tbl td.t1{display:block;font-size:15px;padding-bottom:4px}
   table.compliance-tbl td:empty{display:none}
 }
+/* phones and touch screens: the small row buttons become full tap targets */
+@media (pointer:coarse),(max-width:980px){.compliance-attn .btn.sm,.compliance-page .card .btn,.compliance-page .page-h .btn{min-height:40px}}
+/* four figures stay in one row on laptops and tablets, two by two on phones: never three and an orphan */
+@media (min-width:700px){.compliance-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:699px){.compliance-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+

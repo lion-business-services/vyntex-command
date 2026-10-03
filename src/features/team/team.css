@@ -1,8 +1,11 @@
 .team-kpis{margin-bottom:16px}
+/* four figures: four across, or two by two when the page is narrow. Never three and one. */
+.team-kpis:has(>:nth-child(4):last-child){grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (min-width:981px) and (max-width:1180px),(max-width:720px){.team-kpis:has(>:nth-child(4):last-child){grid-template-columns:repeat(2,minmax(0,1fr))}}
 .team-who{display:flex;gap:10px;align-items:center;min-width:0}
-.team-name{font-weight:700;text-decoration:none}.team-name:hover{text-decoration:underline}
+.team-name{font-weight:700;text-decoration:none}.team-name:hover{text-decoration:underline;text-underline-offset:3px}
 .team-trade{display:block;font-weight:500}
-.team-tel{text-decoration:none}.team-tel:hover{text-decoration:underline}
+.team-tel{text-decoration:none}.team-tel:hover{text-decoration:underline;text-underline-offset:3px}
 .team-pay{display:flex;flex-direction:column}
 .team-rowact{width:1%;white-space:nowrap}
 .team-pad{padding:0 18px 16px}
@@ -19,6 +22,11 @@
 .team-file{margin-top:14px;padding:12px;border:1px dashed var(--line-strong);border-radius:var(--radius-s);display:grid;gap:8px}
 .team-file input[type=file]{font-size:13px;max-width:100%;color:var(--text-2)}
 @media (max-width:720px){
+  /* thumb-sized controls in the rows and in the paperwork list */
+  .team-rowact .btn,.team-doc .btn{min-height:40px}
+  .team-filters .searchbox input,.team-filters .seg button{min-height:40px}
+  .team-rowact .iconbtn{width:40px;height:40px}
+  .team-range .input{min-height:40px}
   .team-parts{align-items:flex-end;text-align:right}
   table.tbl.stackable td.team-rowact{width:100%;justify-content:flex-end;padding-top:6px}
   .team-range .input{flex:1;min-width:0}

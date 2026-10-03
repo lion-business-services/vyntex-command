@@ -1,0 +1,25 @@
+/* Refinements shared by the seven work modules (leads, clients, jobs, tasks, calendar, team, worker portal).
+   One copy, imported by each of them, so these screens cannot drift apart. Tokens only. */
+
+@media (pointer:coarse),(max-width:720px){:is(.work-none,.cal-agenda) .empty .btn{min-height:40px}}
+
+/* filter bars: on a wide screen the selects never push the bar onto a second line because one option is long;
+   on a phone the search takes the first line and the selects sit two by two (the task filters already did) */
+@media (min-width:721px){
+  :is(.leads-filters,.jobs-filters,.tasks-filters) select{max-width:212px;text-overflow:ellipsis}
+}
+@media (max-width:560px){
+  :is(.leads-filters,.jobs-filters,.clients-filters) .searchbox{flex:1 1 100%;max-width:none}
+  :is(.leads-filters,.jobs-filters) select{flex:1 1 calc(50% - 4px);min-width:0;width:calc(50% - 4px)}
+  .clients-filters select{flex:1 1 100%}
+}
+
+/* file pickers (insurance certificate, W-9): the browser's own button, drawn as a secondary button */
+.team-file input[type=file]{min-height:34px;cursor:pointer}
+.team-file input[type=file]::file-selector-button{margin-right:10px;min-height:32px;padding:5px 12px;font:inherit;font-size:13px;font-weight:700;color:var(--text);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--radius-s);cursor:pointer;transition:border-color var(--motion-fast) var(--ease-vyntex),background var(--motion-fast) var(--ease-vyntex)}
+.team-file input[type=file]:hover::file-selector-button{border-color:var(--accent-line);background:var(--surface-3)}
+.team-file input[type=file]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-s)}
+@media (pointer:coarse),(max-width:720px){
+  .team-file input[type=file]{min-height:40px}
+  .team-file input[type=file]::file-selector-button{min-height:40px}
+}

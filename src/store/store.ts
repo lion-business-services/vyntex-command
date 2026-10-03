@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react';
 import type { DemoState, IndustryId, Lang, ViewAs } from '@/domain/types';
 import type { PlanTier } from '@/lib/pricing';
 import { PACKS, isIndustry } from '@/packs';
+import { loadSeed, seedOf, seedReady } from '@/packs/seeds';
 import { makeT, type TFn } from '@/i18n';
 import type { Ctx } from '@/domain/context';
 import { runDaily } from '@/domain/actions';
@@ -54,20 +55,22 @@ function loadPrefs(): Prefs {
 
 export function freshData(id: IndustryId, lang: Lang): DemoState {
   const pack = PACKS[id];
-  const d: DemoState = { v: DATA_VERSION, pack: id, seededOn: today(), seedLang: lang, touched: false, company: { ...pack.sampleCompany }, ...pack.seed(lang), automation: { enabled: {}, runs: [] }, readNotifications: [], settings: {} };
+  const d: DemoState = { v: DATA_VERSION, pack: id, seededOn: today(), seedLang: lang, touched: false, company: { ...pack.sampleCompany }, ...seedOf(id)(lang), automation: { enabled: {}, runs: [] }, readNotifications: [], settings: {} };
   primeDemo(d, { pack, lang, t: makeT(lang, pack), actor: d.users[0]?.id ?? 'u1' });
   return d;
 }
-function loadData(id: IndustryId, lang: Lang): DemoState {
+/** The copy this browser saved earlier, when it is still usable. */
+function savedData(id: IndustryId, lang: Lang): DemoState | null {
   try {
     const d = JSON.parse(storage.get(dataKey(id)) || 'null') as DemoState | null;
     if (d && d.v === DATA_VERSION && d.pack === id && Array.isArray(d.jobs) && daysBetween(d.seededOn, today()) <= STALE_AFTER_DAYS && (d.touched || d.seedLang === lang)) return d;
   } catch { /* fall through to a fresh copy */ }
-  return freshData(id, lang);
+  return null;
 }
 
 let prefs = loadPrefs();
-let data = loadData(prefs.pack, prefs.lang);
+// Filled in before the first screen is drawn: see `ready` at the end of this file.
+let data = null as unknown as DemoState;
 let snapshot: Snapshot = { prefs, data };
 const listeners = new Set<() => void>();
 
@@ -113,25 +116,47 @@ export function setPrefs(patch: Partial<Prefs>) {
 export function setLanguage(lang: Lang) {
   if (lang === prefs.lang) return;
   prefs = { ...prefs, lang };
-  if (!data.touched && data.seedLang !== lang) { data = freshData(prefs.pack, lang); runDaily(data, ctx()); data.touched = false; }
+  const rebuild = () => { if (prefs.lang === lang && !data.touched && data.seedLang !== lang) { data = freshData(prefs.pack, lang); runDaily(data, ctx()); data.touched = false; } };
+  if (seedReady(prefs.pack)) rebuild();
+  else { const id = prefs.pack; void loadSeed(id).then(() => { if (prefs.pack === id) { rebuild(); commit(); } }, () => undefined); }
   commit();
 }
+let wanted: IndustryId | null = null;
+/** Switches the edition. When its sample business has not been downloaded yet, the switch happens as soon as it arrives. */
 export function switchPack(id: IndustryId) {
-  if (id === prefs.pack) return;
+  if (id === prefs.pack) { wanted = null; return; }
+  const saved = savedData(id, prefs.lang);
+  if (!saved && !seedReady(id)) {
+    wanted = id;
+    void loadSeed(id).then(() => { if (wanted === id) switchPack(id); }, () => undefined);
+    return;
+  }
+  wanted = null;
   prefs = { ...prefs, pack: id, viewAs: isWorkerView(prefs.viewAs) ? 'owner' : prefs.viewAs };
-  data = loadData(id, prefs.lang);
+  data = saved ?? freshData(id, prefs.lang);
   runDaily(data, ctx());
   commit();
+  if (!seedReady(id)) void loadSeed(id).catch(() => undefined);
 }
 /** Restores the sample business of the current edition, including the company name, logo and colours. */
 export function resetDemo() {
-  storage.del(dataKey(prefs.pack));
+  const id = prefs.pack;
+  if (!seedReady(id)) { void loadSeed(id).then(() => { if (prefs.pack === id) resetDemo(); }, () => undefined); return; }
+  storage.del(dataKey(id));
   prefs = { ...prefs, viewAs: 'owner' };
-  data = freshData(prefs.pack, prefs.lang);
+  data = freshData(id, prefs.lang);
   runDaily(data, ctx());
   commit();
 }
 
-// start-of-day automations for the edition that loads first
-runDaily(data, ctx());
-commit();
+/**
+ * Resolves when the sample business of the selected edition is in memory; main.tsx waits for it before drawing anything.
+ * A returning visitor's saved copy is used at once and the sample data arrives in the background (it is only needed again
+ * for Reset or a language change). A first visit downloads the one edition being shown.
+ */
+export const ready: Promise<void> = (() => {
+  const start = () => { runDaily(data, ctx()); commit(); };   // start-of-day automations for the edition that loads first
+  const saved = savedData(prefs.pack, prefs.lang);
+  if (saved) { data = saved; start(); void loadSeed(prefs.pack).catch(() => undefined); return Promise.resolve(); }
+  return loadSeed(prefs.pack).then(() => { data = freshData(prefs.pack, prefs.lang); start(); });
+})();

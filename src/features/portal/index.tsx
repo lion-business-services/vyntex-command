@@ -14,6 +14,7 @@ import { planName } from '@/lib/pricing';
 import { money, money2, sum } from '@/lib/money';
 import { periodText } from '@/features/team/util';
 import { InsuranceModal } from '@/features/team/paperwork';
+import '@/features/leads/work.css';
 import './portal.css';
 
 const ASSIGN_TONE: Record<AssignStatus, Tone> = { pending: 'neutral', progress: 'info', done: 'ok' };
@@ -24,7 +25,7 @@ export default function PortalPage() {
   const [coi, setCoi] = useState(false);
   const [showDone, setShowDone] = useState(false);
   const [allPays, setAllPays] = useState(false);
-  if (!me) return <Card><Empty title={t('team.notFound')} action={<Button variant="primary" onClick={() => setPrefs({ viewAs: 'owner' })}>{t('portal.backOwner')}</Button>} /></Card>;
+  if (!me) return <Card className="work-none"><Empty title={t('team.notFound')} action={<Button variant="primary" onClick={() => setPrefs({ viewAs: 'owner' })}>{t('portal.backOwner')}</Button>} /></Card>;
 
   const year = new Date().getFullYear();
   const m = workerMoney(data, me.id, year);
@@ -78,7 +79,7 @@ export default function PortalPage() {
 
         <section className="portal-main" aria-labelledby="portal-jobs-h">
           <h2 id="portal-jobs-h" className="portal-h">{t('portal.jobs')}</h2>
-          {!jobs.length ? <Card><Empty title={t('portal.noJobs')} /></Card> : (
+          {!jobs.length ? <Card className="work-none"><Empty title={t('portal.noJobs')} /></Card> : (
             <div className="stack">
               {current.map((x) => <JobCard key={x.j.id} {...x} workerId={me.id} />)}
               {finished.length > 0 && (
@@ -170,7 +171,7 @@ function JobCard({ j, mine, agreed, paid, owed, finished, workerId }: JobCardPro
   const when = j.start && j.end && j.end !== j.start ? t('team.period', { from: day(j.start), to: day(j.end) }) : j.start ? day(j.start) : t('portal.noDates');
   const repeat = j.repeat && j.repeat !== 'once' && t('rp_' + j.repeat) !== 'rp_' + j.repeat ? t('rp_' + j.repeat) : '';
   return (
-    <article className={cx('card portal-job', finished && 'is-done')} data-testid="portal-job">
+    <article className={cx('card portal-job', finished ? 'is-done' : 'raised')} data-testid="portal-job">
       <div className="row between top nowrap">
         <h3>{j.name}</h3>
         <span className="row tight portal-status">{[...new Set(mine.map((a) => a.status))].map((s) => <Badge key={s} tone={ASSIGN_TONE[s]}>{t('a_' + s)}</Badge>)}</span>
@@ -199,7 +200,7 @@ function JobCard({ j, mine, agreed, paid, owed, finished, workerId }: JobCardPro
         <form className="portal-log" onSubmit={send}>
           <label className="sr" htmlFor={'log-' + j.id}>{t('portal.logLabel')}</label>
           <textarea id={'log-' + j.id} className="input" rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('portal.logPh')} data-testid="portal-log-text" />
-          <Button type="submit" size="sm" variant="primary" icon={<LuSend />} disabled={!text.trim()} data-testid="portal-log">{t('portal.logSend')}</Button>
+          <Button type="submit" size="sm" variant={text.trim() ? 'primary' : 'default'} icon={<LuSend />} disabled={!text.trim()} data-testid="portal-log">{t('portal.logSend')}</Button>
         </form>
       )}
     </article>

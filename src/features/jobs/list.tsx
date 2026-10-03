@@ -1,6 +1,6 @@
 // All jobs: a table and a status board over the same filtered data.
 import { useState } from 'react';
-import { LuPlus, LuTable, LuKanban } from 'react-icons/lu';
+import { LuPlus, LuTable, LuKanban, LuArrowRightLeft, LuChevronDown } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
 import { A, appPath, go, navigate, useRoute } from '@/app/router';
 import { Button, Card, Empty, MoneyBar, PageHeader, SearchBox, Seg, cx } from '@/ui';
@@ -45,7 +45,7 @@ export function JobList() {
       <PageHeader title={t('nav.jobs')} sub={t('jobs.sub')} actions={<>
         <Seg label={t('jobs.view')} value={view} onChange={(x) => go(x === 'board' ? '/jobs?view=board' : '/jobs')} options={[
           { value: 'table', label: <><LuTable aria-hidden="true" />{t('jobs.view.table')}</> }, { value: 'board', label: <><LuKanban aria-hidden="true" />{t('jobs.view.board')}</> }]} />
-        <Button variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setForm(true)} data-testid="jobs-new">{t('newProject')}</Button>
+        <Button variant={data.jobs.length ? 'primary' : 'default'} icon={<LuPlus aria-hidden="true" />} onClick={() => setForm(true)} data-testid="jobs-new">{t('newProject')}</Button>
       </>} />
 
       <div className="filters jobs-filters">
@@ -76,9 +76,9 @@ export function JobList() {
       )}
 
       {!data.jobs.length ? (
-        <Card><Empty title={t('jobs.empty')} action={<Button variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setForm(true)}>{t('newProject')}</Button>}>{t('jobs.emptyHint')}</Empty></Card>
+        <Card className="work-none"><Empty title={t('jobs.empty')} action={<Button variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setForm(true)}>{t('newProject')}</Button>}>{t('jobs.emptyHint')}</Empty></Card>
       ) : !rows.length ? (
-        <Card><Empty title={t('common.noResults')} action={<Button onClick={clear} data-testid="jobs-clear-empty">{t('common.clearFilters')}</Button>} /></Card>
+        <Card className="work-none"><Empty title={t('common.noResults')} action={<Button onClick={clear} data-testid="jobs-clear-empty">{t('common.clearFilters')}</Button>} /></Card>
       ) : view === 'board' ? (
         <Board jobs={rows} />
       ) : (
@@ -149,8 +149,10 @@ function Board({ jobs }: { jobs: Job[] }) {
   const { t, data, pack, can } = useApp();
   const [over, setOver] = useState<JobStatus | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  /** The card that was just moved and where to, so it can settle once in its new column. */
+  const [landed, setLanded] = useState<{ id: string; to: JobStatus } | null>(null);
   const showMoney = can('money');
-  const move = (j: Job | undefined, to: JobStatus) => { if (j) changeStatus(t, j, to); };
+  const move = (j: Job | undefined, to: JobStatus) => { if (!j) return; if (j.status !== to) setLanded({ id: j.id, to }); changeStatus(t, j, to); };
   return (
     <div className="kanban jobs-board" data-testid="jobs-board">
       {pack.jobStatuses.map((s) => {
@@ -162,13 +164,13 @@ function Board({ jobs }: { jobs: Job[] }) {
             <div className="kcol-h"><span>{t('st_' + s)} <span className="count">{col.length}</span></span>{showMoney && <span className="small muted">{money(sum(col, (j) => j.price))}</span>}</div>
             <div className="kcol-b">
               {col.map((j) => (
-                <article key={j.id} className="kcard" draggable data-job={j.id}
+                <article key={j.id} className={cx('kcard', dragging === j.id && 'drag', landed?.id === j.id && landed.to === j.status && 'landed')} draggable data-job={j.id}
                   onDragStart={(e) => { e.dataTransfer.setData('text/plain', j.id); e.dataTransfer.effectAllowed = 'move'; setDragging(j.id); }} onDragEnd={() => { setDragging(null); setOver(null); }}>
                   <A to={`/jobs/${j.id}`} className="t jobs-name">{j.name}</A>
                   <div className="small muted">{byId(data.clients, j.clientId)?.name}</div>
                   <div className="small muted">{t('ty_' + j.type)}{showMoney && j.price ? ` · ${money(j.price)}` : ''}</div>
                   <div className="xs"><JobDates job={j} /></div>
-                  <label className="jobs-move"><span className="sr">{t('jobs.moveTo')}</span>
+                  <label className="jobs-move"><span><LuArrowRightLeft aria-hidden="true" />{t('jobs.moveTo')}<LuChevronDown aria-hidden="true" /></span>
                     <select value={j.status} onChange={(e) => move(j, e.target.value as JobStatus)} aria-label={`${t('jobs.moveTo')}: ${j.name}`}>
                       {pack.jobStatuses.map((x) => <option key={x} value={x}>{t('st_' + x)}</option>)}
                     </select>

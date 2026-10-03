@@ -13,6 +13,8 @@ import { addOnViews } from '@/lib/pricing-view';
 import { money, money2, sum } from '@/lib/money';
 import { nowIso } from '@/lib/dates';
 import { attentionItems, attentionOf, csvAmount, downloadCsv, paymentYears, type AttentionKind } from '@/features/team/util';
+import { SuccessCheck, useBecame } from '@/features/documents/success';
+import { usePrintInLight } from '@/features/reports/print';
 import './compliance.css';
 
 type Todo = 'file' | 'needW9' | 'askW9' | 'under';
@@ -24,6 +26,7 @@ export default function CompliancePage(_: PageProps) {
   const years = useMemo(() => paymentYears(data), [data]);
   const [year, setYear] = useState(() => new Date().getFullYear());
   const limit = threshold1099(year);
+  usePrintInLight();
 
   const rows = useMemo(() => data.workers.map((w) => {
     const m = workerMoney(data, w.id, year);
@@ -98,7 +101,7 @@ export default function CompliancePage(_: PageProps) {
               </tr></tfoot>
             </table>
           </div>
-        ) : <Empty title={t('compliance.none', { year })}>{t('compliance.noneHint')}</Empty>}
+        ) : <Empty title={t('compliance.none', { year })} action={<A to="/payments?tab=workers" className="btn no-print">{t('compliance.goPayments')}</A>}>{t('compliance.noneHint')}</Empty>}
       </Card>
 
       <div className="split compliance-rest no-print">
@@ -173,6 +176,7 @@ function Consent({ canSign }: { canSign: boolean }) {
   const [agree, setAgree] = useState(false);
   const [name, setName] = useState('');
   const [err, setErr] = useState(false);
+  const justRecorded = useBecame(!!consent);
   const save = (e: React.FormEvent) => {
     e.preventDefault();
     const signer = name.trim();
@@ -186,10 +190,10 @@ function Consent({ canSign }: { canSign: boolean }) {
     toast(t('compliance.consent.withdrawn'));
   };
   return (
-    <Card title={t('compliance.consent')} actions={<DemoTag />}>
+    <Card className={!consent && canSign ? 'raised' : undefined} title={t('compliance.consent')} actions={<DemoTag />}>
       {consent ? (
         <div className="stack tight" data-testid="compliance-consent-record">
-          <div><Badge tone="ok">{t('compliance.consent.on')}</Badge></div>
+          <div className="row tight"><SuccessCheck draw={justRecorded} /><Badge tone="ok">{t('compliance.consent.on')}</Badge></div>
           <p>{t('compliance.consent.by', { name: consent.name, date: dateTime(consent.at) })}</p>
           <p className="small muted">{t('compliance.consent.text')}</p>
           {canSign ? <div><Button size="sm" variant="danger" onClick={withdraw} data-testid="compliance-consent-withdraw">{t('compliance.consent.withdraw')}</Button></div> : <p className="small muted">{t('compliance.consent.ownerOnly')}</p>}

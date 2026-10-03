@@ -3,6 +3,8 @@
 import type { PageProps } from '@/app/routes';
 import { JobList } from './list';
 import { JobDetail } from './detail';
+import '@/features/leads/work.css';
+import '@/features/leads/board.css';
 import './jobs.css';
 
 export default function JobsPage({ id, sub }: PageProps) {

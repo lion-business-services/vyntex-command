@@ -1,6 +1,6 @@
 // Calendar: a month grid and an agenda over the same events (visits, follow-ups, job dates, repeat visits, task deadlines).
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { LuChevronLeft, LuChevronRight, LuCalendarDays, LuList, LuPlus, LuCalendarPlus, LuCalendarClock, LuRefreshCw, LuSend } from 'react-icons/lu';
+import { LuChevronLeft, LuChevronRight, LuCalendarDays, LuCalendarCheck2, LuList, LuPlus, LuCalendarPlus, LuCalendarClock, LuRefreshCw, LuSend } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
 import { A, appPath, navigate, refPath, useRoute } from '@/app/router';
 import type { PageProps } from '@/app/routes';
@@ -14,6 +14,7 @@ import type { Priority } from '@/domain/types';
 import { planName } from '@/lib/pricing';
 import { addDays, daysBetween, fmtDate, monthLabel, today } from '@/lib/dates';
 import { gcalUrl, googleItem, kindLabel } from './gcal';
+import '@/features/leads/work.css';
 import './calendar.css';
 
 const KINDS: EventKind[] = ['appt', 'follow', 'start', 'visit', 'end', 'task'];
@@ -125,7 +126,7 @@ export default function CalendarPage(_: PageProps) {
         <aside className="stack">
           {view === 'month' && (
             <div ref={dayRef}>
-              <Card title={<span className="cal-cap">{fmtDate(day, lang, { weekday: 'long', month: 'long', day: 'numeric' })}</span>} actions={day === td ? <Badge tone="accent">{t('calendar.today')}</Badge> : undefined}>
+              <Card className="raised" title={<span className="cal-cap">{fmtDate(day, lang, { weekday: 'long', month: 'long', day: 'numeric' })}</span>} actions={day === td ? <Badge tone="accent">{t('calendar.today')}</Badge> : undefined}>
                 <div data-testid="calendar-day">
                   <EventList events={shown.filter((e) => e.date === day)} empty={t('calendar.none')} compact />
                   <div className="row cal-dayacts">
@@ -265,6 +266,7 @@ function Agenda({ events, range, month, from, to, filtered, onClear, onNewTask }
       <div data-testid="calendar-agenda">
         {!dates.length ? (
           <div className="empty">
+            <LuCalendarCheck2 aria-hidden="true" />
             <b>{t(filtered ? 'calendar.noneFiltered' : 'calendar.noneRange')}</b>
             <div style={{ marginTop: 10 }}>{filtered ? <Button onClick={onClear}>{t('calendar.showAll')}</Button> : <Button icon={<LuPlus />} onClick={onNewTask}>{t('calendar.newTask')}</Button>}</div>
           </div>

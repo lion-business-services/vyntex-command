@@ -1,0 +1,37 @@
+/* Closing call to action. Full-bleed graphite, the V large on the right, traces converging on the button. Calm. */
+.mks-cl{position:relative;margin-top:56px;background:linear-gradient(180deg,var(--surface) 0%,var(--bg) 100%);border-top:1px solid var(--line);overflow:hidden}
+.mks-cl::before{content:"";position:absolute;left:0;right:0;top:-1px;height:1px;background:linear-gradient(90deg,transparent,var(--chrome) 30%,var(--cyan) 70%,transparent);opacity:.55}
+.mks-cl-in{position:relative;width:100%;max-width:1264px;margin:0 auto;padding:104px var(--mk-pad,24px) 112px;display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:40px;align-items:center}
+.mks-cl-copy{position:relative;min-width:0}
+.mks-cl-copy h2{font-family:var(--font-display);font-size:clamp(34px,5vw,62px);font-weight:800;line-height:1.06;letter-spacing:-.03em}
+.mks-cl-copy h2 span{display:block;padding-bottom:.08em}
+.mks-cl-copy p{margin-top:20px;font-size:18px;line-height:1.55;color:var(--text-2);max-width:46ch}
+.mks-cl-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
+.mks-cl-art{position:relative;z-index:1;min-width:0;pointer-events:none}
+.mks-cl-mark{position:relative;z-index:1;max-width:460px;margin-left:auto}
+/* The traces run from the left arm of the mark to the buttons. The wire fills what is left of the button row and reaches
+   into the mark's column: the gap, the space beside the mark, and about a third of the mark itself. */
+.mks-cl-in{--w:calc(min(100vw,1264px) - 2 * var(--mk-pad,24px));--m:calc((var(--w) - 40px) * 5 / 11);--mw:min(var(--m),460px)}
+.mks-cl-cta{align-items:center;flex-wrap:nowrap}
+.mks-cl-wire{position:relative;flex:1;min-width:0;height:48px;margin-left:4px;margin-right:calc(-1 * (40px + var(--m) - var(--mw) + var(--mw) * .47))}
+.mks-cl-wire>span{position:absolute;left:0;right:0;top:50%;height:140px;transform:translateY(-60%)}
+.mks-cl-wire .vx-trace{position:absolute;inset:0;width:100%;height:100%}
+.mks-cl-wire .vx-trace .l{opacity:.55;stroke-width:1.25}
+.mks-cl-wire .vx-trace:nth-child(2) .l{transition-delay:120ms;opacity:.32}
+.mks-cl-wire .vx-trace:nth-child(3) .l{transition-delay:240ms}
+.mks-cl-wire i{position:absolute;left:-4px;top:60%;width:9px;height:9px;margin-top:-4.5px;border-radius:50%;background:var(--bg);border:1.5px solid var(--accent);box-shadow:var(--glow-soft)}
+
+@media (max-width:900px){
+  .mks-cl-in{grid-template-columns:minmax(0,1fr);gap:8px;padding:56px var(--mk-pad,24px) 72px}
+  .mks-cl-art{order:-1}
+  .mks-cl-mark{max-width:230px;margin:0 auto 0 0}
+  .mks-cl-wire{display:none}
+  .mks-cl-cta{flex-wrap:wrap}
+  .mks-cl-copy p{font-size:17px}
+}
+@media (max-width:640px){
+  .mks-cl{margin-top:32px}
+  .mks-cl-in{padding:44px var(--mk-pad,16px) 60px}
+  .mks-cl-mark{max-width:180px}
+  .mks-cl-cta .btn{flex:1 1 220px}
+}

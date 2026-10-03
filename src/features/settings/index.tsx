@@ -1,14 +1,15 @@
 // Settings (owner only). Each section has its own address: /settings/<section>.
 // "Your business" is the personalization of the demo: a prospect puts their own name, logo and colour on the workspace.
 import { useEffect, useState, type ReactNode } from 'react';
-import { LuBuilding2, LuDatabase, LuImage, LuLayers, LuMailCheck, LuPalette, LuPlug, LuTrash2, LuUpload, LuUsers } from 'react-icons/lu';
+import { LuBriefcase, LuBuilding2, LuDatabase, LuImage, LuLayers, LuLayoutDashboard, LuMailCheck, LuPalette, LuPlug, LuTrash2, LuUpload, LuUserPlus, LuUsers } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
 import { A } from '@/app/router';
 import type { PageProps } from '@/app/routes';
 import { mutate } from '@/store/store';
-import { Badge, Button, Card, Field, Note, PageHeader, cx, toast } from '@/ui';
+import { Button, Card, Field, Note, PageHeader, cx, toast } from '@/ui';
 import type { Company } from '@/domain/types';
 import { ACCENT_PRESETS, MAX_LOGO_BYTES, accentVars, hardToRead, isHex, readLogo, rootToken, suggestInitials, type LogoProblem } from './helpers';
+import { SuccessCheck } from '@/features/documents/success';
 import { TeamSection } from './team';
 import { ConnectionsSection, PlanSection } from './plan';
 import { AppearanceSection, DataSection, EmailsSection } from './more';
@@ -57,11 +58,12 @@ function BusinessSection() {
   const [ownInitials, setOwnInitials] = useState(false);
   const [logoErr, setLogoErr] = useState('');
   const [err, setErr] = useState('');
+  const [justSaved, setJustSaved] = useState(false);
   // a reset or another tab replaces the company record: start again from what is saved
   useEffect(() => { setF({ ...saved }); setOwnInitials(false); setLogoErr(''); setErr(''); }, [saved]);
 
   const dirty = FIELDS.some((k) => (f[k] ?? '') !== (saved[k] ?? ''));
-  const set = (patch: Partial<Company>) => { setErr(''); setF((cur) => ({ ...cur, ...patch })); };
+  const set = (patch: Partial<Company>) => { setErr(''); setJustSaved(false); setF((cur) => ({ ...cur, ...patch })); };
   const setName = (name: string) => set(ownInitials ? { name } : { name, initials: suggestInitials(name) || f.initials });
   const pickLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; e.target.value = '';
@@ -77,6 +79,7 @@ function BusinessSection() {
     if (f.logo) next.logo = f.logo;
     if (isHex(f.accent)) next.accent = f.accent;
     mutate((d) => { d.company = next; });
+    setJustSaved(true);
     toast(t('settings.biz.saved'));
   };
 
@@ -88,25 +91,59 @@ function BusinessSection() {
   const previewStyle = (isHex(f.accent) ? accentVars(f.accent) : { '--accent': brand.accent, '--accent-soft': brand.soft, '--accent-line': brand.line }) as React.CSSProperties;
   const custom = isHex(f.accent) ? f.accent : '';
   const brandHex = isHex(brand.accent) ? brand.accent : '#000000';
+  const shownName = f.name.trim() || t('settings.biz.name');
+  const shownInitials = f.initials || suggestInitials(f.name) || '?';
 
   return (
     <>
       <Card title={t('settings.biz.title')}>
         <p className="muted settings-lead">{t('settings.biz.intro')}</p>
-        <div className="settings-biz">
-          <div className="stack">
-            <div className="fgrid">
-              <Field label={t('settings.biz.name')} htmlFor="set-name" full>
-                <input id="set-name" value={f.name} onChange={(e) => setName(e.target.value)} maxLength={80} autoComplete="organization" data-testid="settings-company-name" />
-              </Field>
-              <Field label={t('settings.biz.initials')} htmlFor="set-initials" hint={t('settings.biz.initialsHint')}>
-                <input id="set-initials" value={f.initials} onChange={(e) => { setOwnInitials(true); set({ initials: e.target.value.toUpperCase().slice(0, 3) }); }} maxLength={3} data-testid="settings-initials" />
-              </Field>
-              <Field label={t('common.phone')} htmlFor="set-phone"><input id="set-phone" type="tel" value={f.phone} onChange={(e) => set({ phone: e.target.value })} maxLength={40} autoComplete="tel" /></Field>
-              <Field label={t('common.email')} htmlFor="set-email" full><input id="set-email" type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} maxLength={120} autoComplete="email" /></Field>
-              <Field label={t('settings.biz.license')} htmlFor="set-license" hint={t('settings.biz.licenseHint')} full><input id="set-license" value={f.license} onChange={(e) => set({ license: e.target.value })} maxLength={120} /></Field>
+        <div className="settings-preview-col">
+          <div className="label">{t('settings.biz.preview')}</div>
+          {/* a small copy of the real workspace, built with the same classes: sidebar, a primary button and the top of a document */}
+          <div className="settings-preview" style={previewStyle} data-custom={custom ? '' : undefined} data-testid="settings-preview">
+            <div className="settings-pv-side">
+              <div className="side-brand">
+                <div className="logo settings-pv-swap" key={f.logo ? 'logo' : shownInitials}>{f.logo ? <img src={f.logo} alt="" /> : shownInitials}</div>
+                <div className="grow"><b className="settings-pv-swap" key={shownName}>{shownName}</b><small>{pack.product}</small></div>
+              </div>
+              <div className="nav settings-pv-nav" aria-hidden="true">
+                <a aria-current="page"><LuLayoutDashboard />{t('nav.dashboard')}</a>
+                <a><LuUserPlus />{t('nav.leads')}</a>
+                <a><LuBriefcase />{t('nav.jobs')}</a>
+              </div>
             </div>
+            <div className="settings-pv-main">
+              <div className="settings-pv-top"><b>{t('nav.jobs')}</b><span className="count">{data.jobs.length}</span><span className="grow" /><span className="btn primary sm" aria-hidden="true">{t('newProject')}</span></div>
+              <div className="settings-pv-doc">
+                <div className="settings-pv-co">
+                  {f.logo && <img src={f.logo} alt="" />}
+                  <div>
+                    <b className="settings-pv-swap" key={shownName}>{shownName}</b>
+                    {f.license.trim() && <span>{f.license}</span>}
+                    <span>{[f.phone.trim(), f.email.trim()].filter(Boolean).join(' · ')}</span>
+                  </div>
+                </div>
+                <i className="settings-pv-kind">{t('doc.kind.estimate')}</i>
+              </div>
+            </div>
+          </div>
+          <p className="xs dim settings-hint">{t('settings.biz.previewHint')}</p>
+        </div>
 
+        <div className="settings-biz">
+          <div className="fgrid">
+            <Field label={t('settings.biz.name')} htmlFor="set-name" full>
+              <input id="set-name" value={f.name} onChange={(e) => setName(e.target.value)} maxLength={80} autoComplete="organization" data-testid="settings-company-name" />
+            </Field>
+            <Field label={t('settings.biz.initials')} htmlFor="set-initials" hint={t('settings.biz.initialsHint')}>
+              <input id="set-initials" value={f.initials} onChange={(e) => { setOwnInitials(true); set({ initials: e.target.value.toUpperCase().slice(0, 3) }); }} maxLength={3} data-testid="settings-initials" />
+            </Field>
+            <Field label={t('common.phone')} htmlFor="set-phone"><input id="set-phone" type="tel" value={f.phone} onChange={(e) => set({ phone: e.target.value })} maxLength={40} autoComplete="tel" /></Field>
+            <Field label={t('common.email')} htmlFor="set-email" full><input id="set-email" type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} maxLength={120} autoComplete="email" /></Field>
+            <Field label={t('settings.biz.license')} htmlFor="set-license" hint={t('settings.biz.licenseHint')} full><input id="set-license" value={f.license} onChange={(e) => set({ license: e.target.value })} maxLength={120} /></Field>
+          </div>
+          <div className="stack">
             <div>
               <div className="label">{t('settings.biz.logo')}</div>
               <div className="settings-logo-row">
@@ -135,33 +172,11 @@ function BusinessSection() {
               {custom && hardToRead(custom) && <Note tone="warn">{t('settings.biz.accentHard', { theme: t(prefs.theme === 'dark' ? 'demo.dark' : 'demo.light').toLowerCase() })}</Note>}
             </div>
           </div>
-
-          <div className="settings-preview-col">
-            <div className="label">{t('settings.biz.preview')}</div>
-            <div className="settings-preview" style={previewStyle} data-testid="settings-preview">
-              <div className="settings-pv-side">
-                <div className="side-brand">
-                  <div className="logo">{f.logo ? <img src={f.logo} alt="" /> : (f.initials || suggestInitials(f.name) || '?')}</div>
-                  <div className="grow"><b>{f.name.trim() || t('settings.biz.name')}</b><small>{pack.product}</small></div>
-                </div>
-                <div className="settings-pv-nav" aria-hidden="true"><span className="on">{t('nav.dashboard')}</span><span>{t('nav.leads')}</span><span>{t('nav.jobs')}</span></div>
-              </div>
-              <div className="settings-pv-main">
-                <div className="row"><span className="btn primary sm" aria-hidden="true">{t('newProject')}</span><Badge tone="accent">{t('settings.biz.sampleBadge')}</Badge></div>
-                <div className="settings-pv-doc">
-                  <b>{f.name.trim() || t('settings.biz.name')}</b>
-                  {f.license.trim() && <span>{f.license}</span>}
-                  <span>{[f.phone.trim(), f.email.trim()].filter(Boolean).join(' · ')}</span>
-                </div>
-              </div>
-            </div>
-            <p className="xs dim settings-hint">{t('settings.biz.previewHint')}</p>
-          </div>
         </div>
 
         {err && <p className="small neg" role="alert" style={{ marginTop: 12 }}>{err}</p>}
         <div className="card-foot">
-          <span className={cx('small', dirty ? 'strong' : 'muted')} data-testid="settings-dirty">{t(dirty ? 'settings.biz.unsaved' : 'settings.biz.upToDate')}</span>
+          <span className={cx('small settings-state', dirty ? 'strong' : 'muted')} data-testid="settings-dirty">{!dirty && justSaved && <SuccessCheck draw />}{t(dirty ? 'settings.biz.unsaved' : 'settings.biz.upToDate')}</span>
           <div className="row">
             {dirty && <Button variant="ghost" onClick={() => { setF({ ...saved }); setOwnInitials(false); setLogoErr(''); setErr(''); }}>{t('settings.biz.discard')}</Button>}
             <Button variant="primary" onClick={save} disabled={!dirty} data-testid="settings-save">{t('settings.biz.save')}</Button>

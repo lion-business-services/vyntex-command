@@ -3,15 +3,16 @@
 // Connected mode (when an AI model is set up for the workspace) asks the server function instead.
 // In both modes nothing changes until the person presses Confirm on the card that states exactly what will change.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { LuArrowRight, LuCheck, LuCircleCheck, LuEraser, LuSend, LuSparkles, LuTriangleAlert, LuX } from 'react-icons/lu';
+import { LuArrowRight, LuCheck, LuEraser, LuSend, LuShieldCheck, LuSparkles, LuTriangleAlert, LuX } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
-import { A } from '@/app/router';
+import { A, useRoute } from '@/app/router';
 import type { PageProps } from '@/app/routes';
 import { DemoTag, PlanBadge } from '@/app/shared';
 import { Badge, Button, Card, Dot, PageHeader, cx } from '@/ui';
 import { describe, examples, interpret, isNo, isYes, suggestions, type Block, type Card as ProposalCard, type Choice, type Env, type Proposal } from './engine';
 import { execute, type Outcome } from './run';
 import { askModel, checkConfigured, type Turn } from './remote';
+import { SuccessCheck } from '@/features/documents/success';
 import './assistant.css';
 
 type CardState = 'asking' | 'pending' | 'done' | 'cancelled' | 'replaced' | 'failed';
@@ -85,6 +86,10 @@ export default function AssistantPage(_: PageProps) {
     push(bot([{ type: 'text', text: reply.text || t('asst.confirmAsk') }], { model: true, proposal: reply.proposal, card: reply.proposal ? describe(reply.proposal, env) : undefined, state: reply.proposal ? 'pending' : undefined, remark: reply.problem }));
   };
 
+  // a question handed over from the command palette (/assistant?q=...) is asked once on arrival
+  const route = useRoute(); const asked = useRef('');
+  useEffect(() => { const q = route.query.get('q'); if (q && asked.current !== q) { asked.current = q; void send(q); } }, [route.query]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const actorName = data.users.find((u) => u.role === prefs.viewAs)?.name ?? t('asst.you');
   return (
     <>
@@ -99,7 +104,7 @@ export default function AssistantPage(_: PageProps) {
       </div>
 
       <div className="asst-layout">
-        <section className="card flush asst-chat" aria-label={t('asst.conversation')}>
+        <section className="card flush premium asst-chat" aria-label={t('asst.conversation')}>
           <div className="asst-head">
             <h2>{t('asst.conversation')}</h2>
             <Button size="sm" variant="ghost" icon={<LuEraser aria-hidden="true" />} onClick={() => { setMsgs([]); focus(); }} disabled={!msgs.length} data-testid="asst-clear">{t('asst.clear')}</Button>
@@ -132,7 +137,11 @@ export default function AssistantPage(_: PageProps) {
                   )}
                   {m.card && m.state && m.state !== 'asking' && (
                     <div className={cx('asst-card', m.state)} data-testid="asst-card">
-                      <h3>{m.card.title}</h3>
+                      <div className="asst-card-h">
+                        <span className="asst-card-ic" aria-hidden="true"><LuShieldCheck /></span>
+                        <h3>{m.card.title}</h3>
+                        {m.state === 'pending' && <Badge tone="accent">{t('asst.card.waiting')}</Badge>}
+                      </div>
                       <dl className="kv">{m.card.rows.map(([k, v], i) => <FactRow key={i} k={k} v={v} />)}</dl>
                       {m.card.note && m.state === 'pending' && <p className="xs muted asst-card-note">{m.card.note}</p>}
                       {m.state === 'pending' && (
@@ -143,7 +152,7 @@ export default function AssistantPage(_: PageProps) {
                       )}
                       {m.state === 'done' && m.outcome && (
                         <div className="asst-result ok" data-testid="asst-result">
-                          <LuCircleCheck aria-hidden="true" />
+                          <SuccessCheck draw size={20} />
                           <div>
                             <p>{m.outcome.text}</p>
                             {m.outcome.rules && <p className="xs muted">{t('asst.done.rules', { list: m.outcome.rules.join(', ') })}</p>}
@@ -159,7 +168,12 @@ export default function AssistantPage(_: PageProps) {
                 </div>
               </div>
             ))}
-            {busy && <div className="asst-msg bot"><span className="asst-mark cut" aria-hidden="true"><LuSparkles /></span><div className="asst-body"><p className="muted">{t('asst.waiting')}…</p></div></div>}
+            {busy && (
+              <div className="asst-msg bot" data-testid="asst-thinking">
+                <span className="asst-mark cut" aria-hidden="true"><LuSparkles /></span>
+                <div className="asst-body"><p className="muted asst-think"><span className="asst-pulse" aria-hidden="true"><i /><i /><i /></span>{t('asst.waiting')}…</p></div>
+              </div>
+            )}
           </div>
 
           <div className="asst-chips" role="group" aria-label={t('asst.suggest')}>
@@ -167,7 +181,7 @@ export default function AssistantPage(_: PageProps) {
           </div>
           <form className="asst-form" onSubmit={(e) => { e.preventDefault(); send(draft); }}>
             <input ref={inputRef} className="input" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t('asst.input.ph')} aria-label={t('asst.input.label')} autoComplete="off" enterKeyHint="send" maxLength={500} data-testid="asst-input" />
-            <Button variant="primary" type="submit" icon={<LuSend aria-hidden="true" />} disabled={!draft.trim() || busy} data-testid="asst-send">{t('asst.send')}</Button>
+            <Button variant={open?.state === 'pending' ? 'default' : 'primary'} type="submit" icon={<LuSend aria-hidden="true" />} disabled={!draft.trim() || busy} data-testid="asst-send">{t('asst.send')}</Button>
           </form>
         </section>
 

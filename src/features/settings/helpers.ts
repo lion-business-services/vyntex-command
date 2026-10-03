@@ -51,8 +51,13 @@ export function readLogo(file: File): Promise<string> {
 /** Mid-tone colours that stay readable with light and with dark text, so they work in both appearances. */
 export const ACCENT_PRESETS = ['#E8590C', '#E03131', '#D6336C', '#7048E8', '#1C7ED6', '#0CA678', '#2F9E44', '#B08900'];
 export const isHex = (v: string | undefined): v is string => !!v && /^#[0-9a-f]{6}$/i.test(v);
-/** The same three variables the workspace frame sets from the saved accent colour. */
-export const accentVars = (accent: string) => ({ '--accent': accent, '--accent-soft': accent + '22', '--accent-line': accent + '66' });
+/** Dark or white ink, whichever reads better on the colour: the same rule the workspace frame uses for text on the accent. */
+export function inkOn(accent: string): string {
+  const l = luminance(accent);
+  return l === null || l > 0.4 ? '#00161C' : '#FFFFFF';
+}
+/** The same variables the workspace frame sets from the saved accent colour. */
+export const accentVars = (accent: string) => ({ '--accent': accent, '--accent-soft': accent + '22', '--accent-line': accent + '66', '--accent-ink': inkOn(accent) });
 /** A design token as written in the stylesheet (the brand default, whatever accent the workspace currently overrides it with). */
 export function rootToken(name: string): string {
   try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); } catch { return ''; }
@@ -70,7 +75,7 @@ export function contrast(a: string, b: string): number | null {
 }
 /** True when button text on the colour, or the colour on the page background, would be hard to read in the current appearance. */
 export function hardToRead(accent: string): boolean {
-  const onButton = contrast(accent, rootToken('--accent-ink')); const onPage = contrast(accent, rootToken('--surface'));
+  const onButton = contrast(accent, inkOn(accent)); const onPage = contrast(accent, rootToken('--surface'));
   return (onButton !== null && onButton < 3) || (onPage !== null && onPage < 3);
 }
 

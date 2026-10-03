@@ -1,7 +1,6 @@
 // VYNTEX CLEAN: industry pack for cleaning.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
-import { seed } from './seed';
 
 export const cleanPack: IndustryPack = {
   id: "clean",
@@ -200,5 +199,4 @@ export const cleanPack: IndustryPack = {
     { en: "Offer regular service", es: "Ofrecer servicio regular", dueIn: 5, for: 'owner', pri: 'low' },
   ],
   compliance: true,
-  seed,
 };

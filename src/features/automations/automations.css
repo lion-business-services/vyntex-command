@@ -1,51 +1,73 @@
-/* Automations. Each rule reads as a short flow: a trigger node, then numbered steps on one rail. */
-.auto-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+/* Automations. Each rule reads as a small circuit: the "When" node, a thin connection, then the numbered steps on the same rail.
+   When a rule has just run its steps light one after the other, once, and stay lit; nothing moves while the page is at rest. */
+.auto{--auto-step:calc(var(--motion-fast) * 2.5)} /* 450 ms from one step to the next */
+.auto-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:20px;align-items:start}
 .auto-side{display:flex;flex-direction:column;gap:16px;min-width:0;position:sticky;top:74px}
-.auto-sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
-.auto-above{margin:-4px 0 10px}
-.auto-rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+.auto-sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+.auto-above{margin:-6px 0 12px}
+.auto-rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
 @media (max-width:1100px){
   .auto-grid{grid-template-columns:minmax(0,1fr)}
   .auto-side{position:static;order:-1}
 }
 @media (max-width:700px){.auto-rules{grid-template-columns:minmax(0,1fr)}}
 
-.auto-rule{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;min-width:0}
+.auto-rule{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;min-width:0;box-shadow:var(--shadow-1);transition:border-color var(--motion-standard) var(--ease-vyntex)}
+.auto-rule.lit{border-color:var(--accent-line)}
 .auto-rule>header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
 .auto-rule h3{font-size:15px;line-height:1.3;padding-top:3px}
 .auto-rule.off .auto-flow{opacity:.5}
-.auto-rule.off .auto-node{background:var(--neutral-soft);border-color:var(--line-strong);color:var(--text-3)}
+.auto-rule.off .auto-node{background:var(--neutral-soft);color:var(--text-3)}
+.auto-rule.off .auto-then::before{background:var(--line-strong)}
 .auto-flow{--rail:14px;flex:1}
 .auto-cap{display:block;font-size:11.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3)}
 .auto-when{display:flex;gap:10px;align-items:flex-start}
 .auto-when p{font-weight:650;font-size:14px;line-height:1.4}
-.auto-node{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent)}
+/* the trigger: the same chamfered node the assistant uses */
+.auto-node{--cut:8px;flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:6px;background:var(--accent-soft);color:var(--accent);clip-path:polygon(0 0,calc(100% - var(--cut)) 0,100% var(--cut),100% 100%,0 100%)}
 .auto-node svg{width:15px;height:15px}
 .auto-then{position:relative;margin-top:2px;padding:10px 0 0 38px}
-.auto-then::before{content:"";position:absolute;left:var(--rail);top:0;bottom:11px;width:1px;background:var(--line-strong)}
-.auto-then ol{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:6px}
+/* the connection from the trigger down to the last step, and the lit copy that runs along it */
+.auto-then::before,.auto-then::after{content:"";position:absolute;left:var(--rail);top:0;bottom:11px;width:1px;background:var(--accent-line)}
+.auto-then::after{background:var(--accent);opacity:0;transform-origin:50% 0}
+.auto-then ol{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:8px}
 .auto-then li{position:relative;font-size:14px;line-height:1.4}
-.auto-num{position:absolute;left:-35px;top:0;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--surface);border:1px solid var(--line-strong);font-size:11.5px;font-weight:800;color:var(--text-2);font-variant-numeric:tabular-nums}
-.auto-rule>footer{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.auto-num{position:absolute;left:-35px;top:0;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--surface);border:1px solid var(--accent-line);font-size:11.5px;font-weight:800;color:var(--text-2);font-variant-numeric:tabular-nums;z-index:1}
+.auto-rule.off .auto-num{border-color:var(--line-strong)}
+.auto-num::after{content:attr(data-n);position:absolute;inset:-1px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:var(--accent-ink);opacity:0}
+.auto-rule>footer{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
 .auto-rule>footer>span:first-child{margin-right:auto}
 .auto-plan{flex-basis:100%;margin:0}
 
-/* on/off switch */
-.auto-switch{flex:none;display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:2px 0 2px 4px;font-size:12.5px;font-weight:700;color:var(--text-2);border-radius:99px}
-.auto-switch-track{position:relative;width:36px;height:20px;border-radius:99px;background:var(--surface-3);border:1px solid var(--line-strong);transition:background .12s,border-color .12s}
-.auto-switch-track span{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text-3);transition:transform .12s,background .12s}
+/* a rule that just ran: trigger pings, the connection fills, each step lights about 450 ms after the one before */
+.auto-rule.lit .auto-node{animation:auto-ping var(--motion-reveal) var(--ease-vyntex)}
+.auto-rule.lit .auto-then::after{opacity:1;animation:auto-rail calc(var(--auto-step) * var(--n,1)) linear calc(var(--auto-step) * .5) backwards}
+.auto-rule.lit .auto-num::after{opacity:1;animation:auto-light var(--motion-standard) var(--ease-spring) calc(var(--auto-step) * (var(--i,0) + 1)) backwards}
+@keyframes auto-ping{0%{transform:none}35%{transform:scale(1.14)}100%{transform:none}}
+@keyframes auto-rail{from{transform:scaleY(0)}to{transform:none}}
+@keyframes auto-light{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:none}}
+
+/* on/off switch: the visible track is small, the button around it is a full tap target */
+.auto-switch{flex:none;display:inline-flex;align-items:center;gap:8px;min-height:40px;margin:-8px -4px -8px 0;background:none;border:0;padding:2px 4px;font-size:12.5px;font-weight:700;color:var(--text-2);border-radius:var(--radius-s);transition:color var(--motion-fast) var(--ease-vyntex)}
+.auto-switch-track{position:relative;width:36px;height:20px;border-radius:99px;background:var(--surface-3);border:1px solid var(--line-strong);transition:background var(--motion-fast) var(--ease-vyntex),border-color var(--motion-fast) var(--ease-vyntex)}
+.auto-switch-track span{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--text-3);transition:transform var(--motion-fast) var(--ease-spring),background var(--motion-fast) var(--ease-vyntex)}
+.auto-switch:hover .auto-switch-track{border-color:var(--chrome)}
 .auto-switch[aria-checked="true"]{color:var(--text)}
 .auto-switch[aria-checked="true"] .auto-switch-track{background:var(--accent);border-color:var(--accent)}
 .auto-switch[aria-checked="true"] .auto-switch-track span{transform:translateX(16px);background:var(--accent-ink)}
 
 /* try it and history */
 .auto-try h2 svg{width:16px;height:16px;color:var(--accent)}
-.auto-try-row{margin-top:12px}
+.auto-try-row{margin-top:14px}
 .auto-try-off{margin-top:10px;color:var(--warn)}
+.auto-none{display:flex;gap:9px;align-items:flex-start}
+.auto-none svg{flex:none;width:16px;height:16px;margin-top:2px;color:var(--accent);opacity:.8}
 .auto-runs{list-style:none;margin:0;padding:0;max-height:min(52vh,520px);overflow-y:auto;scrollbar-width:thin}
 .auto-run{padding:10px 0;border-top:1px solid var(--line)}
 .auto-run:first-child{border-top:0;padding-top:0}
-.auto-run.fresh{margin:0 0 6px;padding:10px 12px;border:1px solid var(--accent-line);border-radius:var(--radius-s);background:var(--accent-soft);animation:auto-in .5s ease-out}
+/* the entry that was just written: it lands at once, and each line appears as the matching step lights in the rule */
+.auto-run.fresh{margin:0 0 6px;padding:10px 12px;border:1px solid var(--accent-line);border-left:3px solid var(--accent);border-radius:var(--radius-s);background:var(--accent-soft);animation:auto-in var(--motion-standard) var(--ease-vyntex)}
+.auto-run.fresh ul li,.auto-run.fresh .auto-link{animation:auto-in var(--motion-standard) var(--ease-vyntex) calc(var(--auto-step) * (var(--i,3) + 1)) backwards}
 .auto-run.fresh+.auto-run{border-top:0}
 @keyframes auto-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .auto-run-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
@@ -60,3 +82,10 @@
 .auto-mail-row{margin:8px 0 0 25px}
 .auto-mail-row .auto-link{margin-top:0}
 @media (max-width:1100px){.auto-runs{max-height:none}}
+@media (max-width:560px){.auto-rule{padding:14px}}
+/* touch: full tap targets for the buttons and the record links */
+@media (pointer:coarse),(max-width:980px){
+  .auto-try .btn{min-height:40px}
+  .auto-link,.auto-all{position:relative}
+  .auto-link::after,.auto-all::after{content:"";position:absolute;inset:-10px -6px}
+}

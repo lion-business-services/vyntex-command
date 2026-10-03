@@ -17,6 +17,7 @@ import { money, money2, sum } from '@/lib/money';
 import { today } from '@/lib/dates';
 import { attentionOf, payTypeLabel, periodText, rateLabel } from './util';
 import { InsuranceModal, W9Modal } from './paperwork';
+import '@/features/leads/work.css';
 import './team.css';
 
 const ASSIGN_TONE: Record<AssignStatus, Tone> = { pending: 'neutral', progress: 'info', done: 'ok' };
@@ -54,7 +55,7 @@ function TeamList() {
     <>
       <PageHeader title={t('nav.team')} sub={t(pack.compliance ? 'team.sub' : 'team.subPlain')} actions={<>
         {showMoney && <Button icon={<LuBanknote />} onClick={() => setPay('')} data-testid="team-pay">{t('form.pay.worker')}</Button>}
-        <Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)} data-testid="team-new">{t('team.new')}</Button>
+        <Button variant={data.workers.length ? 'primary' : 'default'} icon={<LuPlus />} onClick={() => setForm(true)} data-testid="team-new">{t('team.new')}</Button>
       </>} />
 
       {!!data.workers.length && (
@@ -67,18 +68,18 @@ function TeamList() {
       )}
 
       {!data.workers.length ? (
-        <Empty title={t('team.empty')} action={<Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)}>{t('team.new')}</Button>}>{t('team.emptyHint')}</Empty>
+        <Card className="work-none"><Empty title={t('team.empty')} action={<Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)}>{t('team.new')}</Button>}>{t('team.emptyHint')}</Empty></Card>
       ) : (
         <>
-          <div className="filters">
+          <div className="filters team-filters">
             <SearchBox value={q} onChange={setQ} placeholder={t('team.search')} />
             {options.length > 1 && <Seg label={t('common.filter')} value={show} onChange={setShow} options={options} />}
             {filtered && <button type="button" className="linkbtn small" onClick={clear}>{t('common.clearFilters')}</button>}
           </div>
           {!rows.length ? (
             show === 'attention' && !s
-              ? <Card><Empty title={t('team.allClear')} action={<Button onClick={clear}>{t('team.showAll')}</Button>}>{t('team.allClearHint')}</Empty></Card>
-              : <Card><Empty title={t('common.noResults')} action={<Button onClick={clear}>{t('common.clearFilters')}</Button>} /></Card>
+              ? <Card className="work-none"><Empty title={t('team.allClear')} action={<Button onClick={clear}>{t('team.showAll')}</Button>}>{t('team.allClearHint')}</Empty></Card>
+              : <Card className="work-none"><Empty title={t('common.noResults')} action={<Button onClick={clear}>{t('common.clearFilters')}</Button>} /></Card>
           ) : (
             <Card flush>
               <div className="table-wrap">
@@ -278,7 +279,7 @@ function WorkerDetail({ id }: { id: string }) {
           </Card>
 
           {pack.compliance && (
-            <Card title={t('team.paperwork')} actions={<PlanBadge feature="complianceUploads" />}>
+            <Card title={t('team.paperwork')} actions={<PlanBadge feature="complianceUploads" />} className={cx(w.active !== false && attentionOf(w).length > 0 && 'raised')}>
               {uploads.state === 'upgrade' && <p className="small muted team-up">{t('ent.upgradeHint', { plan: planName(uploads.plan!, lang) })} {t('team.upgradeNote')}</p>}
               <div className="list">
                 <div className="item team-doc">
@@ -287,7 +288,7 @@ function WorkerDetail({ id }: { id: string }) {
                     <div className="t">{t('team.w9Title')} <W9Badge worker={w} /></div>
                     <div className="small muted">{w.w9 ? (w.w9Date ? t('team.w9On', { date: date(w.w9Date) }) : t('team.w9NoDate')) : t('team.w9Need')}</div>
                   </div>
-                  <Button size="sm" variant={w.w9 ? 'default' : 'primary'} onClick={() => setW9(true)} data-testid="team-w9">{t(w.w9 ? 'team.w9Change' : 'team.w9Mark')}</Button>
+                  <Button size="sm" variant={w.w9 || canPay ? 'default' : 'primary'} onClick={() => setW9(true)} data-testid="team-w9">{t(w.w9 ? 'team.w9Change' : 'team.w9Mark')}</Button>
                 </div>
                 <div className="item team-doc">
                   <LuShieldCheck aria-hidden="true" className="team-ic" />

@@ -26,7 +26,8 @@ function agreement(lang: Lang, pack: IndustryPack, tokens: Record<string, string
   const out: Fix[] = [];
   const words = (...keys: string[]) => keys.map((k) => tokens[k]).filter(Boolean);
   if (lang === 'en') {
-    const vowel = words('job', 'worker', 'client').filter((w) => /^[aeiou]/i.test(w));
+    // by sound, not by letter: "an event", but "a unit", "a user", "a one-time visit"
+    const vowel = words('job', 'worker', 'client').filter((w) => /^[aeiou]/i.test(w) && !/^(?:uni|us[ae]|ut[ei]|eu|one|once)/i.test(w));
     if (vowel.length) out.push([new RegExp(`\\b([Aa]) (?=(?:new )?(?:${vowel.map(esc).join('|')})\\b)`, 'gi'), (_m, a) => (a === 'A' ? 'An ' : 'an ')]);
     return out;
   }
@@ -63,10 +64,16 @@ export function makeT(lang: Lang, pack: IndustryPack): TFn {
   for (const k of Object.keys(tokens)) tokens[lower(k)] = lower(tokens[k]);
   tokens.product = pack.product;
   const fixes = agreement(lang, pack, tokens);
+  // A two-part client word ("Property manager / owner") reads badly inside the plan and add-on lines, which come from the
+  // pricing file's plain "client". Those lines use the plain word in such an edition; every other screen keeps the trade's word.
+  const plain: Record<string, string> | null = tokens.client.includes('/')
+    ? (lang === 'es' ? { client: 'cliente', clients: 'clientes', Client: 'Cliente', Clients: 'Clientes' } : { client: 'client', clients: 'clients', Client: 'Client', Clients: 'Clients' })
+    : null;
   const t: TFn = (k, params) => {
     const raw = dict[k]; if (raw === undefined) return k;
     if (raw.indexOf('{') < 0) return raw;
-    let out = raw.replace(/\{(\w+)\}/g, (m, name) => (params && params[name] !== undefined ? String(params[name]) : tokens[name] ?? m));
+    const words = plain && k.startsWith('price.') ? { ...tokens, ...plain } : tokens;
+    let out = raw.replace(/\{(\w+)\}/g, (m, name) => (params && params[name] !== undefined ? String(params[name]) : words[name] ?? m));
     for (const [re, to] of fixes) out = out.replace(re, to as (m: string, ...rest: string[]) => string);
     return out;
   };

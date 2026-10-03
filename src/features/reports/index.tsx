@@ -1,6 +1,6 @@
 // Reports: profit, sales, money, work and team figures, each computed from the records (see data.ts).
 // The tab lives in the address (/reports/<tab>), the breakdown and the period in the query, so a report can be linked and printed.
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { LuDownload, LuLock, LuPrinter } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
 import { A, go, useRoute, PREVIEW } from '@/app/router';
@@ -11,6 +11,7 @@ import { planName } from '@/lib/pricing';
 import { today } from '@/lib/dates';
 import { HAS_PERIOD, PERIODS, TABS, VIEWS, buildReport, cellText, toCsv, type Period, type Report, type TabId } from './data';
 import { ReportChart } from './charts';
+import { usePrintInLight } from './print';
 import './reports.css';
 
 function downloadCsv(name: string, text: string) {
@@ -40,14 +41,7 @@ export default function ReportsPage({ id }: PageProps) {
   const report: Report | null = useMemo(() => (locked ? null : buildReport(tab, view, { data, t, lang, pack, period: HAS_PERIOD[tab] ? period : 'all' })), [locked, tab, view, data, t, lang, pack, period]);
   const profitPlan = standing('profitReports');
 
-  // Printing uses the light colours whatever theme is on screen, then puts the theme back.
-  useEffect(() => {
-    let prev: string | undefined;
-    const before = () => { prev = document.documentElement.dataset.theme; document.documentElement.dataset.theme = 'light'; };
-    const after = () => { if (prev) document.documentElement.dataset.theme = prev; prev = undefined; };
-    window.addEventListener('beforeprint', before); window.addEventListener('afterprint', after);
-    return () => { window.removeEventListener('beforeprint', before); window.removeEventListener('afterprint', after); after(); };
-  }, []);
+  usePrintInLight();
 
   const periodLabel = HAS_PERIOD[tab] ? t('reports.period.' + period) : t(tab === 'money' && view !== 'outstanding' ? 'reports.basis.six' : 'reports.basis.today');
   const fullTitle = report ? `${t('reports.tab.' + tab)}: ${report.title}` : t('reports.tab.' + tab);

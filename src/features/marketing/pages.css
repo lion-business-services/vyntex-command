@@ -1,0 +1,355 @@
+/* Pricing and Request a demo. Both pages are always dark: the page root (.mk) pins the dark tokens.
+   Everything here uses the tokens of ui/styles.css; nothing depends on marketing.css. Class prefix: mkp-.
+   Chamfer and the chrome-to-cyan edge appear on three surfaces only: the most popular plan, the first-payment panel and the form. */
+.mkp{--mkp-pad:var(--mk-pad,32px);--mkp-max:1264px;position:relative;font-size:17px;line-height:1.6;color:var(--text)}
+.mkp-wrap{width:100%;max-width:var(--mkp-max);margin:0 auto;padding-left:var(--mkp-pad);padding-right:var(--mkp-pad)}
+.mkp h1{font:700 clamp(34px,4.3vw,54px)/1.08 var(--font-display);letter-spacing:-.026em;text-wrap:balance}
+.mkp-product{white-space:nowrap;letter-spacing:.01em}
+.mkp-lede{margin-top:18px;max-width:60ch;font-size:19px;line-height:1.55;color:var(--text-2)}
+.mkp-back,.mkp-quiet{display:inline-flex;align-items:center;gap:7px;font-size:15px;font-weight:650;color:var(--text-2);text-decoration:none;border-radius:4px;transition:color var(--motion-fast) var(--ease-vyntex)}
+.mkp-back:hover,.mkp-quiet:hover{color:var(--text)}
+.mkp-back svg,.mkp-quiet svg{width:16px;height:16px;flex:none}
+.mkp-quiet .arr{transition:transform var(--motion-fast) var(--ease-vyntex)}
+.mkp-quiet:hover .arr{transform:translateX(3px)}
+.mkp-fine{font-size:15px;color:var(--text-2)}
+
+/* the premium surface: chrome-to-cyan edge and one chamfered corner (clipped for real, so it sits on any background) */
+.mkp-premium,.mkp-plan.popular{--mkp-cut:20px;--mkp-edge:var(--accent-line);clip-path:polygon(0 0,calc(100% - var(--mkp-cut)) 0,100% var(--mkp-cut),100% 100%,0 100%)}
+.mkp-premium{position:relative;background:linear-gradient(160deg,var(--cobalt-soft),transparent 44%),var(--surface);border:1px solid var(--mkp-edge);border-radius:14px 0 14px 14px}
+.mkp-premium::before,.mkp-plan.popular::before{content:"";position:absolute;left:22px;top:-1px;width:112px;height:2px;border-radius:2px;background:var(--grad-edge)}
+.mkp-premium::after,.mkp-plan.popular::after{content:"";position:absolute;right:-1px;top:-1px;width:var(--mkp-cut);height:var(--mkp-cut);pointer-events:none;
+  background:linear-gradient(225deg,transparent 50%,var(--mkp-edge) 50%,var(--mkp-edge) calc(50% + 1.3px),transparent calc(50% + 1.3px))}
+
+/* ---------- pricing: heading ---------- */
+.mkp-head{position:relative;padding:44px 0 34px}
+.mkp-head::before{content:"";position:absolute;left:0;right:0;top:0;height:340px;pointer-events:none;background:radial-gradient(58% 100% at 72% 0%,var(--cobalt-soft),transparent 72%)}
+.mkp-head .mkp-wrap{position:relative}
+.mkp-head .mkp-back{margin-bottom:26px}
+
+/* edition and billing: one row that stays under the page header while the plans are on screen */
+.mkp-plans-sec{position:relative}
+.mkp-bar{position:sticky;top:0;z-index:20;border-bottom:1px solid transparent;transition:background var(--motion-fast) var(--ease-vyntex),border-color var(--motion-fast) var(--ease-vyntex)}
+.mkp-bar[data-stuck]{background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom-color:var(--line)}
+.mkp-bar-in{display:flex;align-items:center;gap:12px 18px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+.mkp-select{display:flex;align-items:center;gap:12px;flex:3 1 320px;max-width:560px;min-width:0;font-size:15px;font-weight:700;color:var(--text-2)}
+.mkp-select span{flex:none}
+.mkp-select select{flex:1 1 auto;min-height:46px;min-width:0;width:100%;padding:8px 12px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--radius-s);color:var(--text);font-size:16px;font-weight:650;transition:border-color var(--motion-fast) var(--ease-vyntex),box-shadow var(--motion-fast) var(--ease-vyntex)}
+.mkp-select select:hover{border-color:var(--chrome-lo)}
+.mkp-select select:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.mkp-switch{order:1;position:relative;display:inline-grid;grid-template-columns:1fr 1fr;flex:none;padding:3px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:9px}
+.mkp-switch::before{content:"";position:absolute;left:3px;top:3px;bottom:3px;width:calc(50% - 3px);border-radius:6px;background:var(--surface-4);box-shadow:inset 0 -2px 0 var(--accent),var(--shadow-1);transition:transform var(--motion-standard) var(--ease-spring)}
+.mkp-switch[data-billing="yearly"]::before{transform:translateX(100%)}
+.mkp-switch button{position:relative;z-index:1;min-height:40px;padding:0 20px;border:0;border-radius:6px;background:none;color:var(--text-2);font-size:15.5px;font-weight:700;white-space:nowrap;transition:color var(--motion-fast) var(--ease-vyntex)}
+.mkp-switch button:hover{color:var(--text)}
+.mkp-switch button[aria-pressed="true"]{color:var(--text)}
+.mkp-save{flex:1 1 180px;min-width:0;text-align:right;text-wrap:balance;font-size:15px;font-weight:600;line-height:1.35;color:var(--ok)}
+
+/* ---------- pricing: the three plans ---------- */
+.mkp-plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:20px;align-items:stretch;padding:26px 0 12px}
+.mkp-plan{position:relative;display:flex;flex-direction:column;gap:22px;min-width:0;padding:28px 26px 26px;background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-1);transition:border-color var(--motion-standard) var(--ease-vyntex),background var(--motion-standard) var(--ease-vyntex)}
+.mkp-plan-a,.mkp-plan-b{display:flex;flex-direction:column;gap:22px;min-width:0}
+.mkp-plan-b{flex:1}
+/* wide screens: the three cards share their rows, so names, prices, facts, actions and lists line up across plans */
+@supports (grid-template-rows:subgrid){
+  @media (min-width:981px){
+    .mkp-plan{display:grid;grid-row:span 6;grid-template-rows:subgrid;row-gap:22px}
+    .mkp-plan-a{display:grid;grid-row:span 4;grid-template-rows:subgrid;row-gap:22px}
+    .mkp-plan-b{display:grid;grid-row:span 2;grid-template-rows:subgrid;row-gap:22px}
+  }
+}
+.mkp-plan.on{border-color:var(--accent-line)}
+/* the most popular plan: a chrome-to-cyan top edge, the label and a slight elevation. The other two stay full-strength. */
+.mkp-plan.popular{--mkp-cut:18px;--mkp-edge:var(--line-chrome);margin-top:-12px;margin-bottom:-12px;padding-top:40px;padding-bottom:38px;border-radius:14px 0 14px 14px;border-color:var(--mkp-edge);background:linear-gradient(180deg,var(--surface-3),var(--surface-2) 30%,var(--surface) 78%)}
+.mkp-plan.popular.on{--mkp-edge:var(--accent-line)}
+.mkp-plan.popular::before{left:26px;right:calc(var(--mkp-cut) + 12px);width:auto}
+.mkp-plan-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;min-height:30px}
+.mkp-plan-h h2{font:700 23px/1.2 var(--font-display);letter-spacing:-.015em}
+.mkp-popular{display:inline-flex;align-items:center;padding:3px 11px;border:1px solid var(--accent-line);border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12.5px;font-weight:750;line-height:1.5;white-space:nowrap;margin-right:8px}
+.mkp-price{display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+.mkp-price b{display:inline-block;font:700 clamp(44px,4.5vw,56px)/1 var(--font-display);letter-spacing:-.035em;font-variant-numeric:tabular-nums;animation:mkp-swap var(--motion-standard) var(--ease-vyntex)}
+.mkp-price span{font-size:16px;font-weight:600;color:var(--text-2)}
+.mkp-price-alt{margin-top:8px;font-size:16px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.mkp-saving{margin-top:4px;font-size:14.5px;font-weight:600;line-height:1.45;color:var(--ok)}
+.mkp-saving.none{color:var(--text-3);font-weight:500}
+@keyframes mkp-swap{from{opacity:0;transform:translateY(7px)}}
+.mkp-facts{margin:0;border-top:1px solid var(--line)}
+.mkp-facts>div{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15.5px}
+.mkp-facts dt{color:var(--text-2);white-space:nowrap}
+.mkp-facts dd{margin:0;font-weight:750;text-align:right;font-variant-numeric:tabular-nums}
+.mkp-facts dd.none{font-weight:500;color:var(--text-3)}
+.mkp .mkp-pick{white-space:normal;text-align:center;line-height:1.25}
+.mkp .mkp-pick.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--text)}
+.mkp .mkp-pick.on svg{display:inline-block;width:17px;height:17px;margin-right:8px;vertical-align:-3px;color:var(--accent)}
+.mkp-plan-feats h3{margin-bottom:13px;font:700 14px/1.3 var(--font-body);letter-spacing:0;color:var(--text-3)}
+.mkp-feats{list-style:none;margin:0;padding:0;display:grid;gap:11px;font-size:15.5px;line-height:1.45}
+.mkp-feats li,.mkp-support{display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px}
+.mkp-feats svg,.mkp-support svg{width:16px;height:16px;margin-top:3px}
+.mkp-feats svg{color:var(--accent)}
+.mkp-support{margin-top:16px;padding-top:15px;border-top:1px solid var(--line);font-size:15.5px;line-height:1.45;color:var(--text)}
+.mkp-support svg{color:var(--chrome)}
+.mkp-credit{margin-top:auto;padding:15px 16px;border:1px solid var(--line-strong);border-radius:10px;background:var(--blue-soft)}
+.mkp-credit b{display:block;margin-bottom:6px;font:700 15.5px/1.3 var(--font-display)}
+.mkp-credit p{font-size:14px;line-height:1.5;color:var(--text-2)}
+.mkp-credit p+p{margin-top:4px}
+.mkp-credit-none{display:none}
+@supports (grid-template-rows:subgrid){@media (min-width:981px){.mkp-credit{margin-top:0;align-self:end}.mkp-credit-none{display:block}}}
+
+/* ---------- pricing: your first payment ---------- */
+.mkp-first-sec{padding-top:0;padding-bottom:28px}
+.mkp-link{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:20px;height:52px}
+.mkp-link i{display:flex;justify-content:center;transform:translateX(calc(var(--col,1) * (100% + 20px)));transition:transform var(--motion-standard) var(--ease-vyntex)}
+.mkp-link svg{width:20px;height:52px}
+.mkp-first{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:26px 56px;align-items:center;padding:36px 38px 30px}
+.mkp-first h2{font:700 clamp(26px,2.6vw,34px)/1.15 var(--font-display);letter-spacing:-.02em}
+.mkp-first-for{margin-top:10px;font-size:17px;font-weight:700;color:var(--accent);animation:mkp-swap var(--motion-standard) var(--ease-vyntex)}
+.mkp-first .mkp-fine{margin-top:8px;max-width:40ch}
+.mkp-sum{margin:0}
+.mkp-sum>div{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid var(--line-strong)}
+.mkp-sum dt{color:var(--text-2)}
+.mkp-sum dd{margin:0;font-weight:750;font-variant-numeric:tabular-nums}
+.mkp-sum .total{border-bottom:0;padding-bottom:0;padding-top:16px;align-items:center}
+.mkp-sum .total dt{color:var(--text);font-weight:700}
+.mkp-sum .total dd{font:700 clamp(32px,3vw,40px)/1 var(--font-display);letter-spacing:-.03em;animation:mkp-swap var(--motion-standard) var(--ease-vyntex)}
+.mkp-first-foot{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:18px 40px;flex-wrap:wrap;padding-top:24px;border-top:1px solid var(--line-strong)}
+.mkp-first-foot p{flex:1 1 380px;max-width:66ch;font-size:15px;line-height:1.55;color:var(--text-2)}
+
+/* ---------- pricing: sections ---------- */
+.mkp-sec{padding:84px 0 0}
+.mkp-sec-h{max-width:760px;margin-bottom:34px}
+.mkp-sec-h h2,.mkp-close h2{font:700 clamp(29px,3.2vw,40px)/1.12 var(--font-display);letter-spacing:-.022em;text-wrap:balance}
+.mkp-sec-h p{margin-top:12px;font-size:18px;color:var(--text-2)}
+
+/* the four words */
+.mkp-legend-h{margin-bottom:10px;font-size:14.5px;font-weight:650;color:var(--text-3)}
+.mkp-legend{margin:0 0 22px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.mkp-legend>div{padding:16px 18px 17px;border-left:1px solid var(--line);min-width:0}
+.mkp-legend>div:first-child{border-left:0}
+.mkp-legend dt{display:flex}
+.mkp-legend .badge{font-size:12.5px}
+.mkp-legend .badge:not(.outline){border:1px solid transparent}
+.mkp-legend dd{margin:9px 0 0;font-size:14.5px;line-height:1.45;color:var(--text-2)}
+
+/* add-ons in three groups: a set price, by usage, quoted */
+.mkp-addons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
+.mkp-addon-g{--k:var(--violet);--k-soft:var(--violet-soft);position:relative;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.mkp-addon-g[data-kind="usage"]{--k:var(--info);--k-soft:var(--info-soft)}
+.mkp-addon-g[data-kind="custom"]{--k:var(--chrome);--k-soft:var(--neutral-soft)}
+.mkp-addon-g>h3{display:flex;align-items:center;gap:10px;padding:15px 20px 14px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,var(--k-soft),transparent 78%);box-shadow:inset 0 2px 0 var(--k);font:700 17px/1.3 var(--font-display);letter-spacing:-.01em}
+.mkp-addon-g>h3::before{content:"";flex:none;width:8px;height:8px;border-radius:2px;background:var(--k)}
+.mkp-addon-g[data-kind="custom"]>h3::before{background:none;border:1.5px solid var(--k)}
+.mkp-addon-g ul{list-style:none;margin:0;padding:2px 20px 4px}
+.mkp-addon-g li{padding:16px 0;border-bottom:1px solid var(--line)}
+.mkp-addon-g li:last-child{border-bottom:0}
+.mkp-addon-top{display:flex;align-items:baseline;justify-content:space-between;gap:14px}
+.mkp-addon-name{font-size:16px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.mkp-addon-price{flex:none;font:700 21px/1.2 var(--font-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.mkp-addon-price.none{font:700 13px/1.4 var(--font-body);letter-spacing:0;color:var(--text-2);white-space:nowrap}
+.mkp-addon-flag{margin-top:7px}
+.mkp-addon-bill,.mkp-addon-note{font-size:14.5px;line-height:1.5;color:var(--text-2)}
+.mkp-addon-bill{margin-top:3px}
+.mkp-addon-note{margin-top:7px}
+
+/* good to know */
+.mkp-rules{list-style:none;margin:0;padding:0;columns:2;column-gap:64px}
+.mkp-rules li{position:relative;break-inside:avoid;padding:17px 0 17px 28px;border-top:1px solid var(--line);font-size:16.5px;line-height:1.6;color:var(--text-2)}
+.mkp-rules li::before{content:"";position:absolute;left:2px;top:27px;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--accent);background:var(--bg)}
+
+/* closing band */
+.mkp-close{position:relative;margin-top:92px;border-top:1px solid var(--line);background:linear-gradient(180deg,var(--surface),var(--bg) 92%)}
+.mkp-close::before{content:"";position:absolute;left:0;right:0;top:-1px;height:1px;background:linear-gradient(90deg,transparent 4%,var(--chrome) 30%,var(--cyan) 68%,transparent 96%);opacity:.55}
+.mkp-close-in{display:flex;align-items:center;justify-content:space-between;gap:28px 56px;flex-wrap:wrap;padding:68px 0 34px}
+.mkp-close-t{flex:1 1 440px;max-width:680px}
+.mkp-close-t p{margin-top:12px;font-size:18px;color:var(--text-2)}
+.mkp-close-act{display:flex;align-items:center;gap:14px 26px;flex-wrap:wrap}
+.mkp-version{padding-bottom:30px;font-size:13px;color:var(--text-3)}
+
+/* ---------- request a demo ---------- */
+.mkp-rd-bg{position:absolute;left:0;right:0;top:0;height:560px;pointer-events:none;background:radial-gradient(52% 100% at 76% 0%,var(--cobalt-soft),transparent 74%)}
+.mkp-rd{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);grid-template-rows:auto 1fr;grid-template-areas:"intro form" "aside form";gap:44px 64px;align-items:start;padding-top:60px;padding-bottom:96px}
+.mkp-rd-intro{grid-area:intro}
+.mkp-rd-form{grid-area:form;display:grid;gap:24px;min-width:0}
+.mkp-rd-aside{grid-area:aside;display:grid;gap:40px;min-width:0}
+.mkp-rd h1{font-size:clamp(33px,3.3vw,44px)}
+.mkp-rd-aside h2{font:700 20px/1.25 var(--font-display);letter-spacing:-.012em}
+.mkp-benefits{list-style:none;margin:16px 0 0;padding:0}
+.mkp-benefits li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:16px;padding:16px 0;border-top:1px solid var(--line)}
+.mkp-benefits li>svg{width:22px;height:22px;margin-top:2px;color:var(--accent)}
+.mkp-benefits h3{font:700 17px/1.3 var(--font-display);letter-spacing:-.008em}
+.mkp-benefits p{margin-top:4px;font-size:16px;line-height:1.55;color:var(--text-2)}
+.mkp-benefits .mkp-quiet{margin-top:8px;color:var(--accent)}
+.mkp-benefits .mkp-quiet:hover{color:var(--ice)}
+.mkp-editions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.mkp-editions span{padding:2px 9px;border:1px solid var(--line-strong);border-radius:5px;background:var(--surface);font:700 11.5px/1.6 var(--font-display);letter-spacing:.08em;color:var(--text-2)}
+/* a short sequence: numbered nodes on one trace */
+.mkp-steps{list-style:none;margin:16px 0 0;padding:0;counter-reset:mkp-step}
+.mkp-steps li{position:relative;counter-increment:mkp-step;padding:0 0 18px 44px;font-size:16px;line-height:1.55;color:var(--text-2);min-height:30px}
+.mkp-steps li:last-child{padding-bottom:0}
+.mkp-steps li::before{content:counter(mkp-step);position:absolute;left:0;top:-1px;width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--accent-line);border-radius:50%;background:var(--bg);color:var(--accent);font:700 13px/1 var(--font-display)}
+.mkp-steps li::after{content:"";position:absolute;left:14px;top:29px;bottom:1px;width:1px;background:var(--line-strong)}
+.mkp-steps li:last-child::after{display:none}
+.mkp-talk{display:grid;gap:22px;padding:26px 28px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.mkp-talk h2{font:700 19px/1.25 var(--font-display);letter-spacing:-.012em}
+.mkp-look{padding-top:22px;border-top:1px solid var(--line)}
+.mkp-talk p{margin-top:6px;font-size:16px;color:var(--text-2)}
+.mkp-look .btn{margin-top:14px}
+.mk .mkp-contact{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;font-size:16px}
+.mk .mkp-contact a,.mk .mkp-contact li>span{display:inline-flex;align-items:flex-start;gap:11px;color:var(--text);font-weight:650;text-decoration:none;overflow-wrap:anywhere;transition:color var(--motion-fast) var(--ease-vyntex)}
+.mk .mkp-contact a:hover{color:var(--accent)}
+.mk .mkp-contact svg{flex:none;width:18px;height:18px;margin-top:4px;color:var(--accent)}
+
+/* the form */
+.mkp-form{padding:36px 36px 34px}
+.mkp-form-h{margin-bottom:26px}
+.mkp-form-h h2{font:700 26px/1.2 var(--font-display);letter-spacing:-.018em}
+.mkp-form-h p{margin-top:7px;font-size:16px;color:var(--text-2)}
+.mkp-fgrid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px 16px}
+.mkp-fgrid>*{grid-column:span 6}
+.mkp-fgrid>.full{grid-column:1/-1}
+.mkp-fgrid>.lang{grid-column:span 5}
+.mkp-fgrid>.method{grid-column:span 7}
+.mkp-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.mkp-field>label,.mkp-choice legend{font-size:14.5px;font-weight:700;line-height:1.35;color:var(--text)}
+.mkp-opt{font-weight:500;color:var(--text-3)}
+.mkp-field input,.mkp-field select,.mkp-field textarea{width:100%;min-height:48px;padding:10px 13px;background:var(--bg);border:1px solid var(--line-strong);border-radius:var(--radius-s);color:var(--text);font-size:16px;line-height:1.4;transition:border-color var(--motion-fast) var(--ease-vyntex),box-shadow var(--motion-fast) var(--ease-vyntex)}
+.mkp-field textarea{min-height:104px;resize:vertical;line-height:1.5}
+.mkp-field input:hover,.mkp-field select:hover,.mkp-field textarea:hover{border-color:var(--chrome-lo)}
+.mkp-field input:focus,.mkp-field select:focus,.mkp-field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.mkp-field.err input,.mkp-field.err select,.mkp-field.err textarea{border-color:var(--bad)}
+.mkp-field.err input:focus,.mkp-field.err textarea:focus{box-shadow:0 0 0 3px var(--bad-soft)}
+.mkp-choice{align-self:end;min-width:0;margin:0;padding:0;border:0}
+.mkp-choice legend{padding:0;margin-bottom:6px}
+.mkp-choice>div{display:flex;padding:3px;gap:2px;background:var(--bg);border:1px solid var(--line-strong);border-radius:var(--radius-s)}
+.mkp-choice label{position:relative;flex:1 1 auto;min-width:0;cursor:pointer}
+.mkp-choice input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.mkp-choice span{display:grid;place-items:center;min-height:40px;padding:5px 6px;border-radius:5px;text-align:center;font-size:15px;font-weight:650;line-height:1.2;color:var(--text-2);transition:background var(--motion-fast) var(--ease-vyntex),color var(--motion-fast) var(--ease-vyntex)}
+.mkp-choice label:hover span{color:var(--text)}
+.mkp-choice input:checked+span{background:var(--surface-4);color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+.mkp-choice input:focus-visible+span{outline:2px solid var(--accent);outline-offset:1px}
+.mkp-consent{display:grid;gap:6px;padding-top:2px}
+.mkp-consent label{display:flex;align-items:flex-start;gap:11px;font-size:16px;line-height:1.45;cursor:pointer}
+.mkp-consent input{flex:none;width:21px;height:21px;margin:1px 0 0;accent-color:var(--accent)}
+.mkp-consent.err input{outline:2px solid var(--bad);outline-offset:2px;border-radius:3px}
+.mkp-err{display:flex;align-items:flex-start;gap:6px;font-size:14px;font-weight:600;line-height:1.4;color:var(--bad)}
+.mkp-err svg{flex:none;width:15px;height:15px;margin-top:2px}
+.mkp-err-sum{margin-top:18px;padding:11px 13px;border:1px solid var(--bad);border-radius:var(--radius-s);background:var(--bad-soft);font-size:15px}
+.mkp-err-sum svg{width:17px;height:17px}
+.mkp-hp{position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden}
+.mkp-send{margin-top:24px}
+.mkp-send .btn{min-height:54px;font-size:17px}
+
+/* not delivered: said plainly, with the ways that work right now. Never the success mark. */
+.mkp-result{margin-top:20px;padding:20px 22px;border:1px solid var(--warn);border-radius:10px;background:var(--warn-soft)}
+.mkp-result:focus,.mkp-done:focus{outline:none}
+.mkp-result:focus-visible{box-shadow:0 0 0 3px var(--warn-soft)}
+.mkp-result-tag{margin-bottom:10px}
+.mkp-result-tag .badge{border-color:var(--warn);font-size:12.5px}
+.mkp-result h2{font:700 19px/1.3 var(--font-display)}
+.mkp-result p{margin-top:6px;font-size:15.5px;line-height:1.55;color:var(--text)}
+.mkp-alt{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:8px}
+.mkp-alt .btn{width:100%;min-height:46px;justify-content:flex-start;white-space:normal;text-align:left;font-size:15px}
+.mkp-alt .btn svg{color:var(--accent)}
+
+/* delivered: the trace completes toward the check node once, then stays still */
+.mkp-done-fig{display:block;max-width:100%;height:auto;margin:2px 0 22px -1px;overflow:visible}
+.mkp-done-fig .ln{stroke:var(--accent);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:100;stroke-dashoffset:0;animation:mkp-draw var(--motion-standard) var(--ease-vyntex) both}
+.mkp-done-fig .nd{fill:var(--surface);stroke:var(--accent);stroke-width:1.5}
+.mkp-done-fig .ring{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5;filter:drop-shadow(0 0 9px var(--accent-line));transform-box:fill-box;transform-origin:center;animation:mkp-node var(--motion-fast) var(--ease-vyntex) calc(var(--motion-standard) * .82) both}
+.mkp-done-fig .ck{stroke:var(--ice);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:100;stroke-dashoffset:0;animation:mkp-draw var(--motion-fast) var(--ease-vyntex) calc(var(--motion-standard) * .82) both}
+@keyframes mkp-draw{from{stroke-dashoffset:100}}
+@keyframes mkp-node{from{opacity:0;transform:scale(.82)}}
+.mkp-done h2{font:700 clamp(24px,2.4vw,30px)/1.22 var(--font-display);letter-spacing:-.018em;text-wrap:balance}
+.mkp-done h3{margin-top:28px;font:700 14px/1.3 var(--font-body);letter-spacing:0;color:var(--text-3)}
+.mkp-done-sent{margin:10px 0 0;border-top:1px solid var(--line-strong)}
+.mkp-done-sent>div{display:flex;align-items:baseline;justify-content:space-between;gap:18px;padding:11px 0;border-bottom:1px solid var(--line-strong);font-size:16px}
+.mkp-done-sent dt{color:var(--text-2)}
+.mkp-done-sent dd{margin:0;font-weight:700;text-align:right;overflow-wrap:anywhere}
+.mkp-done-sent dd span{display:block;font-weight:500;color:var(--text-2);white-space:nowrap}
+.mkp-done-act{display:flex;align-items:center;gap:16px 26px;flex-wrap:wrap;margin-top:30px}
+.mkp-done-act .linkbtn{font-size:15px;font-weight:650;color:var(--text-2)}
+.mkp-done-act .linkbtn:hover{color:var(--text)}
+
+/* ---------- widths ---------- */
+@media (max-width:1100px){
+  .mkp-plan{padding-left:22px;padding-right:22px}
+  .mkp-save{flex-basis:150px}
+  .mkp-rd{gap:40px 48px}
+  .mkp-form{padding:30px 28px}
+  .mkp-first{gap:24px 40px;padding:32px 30px 28px}
+}
+@media (max-width:980px){
+  .mkp{--mkp-pad:var(--mk-pad,24px)}
+  .mkp-select span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .mkp-select{max-width:none}
+  .mkp-switch{order:0}
+  .mkp-save{flex:1 0 100%;text-align:right;font-size:14px}
+  /* plans stack; each keeps its full weight and the most popular one keeps its label and edge.
+     On tablets a plan reads across: price and facts on the left, what it includes on the right. */
+  .mkp-plans{grid-template-columns:minmax(0,1fr);row-gap:18px;padding-top:20px}
+  .mkp-plan,.mkp-plan.popular{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:22px 36px;align-items:start;margin-top:0;margin-bottom:0;padding:28px 28px 26px}
+  .mkp-plan-b{height:100%}
+  .mkp-link{grid-template-columns:minmax(0,1fr);height:44px}
+  .mkp-link i{transform:none}
+  .mkp-link svg{height:44px}
+  .mkp-legend{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mkp-legend>div:nth-child(odd){border-left:0}
+  .mkp-legend>div:nth-child(n+3){border-top:1px solid var(--line)}
+  .mkp-addons{grid-template-columns:minmax(0,1fr)}
+  .mkp-rules{columns:1}
+  .mkp-sec{padding-top:68px}
+  .mkp-close{margin-top:72px}
+  .mkp-rd{grid-template-columns:minmax(0,1fr);grid-template-rows:none;grid-template-areas:"intro" "form" "aside";gap:32px;padding-top:44px;padding-bottom:72px}
+}
+@media (max-width:640px){
+  .mkp{--mkp-pad:var(--mk-pad,20px);font-size:16.5px}
+  .mkp h1,.mkp-rd h1{font-size:31px}
+  .mkp-head .mkp-product{white-space:normal}
+  .mkp-head{padding:28px 0 20px}
+  .mkp-head .mkp-back{margin-bottom:18px}
+  .mkp-lede{font-size:17.5px;margin-top:14px}
+  .mkp-bar-in{gap:6px 12px;padding-top:7px;padding-bottom:7px}
+  .mkp-select{flex:1 0 100%;max-width:none;margin-right:0}
+  .mkp-select select{width:100%;min-height:42px;font-size:16px;padding:6px 10px}
+  .mkp-switch button{min-height:36px;padding:0 14px;font-size:15px}
+  .mkp-save{flex:1 1 0;text-align:left;font-size:13px;line-height:1.3}
+  .mkp-price b{font-size:46px}
+  .mkp-plan,.mkp-plan.popular{display:flex;align-items:stretch;padding:26px 22px 24px}
+  .mkp-first{grid-template-columns:minmax(0,1fr);padding:26px 22px 24px}
+  .mkp-first-foot .btn{width:100%;white-space:normal;text-align:center;line-height:1.25}
+  .mkp-legend{grid-template-columns:minmax(0,1fr)}
+  .mkp-legend>div{border-left:0}
+  .mkp-legend>div:nth-child(n+2){border-top:1px solid var(--line)}
+  .mkp-sec{padding-top:56px}
+  .mkp-sec-h{margin-bottom:26px}
+  .mkp-sec-h p,.mkp-close-t p{font-size:17px}
+  .mkp-rules li{font-size:16px}
+  .mkp-close{margin-top:60px}
+  .mkp-close-in{padding:48px 0 26px}
+  .mkp-close-act{width:100%}
+  .mkp-close-act .btn{width:100%}
+  .mkp-rd{padding-top:30px;padding-bottom:56px;gap:26px}
+  .mkp-form{padding:26px 20px 24px}
+  .mkp-form-h{margin-bottom:22px}
+  .mkp-form-h h2{font-size:23px}
+  .mkp-fgrid{grid-template-columns:minmax(0,1fr);gap:16px}
+  .mkp-fgrid>*,.mkp-fgrid>.lang,.mkp-fgrid>.method{grid-column:1/-1}
+  .mkp-talk{padding:22px 20px}
+  .mkp-result{padding:18px 16px}
+  .mkp-done-act .btn{width:100%;white-space:normal;text-align:center;line-height:1.25}
+  .mkp-done-sent>div{display:block}
+  .mkp-done-sent dt{font-size:14.5px}
+  .mkp-done-sent dd{text-align:left}
+  .mkp-done-sent dd span{display:inline;margin-left:8px;white-space:normal}
+}
+@media (max-width:380px){
+  .mkp{--mkp-pad:var(--mk-pad,16px)}
+  .mkp h1,.mkp-rd h1{font-size:29px}
+  .mkp-plan,.mkp-plan.popular{padding:24px 18px 20px}
+  .mkp-first{padding:24px 18px 22px}
+  .mkp-form{padding:24px 16px 20px}
+  .mkp-switch button{padding:0 10px}
+  .mkp-choice span{font-size:14.5px;padding:5px 3px}
+}
+/* reduced motion: every animation here starts from a keyframe and ends in the resting style, so with animations off (ui/styles.css)
+   everything is already complete. Reveals are shown in place, including the panel kind. */
+@media (prefers-reduced-motion:reduce){.mkp .vx-reveal,.mkp .vx-reveal.panel{opacity:1;transform:none;filter:none}}
+@media print{.mkp-bar{position:static}.mkp-rd-bg,.mkp-link{display:none}}

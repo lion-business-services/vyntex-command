@@ -1,5 +1,5 @@
 // One job: header with the status control, then tabs for the team, the money, tasks, documents, the work log and history.
-import { useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
   LuPencil, LuTrash2, LuPlus, LuMapPin, LuZap, LuX, LuBanknote, LuFileText, LuFilePlus2, LuChevronRight, LuMail, LuCalendarDays,
 } from 'react-icons/lu';
@@ -29,7 +29,9 @@ export function JobDetail({ id, sub }: { id: string; sub?: string }) {
   const job = byId(data.jobs, id);
   const [edit, setEdit] = useState(false);
   const [auto, setAuto] = useState<AutoLine[] | null>(null);
-  if (!job) return <Card><Empty title={t('jobs.notFound')} action={<A to="/jobs" className="btn" data-testid="jobs-back">{t('back')}</A>} /></Card>;
+  /** Set once the status is changed on this page, so the badge settles when it changes and not when the page opens. */
+  const [touched, setTouched] = useState(false);
+  if (!job) return <Card className="work-none"><Empty title={t('jobs.notFound')} action={<A to="/jobs" className="btn" data-testid="jobs-back">{t('back')}</A>} /></Card>;
 
   const showMoney = can('money');
   const tabs = TABS.filter((x) => x !== 'money' || showMoney);
@@ -37,7 +39,7 @@ export function JobDetail({ id, sub }: { id: string; sub?: string }) {
   const client = byId(data.clients, job.clientId);
   const openTasks = tasksOfJob(data, job.id).filter(isOpenTask).length;
   const openTab = (x: JobTab) => go(x === 'overview' ? `/jobs/${job.id}` : `/jobs/${job.id}/${x}`);
-  const setStatus = (to: JobStatus) => { const lines = changeStatus(t, job, to); setAuto(lines.length ? lines : null); };
+  const setStatus = (to: JobStatus) => { setTouched(true); const lines = changeStatus(t, job, to); setAuto(lines.length ? lines : null); };
   const remove = async () => {
     if (await confirmDialog(t('jobs.deleteConfirm', { name: job.name }), t('deleteProject'), t('common.cancel'))) { act(deleteJob, job.id); toast(t('common.deleted')); go('/jobs'); }
   };
@@ -46,10 +48,10 @@ export function JobDetail({ id, sub }: { id: string; sub?: string }) {
     <>
       <BackLink to="/jobs">{t('back')}</BackLink>
       <PageHeader
-        title={<>{job.name} <JobStatusBadge status={job.status} /></>}
+        title={<>{job.name} <span key={job.status} className={cx('jobs-status', touched && 'jobs-settle')}><JobStatusBadge status={job.status} /></span></>}
         sub={<>{[job.number, t('ty_' + job.type)].filter(Boolean).join(' · ')}{client && <> · <A to={`/clients/${client.id}`} className="jobs-client" data-testid="jobs-client-link">{client.name}</A></>}</>}
         actions={<>
-          <label className="jobs-statusctl"><span className="xs dim">{t('common.status')}</span>
+          <label className="jobs-statusctl"><span className="xs muted">{t('common.status')}</span>
             <select value={job.status} onChange={(e) => setStatus(e.target.value as JobStatus)} data-testid="jobs-status">
               {pack.jobStatuses.map((s) => <option key={s} value={s}>{t('st_' + s)}</option>)}
             </select>
@@ -64,14 +66,15 @@ export function JobDetail({ id, sub }: { id: string; sub?: string }) {
 
       {auto && <AutoNote lines={auto} jobId={job.id} onClose={() => setAuto(null)} />}
 
-      <div className="tabs" role="tablist" aria-label={t('jobs.tabs')}>
+      <JobTabs label={t('jobs.tabs')} current={tab}>
         {tabs.map((x) => (
           <button key={x} type="button" role="tab" aria-selected={x === tab} onClick={() => openTab(x)} data-testid={`jobs-tab-${x}`}>
             {t('jobs.tab.' + x)}{x === 'tasks' && openTasks > 0 && <span className="count">{openTasks}</span>}
           </button>
         ))}
-      </div>
+      </JobTabs>
 
+      <div className="jobs-tab" data-tab={tab}>
       {tab === 'overview' && <Overview job={job} onTab={openTab} />}
       {tab === 'team' && <Team job={job} />}
       {tab === 'money' && <Money job={job} />}
@@ -83,9 +86,49 @@ export function JobDetail({ id, sub }: { id: string; sub?: string }) {
           <ActivityList items={activityFor(data, { type: 'job', id: job.id }).filter((a) => showMoney || !MONEY_ACTIVITY.includes(a.kind))} limit={25} />
         </Card>
       )}
+      </div>
 
       {edit && <JobForm job={job} onClose={() => setEdit(false)} onSaved={(lines) => setAuto(lines.length ? lines : null)} />}
     </>
+  );
+}
+
+/** The tab strip with one underline that slides to the open tab. On narrow screens the open tab is brought into view and a fade shows there is more to the right. */
+function JobTabs({ label, current, children }: { label: string; current: string; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [line, setLine] = useState<{ x: number; w: number } | null>(null);
+  const [more, setMore] = useState(false);
+  const measure = () => {
+    const el = ref.current; if (!el) return;
+    const on = el.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (on) setLine((l) => (l && l.x === on.offsetLeft && l.w === on.offsetWidth ? l : { x: on.offsetLeft, w: on.offsetWidth }));
+    setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
+  };
+  useLayoutEffect(() => {
+    const el = ref.current; if (!el) return;
+    const on = el.querySelector<HTMLElement>('[aria-selected="true"]');
+    // keep the open tab visible in the strip without moving the page
+    if (on && (on.offsetLeft < el.scrollLeft || on.offsetLeft + on.offsetWidth > el.scrollLeft + el.clientWidth)) el.scrollLeft = Math.max(0, on.offsetLeft - 24);
+  }, [current]);
+  // cheap, and it keeps the underline right when a count appears on a tab or the wording changes
+  useLayoutEffect(measure);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    el.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
+    // widths change when the web font arrives or the language changes
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    if (ro) for (const b of Array.from(el.children)) ro.observe(b);
+    return () => { el.removeEventListener('scroll', measure); window.removeEventListener('resize', measure); ro?.disconnect(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current]);
+  return (
+    <div className={cx('jobs-tabwrap', more && 'more')}>
+      <div className={cx('tabs jobs-tabs', line && 'ready')} role="tablist" aria-label={label} ref={ref}>
+        {children}
+        {line && <span className="jobs-tabline" aria-hidden="true" style={{ transform: `translateX(${line.x}px) scaleX(${line.w})` }} />}
+      </div>
+    </div>
   );
 }
 
@@ -118,10 +161,15 @@ function AutoNote({ lines, jobId, onClose }: { lines: AutoLine[]; jobId: string;
 }
 
 /* ---------- overview ---------- */
-function Fig({ label, value, hint, tone }: { label: ReactNode; value: ReactNode; hint?: ReactNode; tone?: 'pos' | 'neg' | 'warn' }) {
-  return <div className="jobs-fig"><div className="k">{label}</div><div className={cx('v', tone)}>{value}</div>{hint && <div className="h">{hint}</div>}</div>;
+function Fig({ label, value, hint, tone, swatch }: { label: ReactNode; value: ReactNode; hint?: ReactNode; tone?: 'pos' | 'neg' | 'warn'; swatch?: 's1' | 's2' | 's3' | 's4' }) {
+  // the hint line is always there so the figures of a pair stay on the same baseline
+  return <div className="jobs-fig"><div className="k">{swatch && <i className={'jobs-k ' + swatch} aria-hidden="true" />}{label}</div><div className={cx('v', tone)}>{value}</div><div className="h">{hint}</div></div>;
+}
+function Line({ label, value, swatch }: { label: ReactNode; value: ReactNode; swatch?: 's1' | 's2' }) {
+  return <div><dt>{swatch && <i className={'jobs-k ' + swatch} aria-hidden="true" />}{label}</dt><dd>{value}</dd></div>;
 }
 
+/** Price, profit, received and balance first; what they are made of underneath. */
 function MoneySummary({ m }: { m: JobMoney }) {
   const { t, can } = useApp();
   const showProfit = can('profit');
@@ -131,26 +179,30 @@ function MoneySummary({ m }: { m: JobMoney }) {
   ];
   const collected = m.price > 0 ? Math.min(1, Math.max(0, m.received / m.price)) : 0;
   return (
-    <Card title={t('jobs.ov.money')} className="jobs-money">
-      <div className="jobs-figs">
-        <Fig label={t('contract')} value={money(m.price)} />
-        <Fig label={t('subLabor')} value={money(m.labor)} />
-        <Fig label={t('materials')} value={money(m.expenses)} />
-        {showProfit && <Fig label={t('jobs.ov.profit')} value={money(m.profit)} tone={m.profit < 0 ? 'neg' : 'pos'} hint={m.price > 0 ? t('jobs.ov.margin', { pct: pct(m.margin) }) : undefined} />}
-      </div>
-      <div className="jobs-bar">
-        <MoneyBar total={m.price} parts={parts} label={`${t('jobs.ov.split')}: ${parts.map((p) => `${p.label} ${money(p.value)}`).join(', ')}`} />
-        <div className="legend">{parts.map((p) => <span key={p.cls}><i className={'jobs-k ' + p.cls} />{p.label}</span>)}</div>
-      </div>
-      <hr className="divider" />
-      <div className="jobs-figs">
-        <Fig label={t('jobs.m.received')} value={money(m.received)} hint={m.price > 0 ? t('jobs.ov.collected', { pct: pct(collected) }) : undefined} />
-        <Fig label={t('jobs.m.clientOwes')} value={money(Math.max(0, m.clientOwes))} tone={m.clientOwes > 0.005 ? 'warn' : undefined} hint={m.price > 0 && m.clientOwes <= 0.005 ? t('jobs.paid') : undefined} />
-        <Fig label={t('paidSubs')} value={money(m.paidWorkers)} />
-        <Fig label={t('jobs.m.oweWorkers')} value={money(Math.max(0, m.oweWorkers))} />
-      </div>
-      <div className="jobs-bar">
-        <MoneyBar total={m.price} parts={[{ value: m.received, cls: 's4', label: t('jobs.m.received') }]} label={`${t('jobs.m.received')}: ${money(m.received)} / ${money(m.price)}`} />
+    <Card title={t('jobs.ov.money')} className="jobs-money raised">
+      <div className="jobs-mgrid">
+        <div className="jobs-mhalf">
+          <div className="jobs-figs">
+            <Fig label={t('contract')} value={money(m.price)} />
+            {showProfit && <Fig label={t('jobs.ov.profit')} swatch="s3" value={money(m.profit)} tone={m.profit < 0 ? 'neg' : 'pos'} hint={m.price > 0 ? t('jobs.ov.margin', { pct: pct(m.margin) }) : undefined} />}
+          </div>
+          <MoneyBar total={m.price} parts={parts} label={`${t('jobs.ov.split')}: ${parts.map((p) => `${p.label} ${money(p.value)}`).join(', ')}`} />
+          <dl className="jobs-lines">
+            <Line swatch="s1" label={t('subLabor')} value={money(m.labor)} />
+            <Line swatch="s2" label={t('materials')} value={money(m.expenses)} />
+          </dl>
+        </div>
+        <div className="jobs-mhalf">
+          <div className="jobs-figs">
+            <Fig label={t('jobs.m.received')} swatch="s4" value={money(m.received)} hint={m.price > 0 ? t('jobs.ov.collected', { pct: pct(collected) }) : undefined} />
+            <Fig label={t('jobs.m.clientOwes')} value={money(Math.max(0, m.clientOwes))} tone={m.clientOwes > 0.005 ? 'warn' : undefined} hint={m.price > 0 && m.clientOwes <= 0.005 ? t('jobs.paid') : undefined} />
+          </div>
+          <MoneyBar total={m.price} parts={[{ value: m.received, cls: 's4', label: t('jobs.m.received') }]} label={`${t('jobs.m.received')}: ${money(m.received)} / ${money(m.price)}`} />
+          <dl className="jobs-lines">
+            <Line label={t('paidSubs')} value={money(m.paidWorkers)} />
+            <Line label={t('jobs.m.oweWorkers')} value={money(Math.max(0, m.oweWorkers))} />
+          </dl>
+        </div>
       </div>
     </Card>
   );
@@ -166,7 +218,7 @@ function Overview({ job, onTab }: { job: Job; onTab: (x: JobTab) => void }) {
   const visits = repeats(job) ? calendarEvents(data, 70).filter((e) => e.kind === 'visit' && e.ref.type === 'job' && e.ref.id === job.id && e.date >= today()).slice(0, 4) : [];
   const unset = <span className="dim">{t('jobs.notSet')}</span>;
   const tasksCard = (
-    <Card title={t('jobs.ov.openTasks')} actions={<button type="button" className="linkbtn small" onClick={() => onTab('tasks')}>{t('jobs.ov.allTasks')}</button>}>
+    <Card title={t('jobs.ov.openTasks')} className={showMoney ? undefined : 'raised'} actions={<button type="button" className="linkbtn small" onClick={() => onTab('tasks')}>{t('jobs.ov.allTasks')}</button>}>
       {open.length ? <div className="list">{open.slice(0, 4).map((x) => <TaskRow key={x.id} task={x} />)}</div> : <p className="muted small">{t('jobs.ov.noOpenTasks')}</p>}
     </Card>
   );
@@ -236,17 +288,17 @@ function Team({ job }: { job: Job }) {
 
   return (
     <>
-      <Card flush title={t('secAssign')} actions={add}>
+      <Card flush className="work-none" title={t('secAssign')} actions={add}>
         {!rows.length ? (
           <Empty title={t('jobs.team.empty')}>{showMoney ? t('jobs.team.emptyHint') : null}</Empty>
         ) : (
           <div className="table-wrap">
-            <table className="tbl stackable jobs-stack" data-testid="jobs-team-table">
+            <table className="tbl stackable jobs-stack jobs-team" data-testid="jobs-team-table">
               <thead>
                 <tr>
                   <th>{t('sub')}</th><th>{t('part')}</th>
-                  {showMoney && <><th>{t('jobs.team.col.pay')}</th><th className="num">{t('jobs.as.total')}</th><th className="num">{t('jobs.team.col.paid')}</th><th className="num">{t('jobs.team.col.owed')}</th></>}
-                  <th>{t('common.status')}</th>{showMoney && <th><span className="sr">{t('common.actions')}</span></th>}
+                  {showMoney && <><th className="jobs-c-pay">{t('jobs.team.col.pay')}</th><th className="num">{t('jobs.as.total')}</th><th className="num">{t('jobs.team.col.paid')}</th><th className="num">{t('jobs.team.col.owed')}</th></>}
+                  <th>{t('common.status')}</th>{showMoney && <th className="jobs-acts"><span className="sr">{t('common.actions')}</span></th>}
                 </tr>
               </thead>
               <tbody>
@@ -265,7 +317,7 @@ function Team({ job }: { job: Job }) {
                       </td>
                       <td data-label={t('part')}>{a.scope}</td>
                       {showMoney && <>
-                        <td data-label={t('jobs.team.col.pay')} className="small nowrap">{payLine(t, a)}</td>
+                        <td data-label={t('jobs.team.col.pay')} className="small nowrap jobs-c-pay">{payLine(t, a)}</td>
                         <td data-label={t('jobs.as.total')} className="num">{money2(a.price)}</td>
                         <td data-label={t('jobs.team.col.paid')} className="num">{money2(paid)}</td>
                         <td data-label={t('jobs.team.col.owed')} className={cx('num strong', owed < -0.005 && 'neg')}>{money2(owed)}</td>
@@ -287,7 +339,7 @@ function Team({ job }: { job: Job }) {
               {showMoney && (
                 <tfoot>
                   <tr>
-                    <td className="t1" colSpan={3}>{t('common.total')}</td>
+                    <td className="t1" colSpan={2}>{t('common.total')}</td><td className="jobs-c-pay" />
                     <td data-label={t('jobs.as.total')} className="num">{money2(m.labor)}</td>
                     <td data-label={t('jobs.team.col.paid')} className="num">{money2(m.paidWorkers)}</td>
                     <td data-label={t('jobs.team.col.owed')} className="num">{money2(m.oweWorkers)}</td>
@@ -326,14 +378,14 @@ function Money({ job }: { job: Job }) {
 
   return (
     <div className="stack">
-      <div className="grid2">
-        <Card flush title={t('secRecv')} actions={m.clientOwes > 0.005
+      <div className="grid2 jobs-pair">
+        <Card flush title={t('secRecv')} className={m.clientOwes > 0.005 ? 'raised' : undefined} actions={m.clientOwes > 0.005
           ? <Button size="sm" variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setRecv(true)} data-testid="jobs-record-payment">{t('form.pay.record')}</Button>
           : m.price > 0 ? <Badge tone="ok">{t('jobs.paid')}</Badge> : null}>
           {job.received.length ? (
             <div className="table-wrap">
               <table className="tbl stackable" data-testid="jobs-received">
-                <thead><tr><th>{t('common.date')}</th><th>{t('common.method')}</th><th className="num">{t('common.amount')}</th><th><span className="sr">{t('common.actions')}</span></th></tr></thead>
+                <thead><tr><th>{t('common.date')}</th><th>{t('common.method')}</th><th className="num">{t('common.amount')}</th><th className="jobs-acts"><span className="sr">{t('common.actions')}</span></th></tr></thead>
                 <tbody>
                   {byDate(job.received).map((r) => (
                     <tr key={r.id}>
@@ -355,7 +407,7 @@ function Money({ job }: { job: Job }) {
           {job.expenses.length ? (
             <div className="table-wrap">
               <table className="tbl stackable" data-testid="jobs-expenses">
-                <thead><tr><th>{t('desc')}</th><th>{t('common.date')}</th><th className="num">{t('common.amount')}</th><th><span className="sr">{t('common.actions')}</span></th></tr></thead>
+                <thead><tr><th>{t('desc')}</th><th>{t('common.date')}</th><th className="num">{t('common.amount')}</th><th className="jobs-acts"><span className="sr">{t('common.actions')}</span></th></tr></thead>
                 <tbody>
                   {byDate(job.expenses).map((e) => (
                     <tr key={e.id}>
@@ -377,7 +429,7 @@ function Money({ job }: { job: Job }) {
         {pays.length ? (
           <div className="table-wrap">
             <table className="tbl stackable" data-testid="jobs-worker-pays">
-              <thead><tr><th>{t('jobs.money.who')}</th><th>{t('common.date')}</th><th>{t('common.method')}</th><th className="num">{t('common.amount')}</th><th><span className="sr">{t('common.actions')}</span></th></tr></thead>
+              <thead><tr><th>{t('jobs.money.who')}</th><th>{t('common.date')}</th><th>{t('common.method')}</th><th className="num">{t('common.amount')}</th><th className="jobs-acts"><span className="sr">{t('common.actions')}</span></th></tr></thead>
               <tbody>
                 {pays.map((p) => {
                   const name = byId(data.workers, p.workerId)?.name ?? t('jobs.team.gone');
@@ -418,7 +470,7 @@ function Tasks({ job }: { job: Job }) {
   const current = byId(data.tasks, editing ?? undefined);
   return (
     <div className="stack">
-      <Card title={<>{t('jobs.tasks.open')} <span className="count">{open.length}</span></>} actions={addBtn}>
+      <Card className="work-none" title={<>{t('jobs.tasks.open')} <span className="count">{open.length}</span></>} actions={addBtn}>
         {open.length ? <div className="list" data-testid="jobs-tasks-open">{open.map((x) => <TaskRow key={x.id} task={x} onEdit={() => setEditing(x.id)} />)}</div>
           : all.length ? <p className="muted small">{t('jobs.tasks.noneOpen')}</p>
           : <Empty title={t('jobs.tasks.none')}>{t('jobs.tasks.noneHint')}</Empty>}
@@ -442,7 +494,7 @@ function Documents({ job }: { job: Job }) {
   const make = (k: DocKind) => { const d = act(createDoc, job.id, k); if (d) go(`/documents/${d.id}`); };
   return (
     <div className="split">
-      <Card flush title={t('jobs.tab.documents')}>
+      <Card flush className="work-none" title={t('jobs.tab.documents')}>
         {docs.length ? (
           <div className="jobs-docs" data-testid="jobs-docs">
             {docs.map((d) => (
@@ -485,7 +537,7 @@ function LogAndNotes({ job }: { job: Job }) {
             {log.map((l) => {
               const name = actorName(data, l.workerId) ?? t('jobs.team.gone');
               return (
-                <div className="item" key={l.id}>
+                <div className="item jobs-logrow" key={l.id}>
                   <Avatar name={name} size="sm" />
                   <div className="grow"><div className="jobs-prose">{l.text}</div><div className="xs dim">{name} · {shortDate(l.date, lang)}</div></div>
                   {can('delete') && <IconButton size="sm" label={t('common.delete')} onClick={() => remove(l.id)} data-testid="jobs-remove-log"><LuTrash2 /></IconButton>}

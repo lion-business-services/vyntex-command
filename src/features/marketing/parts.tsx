@@ -1,15 +1,19 @@
-// Pieces shared by the three public pages: frame of the page (header, footer), the chamfered brand shapes and contact links.
-import { useEffect, type ReactNode } from 'react';
-import { LuMail, LuMapPin, LuMessageCircle, LuPhone } from 'react-icons/lu';
+// Pieces shared by the three public pages: the page frame (header, footer), the product name set like the wordmark,
+// section headings, contact links and the links that scroll to a section of the overview.
+import { useEffect, useState, type MouseEvent, type ReactNode } from 'react';
+import { LuMail, LuMapPin, LuMenu, LuMessageCircle, LuPhone, LuX } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
-import { Link, asset } from '@/app/router';
+import { Link, PREVIEW, navigate } from '@/app/router';
 import { setLanguage } from '@/store/store';
 import { BRAND } from '@/config/brand';
+import { Lockup, ScrollProgress } from '@/brand';
 import type { IndustryPack } from '@/packs/types';
 import type { TFn } from '@/i18n';
 import { cx } from '@/ui';
 
 export type MkPageId = 'home' | 'pricing' | 'request';
+/** Sections of the overview that the header links to. */
+export type MkSectionId = 'product' | 'industries' | 'how-it-works';
 
 /** Digits of the business phone with country code, for WhatsApp links. */
 export const WHATSAPP_NUMBER = BRAND.phoneHref.replace(/\D/g, '');
@@ -21,23 +25,24 @@ export const mailHref = (subject?: string, body?: string) => {
 
 /** The edition word of a product name: "BUILD" in "VYNTEX BUILD". Falls back to the whole name. */
 export function editionWord(pack: IndustryPack): string {
-  const prefix = BRAND.platformName + ' ';
-  return pack.product.startsWith(prefix) ? pack.product.slice(prefix.length) : pack.product;
+  const first = BRAND.platformName.split(' ')[0];
+  for (const prefix of [BRAND.platformName + ' ', first + ' ']) if (pack.product.startsWith(prefix)) return pack.product.slice(prefix.length);
+  return pack.product;
 }
 
-/** Product name set like the wordmark: platform name in chrome, edition word in the circuit blue. */
+/** Product name set like the wordmark: the VYNTEX name in chrome, the edition word in the blue spectrum. */
 export function ProductName({ pack, className }: { pack: IndustryPack; className?: string }) {
   const word = editionWord(pack);
   const split = word !== pack.product;
   return (
     <span className={cx('mk-product', className)}>
-      <span className="mk-chrome">{split ? BRAND.platformName : pack.product}</span>
+      <span className="mk-chrome">{split ? pack.product.slice(0, pack.product.length - word.length).trim() : pack.product}</span>
       {split && <> <span className="mk-blue">{word}</span></>}
     </span>
   );
 }
 
-/** A sentence with the industry words set apart, so the visitor sees what the industry picker changes. */
+/** A sentence with one industry word set apart, so the visitor sees what the industry picker changes. */
 export function Swap({ t, k, token }: { t: TFn; k: string; token: 'job' | 'worker' }) {
   const mark = '\u0001';
   const [before, after = ''] = t(k, { [token]: mark }).split(mark);
@@ -59,24 +64,97 @@ export function SecHead({ id, title, sub }: { id: string; title: ReactNode; sub?
   return <div className="mk-sec-h"><h2 id={id}>{title}</h2>{sub && <p>{sub}</p>}</div>;
 }
 
+/* ---------- links to a section of the overview ---------- */
+let pendingSection: string | null = null;
+const HEADER_OFFSET = 76;
+/** Scrolls the overview to a section. Smooth unless the visitor asked for reduced motion; `jump` goes there at once. */
+export function scrollToSection(id: string, jump = false) {
+  const el = document.getElementById(id); if (!el) return;
+  const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET), behavior: (jump || reduced ? 'instant' : 'smooth') as ScrollBehavior });
+}
+/** How far a section is from where `scrollToSection` puts it, in pixels. Null when the section is not on the page. */
+export function sectionOffBy(id: string): number | null {
+  const el = document.getElementById(id);
+  return el ? Math.abs(el.getBoundingClientRect().top - HEADER_OFFSET) : null;
+}
+/** Called by the overview when it mounts: the section asked for from another page, or the one named in the address. */
+export function takePendingSection(): string | null {
+  const id = pendingSection ?? (PREVIEW || typeof location === 'undefined' ? '' : decodeURIComponent(location.hash.slice(1)));
+  pendingSection = null;
+  return id || null;
+}
+function SectionLink({ id, onHome, children, onDone, tid }: { id: MkSectionId; onHome: boolean; children: ReactNode; onDone?: () => void; /** Test id, for the header copy only. */ tid?: boolean }) {
+  const click = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault(); onDone?.();
+    if (onHome) scrollToSection(id);
+    else { pendingSection = id; navigate('/'); }
+  };
+  return <a href={PREVIEW ? '#' : '/#' + id} onClick={click} data-testid={tid ? `mk-nav-${id}` : undefined}>{children}</a>;
+}
+
+/** True while the viewport is narrower than the given width. */
+function useNarrow(maxWidth: number): boolean {
+  const q = `(max-width:${maxWidth}px)`;
+  const [narrow, setNarrow] = useState(() => typeof matchMedia === 'function' && matchMedia(q).matches);
+  useEffect(() => { const m = matchMedia(q); const on = () => setNarrow(m.matches); on(); m.addEventListener('change', on); return () => m.removeEventListener('change', on); }, [q]);
+  return narrow;
+}
+
 export function MkHeader({ current }: { current: MkPageId }) {
   const { t, lang } = useApp();
+  const compact = useNarrow(1099);
+  const phone = useNarrow(700);
+  const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+  useEffect(() => { if (!compact) setOpen(false); }, [compact]);
+  useEffect(() => {
+    if (!open) return;
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); document.getElementById('mk-menu-btn')?.focus(); } };
+    document.addEventListener('keydown', key); return () => document.removeEventListener('keydown', key);
+  }, [open]);
+  const onHome = current === 'home';
+
+  const nav = (
+    <nav className="mk-nav" aria-label={t('mk.nav.label')}>
+      <SectionLink id="product" onHome={onHome} onDone={close} tid>{t('mk.nav.product')}</SectionLink>
+      <SectionLink id="industries" onHome={onHome} onDone={close} tid>{t('mk.nav.industries')}</SectionLink>
+      <Link to="/pricing" aria-current={current === 'pricing' ? 'page' : undefined} onClick={close} data-testid="mk-nav-pricing">{t('mk.nav.pricing')}</Link>
+      <SectionLink id="how-it-works" onHome={onHome} onDone={close} tid>{t('mk.nav.how')}</SectionLink>
+    </nav>
+  );
+  const language = (
+    <div className="mk-lang" role="group" aria-label={t('demo.language')}>
+      <button type="button" aria-pressed={lang === 'en'} onClick={() => setLanguage('en')} data-testid="mk-lang-en" lang="en" aria-label="English">EN</button>
+      <button type="button" aria-pressed={lang === 'es'} onClick={() => setLanguage('es')} data-testid="mk-lang-es" lang="es" aria-label="Español">ES</button>
+    </div>
+  );
+  const demo = <Link to="/demo" className="mk-top-demo" onClick={close} data-testid="mk-nav-demo">{t('mk.nav.demo')}</Link>;
+  const request = (
+    <Link to="/request-demo" className="btn primary mk-top-cta" aria-current={current === 'request' ? 'page' : undefined} onClick={close} data-testid="mk-nav-request">{t('mk.nav.request')}</Link>
+  );
+
   return (
-    <header className="mk-top">
+    <header className={cx('mk-top', compact && 'compact', open && 'open')}>
       <div className="mk-wrap mk-top-in">
-        <Link to="/" className="mk-logo" aria-label={`${BRAND.platformName}, ${t('mk.nav.home')}`} aria-current={current === 'home' ? 'page' : undefined}>
-          <img src={asset('brand/vyntex-wordmark.jpg')} alt="" width={640} height={86} />
-        </Link>
-        <nav className="mk-nav" aria-label={t('mk.nav.label')}>
-          <Link to="/pricing" aria-current={current === 'pricing' ? 'page' : undefined} data-testid="mk-nav-pricing">{t('mk.nav.pricing')}</Link>
-          <Link to="/request-demo" aria-current={current === 'request' ? 'page' : undefined} data-testid="mk-nav-request">{t('mk.nav.request')}</Link>
-        </nav>
-        <div className="mk-lang" role="group" aria-label={t('demo.language')}>
-          <button type="button" aria-pressed={lang === 'en'} onClick={() => setLanguage('en')} data-testid="mk-lang-en" lang="en" aria-label="English">EN</button>
-          <button type="button" aria-pressed={lang === 'es'} onClick={() => setLanguage('es')} data-testid="mk-lang-es" lang="es" aria-label="Español">ES</button>
-        </div>
-        <Link to="/demo" className="mk-btn primary sm mk-top-demo" data-testid="mk-nav-demo">{t('mk.nav.demo')}</Link>
+        <Link to="/" className="mk-logo" aria-label={`${BRAND.platformName}, ${t('mk.nav.home')}`} aria-current={onHome ? 'page' : undefined} onClick={close}><Lockup size="sm" /></Link>
+        {compact ? (
+          <>
+            {!phone && request}
+            <button type="button" id="mk-menu-btn" className="mk-menu-btn" aria-expanded={open} aria-controls="mk-menu" aria-label={t(open ? 'mk.nav.close' : 'mk.nav.menu')} onClick={() => setOpen(!open)} data-testid="mk-menu">
+              {open ? <LuX aria-hidden="true" /> : <LuMenu aria-hidden="true" />}
+            </button>
+          </>
+        ) : (
+          <>{nav}{language}{demo}{request}</>
+        )}
       </div>
+      {compact && (
+        <div id="mk-menu" className="mk-menu" hidden={!open}>
+          <div className="mk-wrap mk-menu-in">{nav}<div className="mk-menu-end">{demo}{language}</div>{phone && request}</div>
+        </div>
+      )}
     </header>
   );
 }
@@ -94,21 +172,26 @@ export function ContactList({ className }: { className?: string }) {
   );
 }
 
-export function MkFooter() {
-  const { t } = useApp();
+export function MkFooter({ current }: { current?: MkPageId }) {
+  const { t, lang } = useApp();
+  const onHome = current === 'home';
   return (
     <footer className="mk-foot">
       <div className="mk-wrap mk-foot-in">
         <div className="mk-foot-brand">
-          <img src={asset('brand/vyntex-wordmark.jpg')} alt={BRAND.company} width={640} height={86} loading="lazy" />
+          <Lockup size="md" tagline={BRAND.descriptor[lang]} />
+          <p className="mk-foot-legal">{t('mk.foot.legal', { legal: BRAND.legalName, company: BRAND.company })}</p>
+          <p className="mk-foot-tag">{BRAND.tagline[lang]}</p>
         </div>
         <div className="mk-foot-co">
-          <p className="mk-foot-legal">{t('mk.foot.legal', { legal: BRAND.legalName, company: BRAND.company })}</p>
-          <p className="mk-foot-tag">{BRAND.tagline}</p>
+          <h2>{t('mk.foot.contact')}</h2>
           <ContactList />
         </div>
         <nav className="mk-foot-nav" aria-label={t('mk.foot.pages')}>
-          <Link to="/">{t('mk.nav.home')}</Link>
+          <h2>{t('mk.foot.pages')}</h2>
+          <SectionLink id="product" onHome={onHome}>{t('mk.nav.product')}</SectionLink>
+          <SectionLink id="industries" onHome={onHome}>{t('mk.nav.industries')}</SectionLink>
+          <SectionLink id="how-it-works" onHome={onHome}>{t('mk.nav.how')}</SectionLink>
           <Link to="/pricing">{t('mk.nav.pricing')}</Link>
           <Link to="/request-demo">{t('mk.nav.request')}</Link>
           <Link to="/demo">{t('mk.nav.demo')}</Link>
@@ -118,15 +201,16 @@ export function MkFooter() {
   );
 }
 
-/** Page frame for the public pages. They are always dark: the logo artwork only exists on black. */
+/** Page frame for the public pages. They are always dark: the brand lives on graphite. */
 export function MkPage({ current, children }: { current: MkPageId; children: ReactNode }) {
   const { t } = useApp();
   return (
     <div className="mk">
       <a href="#mk-main" className="skip">{t('app.skip')}</a>
+      <ScrollProgress />
       <MkHeader current={current} />
-      <main id="mk-main" tabIndex={-1}>{children}</main>
-      <MkFooter />
+      <main id="mk-main" className="mk-main" tabIndex={-1}>{children}</main>
+      <MkFooter current={current} />
     </div>
   );
 }

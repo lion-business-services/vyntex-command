@@ -1,0 +1,139 @@
+/* Sticky product walkthrough. Wide screens: the story on the left with a progress rail, one window held in place on the right.
+   Everything else: the steps stack, each with its own window. Only opacity and transform move. */
+.mks-wt-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.mks-wt-steps{list-style:none;margin:0;padding:0;min-width:0}
+.mks-wt-step{position:relative;padding-left:52px;min-width:0}
+.mks-wt-node{position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--bg);border:1px solid var(--line-strong);color:var(--text-3);font:700 12.5px var(--font-display);z-index:1}
+/* the rail: a quiet line under every step, a lit line over the steps already passed */
+.mks-wt-step::before,.mks-wt-step::after{content:"";position:absolute;left:14.5px;top:30px;bottom:0;width:1px}
+.mks-wt-step::before{background:var(--line-strong)}
+.mks-wt-step::after{background:linear-gradient(180deg,var(--cyan),var(--blue));transform:scaleY(0);transform-origin:50% 0;transition:transform var(--motion-reveal) var(--ease-vyntex)}
+.mks-wt-step:last-child::before,.mks-wt-step:last-child::after{display:none}
+.mks-wt-copy h3{font:700 22px/1.2 var(--font-display);letter-spacing:-.015em;color:var(--text);padding-top:2px}
+.mks-wt-copy p{margin:10px 0 14px;font-size:16px;line-height:1.6;color:var(--text-2);max-width:44ch}
+
+/* wide: sticky window */
+.mks-wt-grid.sticky{grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:56px}
+/* A step is about a third of the screen tall, so the lit step always sits beside the upper half of the window with its
+   neighbours dimmed above and below: the story reads as one list next to one screen, without empty stretches. */
+.mks-wt-grid.sticky .mks-wt-step{min-height:clamp(264px,34vh,340px);padding-bottom:44px}
+.mks-wt-grid.sticky .mks-wt-copy{opacity:.42;transition:opacity var(--motion-standard) var(--ease-vyntex)}
+.mks-wt-grid.sticky .mks-wt-step.on .mks-wt-copy{opacity:1}
+.mks-wt-grid.sticky .mks-wt-step.past .mks-wt-copy{opacity:.6}
+.mks-wt-step.past::after{transform:scaleY(1)}
+.mks-wt-step.past .mks-wt-node,.mks-wt-step.on .mks-wt-node{border-color:var(--accent-line);color:var(--accent)}
+.mks-wt-node::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:1px solid var(--accent);box-shadow:var(--glow-soft);opacity:0;transform:scale(.7);transition:opacity var(--motion-standard) var(--ease-vyntex),transform var(--motion-standard) var(--ease-vyntex)}
+.mks-wt-step.on .mks-wt-node{background:var(--surface-2);color:var(--ice)}
+.mks-wt-step.on .mks-wt-node::after{opacity:1;transform:none}
+.mks-wt-stage{min-width:0}
+.mks-wt-sticky{position:sticky;top:max(88px,calc(50vh - 280px));display:grid;align-items:start;min-width:0}
+.mks-wt-sticky .mks-wt-pane{grid-area:1/1;min-width:0;display:flex;opacity:0;visibility:hidden;transform:translateY(10px) scale(.992);transition:opacity var(--motion-standard) var(--ease-vyntex),transform var(--motion-standard) var(--ease-vyntex),visibility 0s linear var(--motion-standard)}
+.mks-wt-sticky .mks-wt-pane.on{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.mks-wt-sticky .mks-wt-pane>.vx-frame{flex:1}
+
+/* stacked: each step carries its own window */
+.mks-wt-grid.stack .mks-wt-step{padding-bottom:44px}
+.mks-wt-grid.stack .mks-wt-node{border-color:var(--accent-line);color:var(--accent)}
+.mks-wt-grid.stack .mks-wt-pane{margin-top:18px}
+@media (min-width:1024px){
+  /* reduced motion on a wide screen: text and window side by side, nothing moves */
+  .mks-wt-grid.stack .mks-wt-step{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:56px;padding-bottom:56px}
+  .mks-wt-grid.stack .mks-wt-pane{margin-top:0}
+}
+@media (max-width:640px){
+  .mks-wt-step{padding-left:42px}
+  .mks-wt-node{width:26px;height:26px;font-size:12px}
+  .mks-wt-step::before,.mks-wt-step::after{left:12.5px;top:26px}
+  .mks-wt-copy h3{font-size:20px}
+  .mks-wt-copy p{font-size:15.5px}
+  .mks-wt-grid.stack .mks-wt-pane{margin-left:-42px}
+  .mks-wt-grid.stack .mks-wt-step::before{display:none}
+}
+
+/* ---- window contents ---- */
+.mks-wide-only{font-weight:650}
+.mks-wt-stages{list-style:none;margin:0 0 6px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.mks-wt-stages li{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-s);padding:9px 10px;min-width:0}
+.mks-wt-stages b{display:block;font:700 21px/1.1 var(--font-display);color:var(--text);font-variant-numeric:tabular-nums}
+.mks-wt-stages span{display:block;font-size:12px;font-weight:650;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mks-wt-stages small{display:block;font-size:11.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.mks-wt-stages li.zero b{color:var(--text-3)}
+
+.mks-wt-from{display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-s);padding:9px 11px;max-width:340px;margin:0 auto}
+.mks-wt-from small,.mks-wt-rec small{display:block;font-size:11.5px;font-weight:650;color:var(--text-3)}
+.mks-wt-from b{display:block}
+.mks-wt-fork{display:block;width:100%;height:34px}
+.mks-wt-fork path{stroke:var(--accent);stroke-width:1.25;opacity:.7}
+.mks-wt-pair{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:12px;align-items:stretch}
+.mks-wt-rec{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-s);padding:12px 13px;min-width:0}
+.mks-wt-rec.main{border-color:var(--accent-line);background:linear-gradient(160deg,var(--cobalt-soft),transparent 60%),var(--surface-2)}
+.mks-wt-rec>b{display:block;font:700 15px/1.3 var(--font-display);color:var(--text);margin:2px 0 6px;overflow-wrap:anywhere}
+/* the value keeps its line; a long industry label ("Property manager / owner since") wraps instead */
+.mks-wt-rec .kv{margin-top:10px;font-size:13px;gap:4px 12px;grid-template-columns:minmax(0,max-content) minmax(max-content,1fr)}
+.mks-wt-rec .kv dt{overflow-wrap:anywhere}
+.mks-wt-rec .kv dd.num{text-align:left;font-family:var(--font-display)}
+.mks-wt-addr{margin-top:10px;font-size:12.5px;color:var(--text-3)}
+
+.mks-wt-week{list-style:none;margin:0 0 6px;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.mks-wt-week li{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-s);padding:7px 4px 8px;text-align:center;min-width:0}
+.mks-wt-week span{display:block;font-size:11px;font-weight:650;color:var(--text-3);text-transform:capitalize;overflow:hidden;white-space:nowrap}
+.mks-wt-week b{display:block;font:700 16px/1.25 var(--font-display);color:var(--text)}
+.mks-wt-week i{display:flex;justify-content:center;gap:3px;height:5px;margin-top:4px}
+.mks-wt-week u{width:5px;height:5px;border-radius:50%;background:var(--blue);text-decoration:none}
+.mks-wt-week li.now{border-color:var(--accent-line)}
+.mks-wt-week li.now b{color:var(--accent)}
+.mks-wt-week li.zero b{color:var(--text-3)}
+.mks-wt-when{flex:none;width:92px;font-size:12.5px;font-weight:700;color:var(--text)}
+.mks-wt-when small{font-weight:600}
+
+.mks-wt-due{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.mks-wt-by{display:flex;gap:7px;align-items:flex-start;margin-top:4px;font-size:12.5px;color:var(--text-3)}
+.mks-wt-by svg{flex:none;width:14px;height:14px;margin-top:2px;color:var(--ok)}
+.mks-wt-rule{margin-top:14px;border:1px solid var(--accent-line);border-radius:var(--radius-s);background:var(--accent-soft);padding:11px 13px}
+.mks-wt-rule p{font-size:13.5px;color:var(--text)}
+.mks-wt-rule p+p{margin-top:3px}
+.mks-wt-rule p b{display:inline-block;min-width:44px;font-size:11.5px;font-weight:750;color:var(--text-3)}
+.mks-wt-rule-h .mks-auto{font-size:12.5px}
+.mks-wt-kick{list-style:none;margin:7px 0 0;padding:0 0 0 13px;border-left:1px solid var(--accent-line)}
+.mks-wt-kick li{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:3px 0;font-size:13px}
+.mks-wt-kick small{flex:none;font-size:12px;color:var(--text-3)}
+
+.mks-wt-job{display:flex;align-items:center;gap:10px;padding-bottom:6px}
+.mks-wt-job b{display:block;font:700 15px/1.3 var(--font-display);color:var(--text)}
+.mks-wt-job small{display:block;font-size:12px;color:var(--text-3)}
+.mks-wt-ico{flex:none;width:17px;height:17px;color:var(--text-3)}
+.mks-wt-money{margin-top:10px;padding-top:12px;border-top:1px solid var(--line)}
+.mks-wt-money h3{color:var(--text)}
+.mks-wt-money h3 .num{font:650 12.5px var(--font-body);color:var(--text-2)}
+.mks-wt-pays{list-style:none;margin:10px 0 0;padding:0}
+.mks-wt-pays li{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) auto;gap:10px;font-size:13px;color:var(--text-2);padding:3px 0}
+.mks-wt-pays b{color:var(--text)}
+
+.mks-wt-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.mks-wt-kpis .kpi{padding:11px 13px 10px}
+.mks-wt-kpis .kpi .v{font-size:22px}
+.mks-wt-charts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
+.mks-wt-status{list-style:none;margin:0;padding:0}
+.mks-wt-status li{display:grid;grid-template-columns:minmax(0,128px) minmax(0,1fr) 18px;gap:8px;align-items:center;font-size:12.5px;color:var(--text-2);padding:4px 0}
+.mks-wt-status i{display:block;height:6px;border-radius:0 4px 4px 0;background:var(--surface-3)}
+.mks-wt-status u{display:block;height:100%;border-radius:0 4px 4px 0;background:var(--blue)}
+.mks-wt-status b{color:var(--text)}
+.mks-wt-cols{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:end}
+.mks-wt-cols li{display:flex;flex-direction:column;align-items:stretch;gap:4px;text-align:center;min-width:0}
+.mks-wt-cols small{font-size:11px;color:var(--text-2);text-align:center}
+.mks-wt-cols i{display:flex;align-items:flex-end;height:84px;border-bottom:1px solid var(--line-strong)}
+.mks-wt-cols u{display:block;width:100%;max-width:34px;margin:0 auto;border-radius:4px 4px 0 0;background:var(--blue)}
+.mks-wt-cols span{font-size:11.5px;font-weight:650;color:var(--text-3);text-transform:capitalize}
+
+@media (max-width:520px){
+  .mks-wide-only{display:none}
+  .mks-wt-stages{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mks-wt-pair,.mks-wt-charts{grid-template-columns:minmax(0,1fr)}
+  .mks-wt-fork{display:none}
+  .mks-wt-from{max-width:none;margin-bottom:10px}
+  .mks-wt-when{width:76px}
+  .mks-wt-week{gap:4px}
+}
+@media (prefers-reduced-motion:reduce){
+  .mks-wt-step::after,.mks-wt-node::after,.mks-wt-sticky .mks-wt-pane,.mks-wt-grid.sticky .mks-wt-copy{transition:none}
+}

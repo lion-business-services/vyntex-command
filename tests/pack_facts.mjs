@@ -2,8 +2,9 @@
 import { buildSync } from 'esbuild'; import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os'; import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'vx-facts-')), 'f.mjs');
-buildSync({ stdin: { contents: `import { PACK_LIST } from '@/packs'; import { makeT } from '@/i18n'; import { plansFor } from '@/lib/pricing'; globalThis.__f = { PACK_LIST, makeT, plansFor };`, resolveDir: root, loader: 'ts' }, bundle: true, format: 'esm', outfile: out, alias: { '@': path.join(root, 'src') }, loader: { '.json': 'json' }, logLevel: 'error', platform: 'node' });
+buildSync({ stdin: { contents: `import { PACK_LIST } from '@/packs'; import { loadAllSeeds, seedOf } from '@/packs/seeds'; globalThis.__seeds = { loadAllSeeds, seedOf }; import { makeT } from '@/i18n'; import { plansFor } from '@/lib/pricing'; globalThis.__f = { PACK_LIST, makeT, plansFor };`, resolveDir: root, loader: 'ts' }, bundle: true, format: 'esm', outfile: out, alias: { '@': path.join(root, 'src') }, loader: { '.json': 'json' }, logLevel: 'error', platform: 'node' });
 await import(pathToFileURL(out).href);
+await globalThis.__seeds.loadAllSeeds();
 const { PACK_LIST, makeT, plansFor } = globalThis.__f;
 const BANNED = { en: ['project', 'subcontractor', 'contract'], es: ['proyecto', 'subcontratista', 'contrato'] };
 const facts = PACK_LIST.map((p) => {
@@ -12,7 +13,7 @@ const facts = PACK_LIST.map((p) => {
     const t = makeT(lang, p);
     const texts = [];
     const walk = (v) => { if (typeof v === 'string') texts.push(v); else if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === 'object') Object.values(v).forEach(walk); };
-    walk([Object.values(p.terms[lang]), p.serviceTypes.map((s) => s[lang]), Object.values(p.agreement[lang]), p.seed(lang), p.kickoffTasks.map((x) => x[lang]), p.closeoutTasks.map((x) => x[lang]), p.blurb[lang]]);
+    walk([Object.values(p.terms[lang]), p.serviceTypes.map((s) => s[lang]), Object.values(p.agreement[lang]), globalThis.__seeds.seedOf(p.id)(lang), p.kickoffTasks.map((x) => x[lang]), p.closeoutTasks.map((x) => x[lang]), p.blurb[lang]]);
     const own = texts.filter((x) => !/^(project|contract|milestone|progress)$/.test(x)).join(' \n ').toLowerCase();
     o.allowed[lang] = BANNED[lang].filter((w) => new RegExp(`(?<![\\p{L}])${w}(s|es)?(?![\\p{L}])`, 'u').test(own));
     o.where = o.where || {}; o.where[lang] = Object.fromEntries(o.allowed[lang].map((w) => [w, (own.match(new RegExp(`.{0,40}(?<![\\p{L}])${w}(s|es)?(?![\\p{L}]).{0,30}`, 'u')) || [''])[0].replace(/\n/g, ' ')]));

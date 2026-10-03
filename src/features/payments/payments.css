@@ -1,7 +1,7 @@
-.payments-kpis{margin-bottom:16px}
+.payments-kpis{margin-bottom:20px}
 .payments-tabs{margin-bottom:12px}
 .payments-date{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--text-2)}
-.payments-date .input{width:auto;min-height:38px;padding:6px 9px;font-size:14px;font-weight:500;color:var(--text)}
+.payments-date .input{width:auto;min-height:40px;padding:6px 9px;font-size:14px;font-weight:500;color:var(--text)}
 .payments-ref{margin-left:8px}
 .payments-name{font-weight:700;text-decoration:none}.payments-name:hover{text-decoration:underline}
 .payments-sub{font-weight:500}
@@ -15,3 +15,12 @@
 /* totals row stacks like the rest of the table on phones */
 @media (max-width:720px){table.payments-tbl tfoot{display:block;width:100%;border-top:1px solid var(--line-strong)}table.payments-tbl tfoot td{border-top:0}}
 .payments-kpis button.kpi{display:flex;flex-direction:column;justify-content:flex-start}
+/* phones and touch screens: the row buttons become full tap targets */
+@media (pointer:coarse),(max-width:980px){.payments-rowact .btn.sm,.payments-filters .btn.sm,.payments-filters select{min-height:40px}}
+/* four figures stay in one row on laptops and tablets, two by two on phones: never three and an orphan */
+@media (min-width:700px){.payments-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:699px){.payments-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+@media (pointer:coarse),(max-width:980px){.payments-list .btn{min-height:40px}}
+/* laptops: long column titles wrap so the table fits its card instead of scrolling sideways by a few pixels */
+@media (min-width:721px) and (max-width:1180px){.payments-tbl th{white-space:normal;vertical-align:bottom}}

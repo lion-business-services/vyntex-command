@@ -1,6 +1,6 @@
 // Leads: every request from first contact to a won job. Table and pipeline views over the same data.
 import { useMemo, useState } from 'react';
-import { LuPlus, LuTable, LuKanban, LuCalendarClock, LuPencil, LuTrash2, LuTrophy, LuCircleX, LuRotateCcw, LuMail, LuBellRing } from 'react-icons/lu';
+import { LuPlus, LuTable, LuKanban, LuCalendarClock, LuPencil, LuTrash2, LuTrophy, LuCircleX, LuRotateCcw, LuMail, LuBellRing, LuArrowRightLeft, LuChevronDown } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
 import { A, go, useRoute } from '@/app/router';
 import { BackLink } from '@/app/Shell';
@@ -14,6 +14,8 @@ import { activityFor, byId, isOpenLead } from '@/domain/selectors';
 import type { Lead, LeadSource, LeadStage, Priority } from '@/domain/types';
 import { money, sum } from '@/lib/money';
 import { today } from '@/lib/dates';
+import './work.css';
+import './board.css';
 import './leads.css';
 
 const STAGES: LeadStage[] = ['new', 'contacted', 'scheduled', 'sent', 'won', 'lost'];
@@ -46,7 +48,7 @@ function LeadList() {
   const [source, setSource] = useState<'' | LeadSource>('');
   const [owner, setOwner] = useState('');
   const [pri, setPri] = useState<'' | Priority>('');
-  const [form, setForm] = useState(false);
+  const [form, setForm] = useState(() => route.query.get('new') === '1');
   const [lost, setLost] = useState<Lead | null>(null);
   const next = useNextStep();
 
@@ -74,10 +76,10 @@ function LeadList() {
       <PageHeader title={t('leads.title')} sub={t('leads.sub')} actions={<>
         <Seg label={t('leads.view')} value={view} onChange={(v) => go(v === 'board' ? '/leads?view=board' : '/leads')} options={[
           { value: 'table', label: <><LuTable aria-hidden="true" />{t('leads.view.table')}</> }, { value: 'board', label: <><LuKanban aria-hidden="true" />{t('leads.view.board')}</> }]} />
-        <Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)} data-testid="leads-new">{t('leads.new')}</Button>
+        <Button variant={data.leads.length ? 'primary' : 'default'} icon={<LuPlus />} onClick={() => setForm(true)} data-testid="leads-new">{t('leads.new')}</Button>
       </>} />
 
-      <div className="filters">
+      <div className="filters leads-filters">
         <SearchBox value={q} onChange={setQ} placeholder={t('leads.search')} />
         {view === 'table' && (
           <select value={stage} onChange={(e) => setStage(e.target.value as typeof stage)} aria-label={t('leads.col.stage')} data-testid="leads-filter-stage">
@@ -96,14 +98,14 @@ function LeadList() {
         </select>
         {filtered && <button type="button" className="linkbtn small" onClick={clear}>{t('common.clearFilters')}</button>}
       </div>
-      <p className="small muted leads-sum">{t('leads.open', { n: open.length })} · {t('leads.pipeline')}: <b>{money(sum(open, (l) => l.value))}</b></p>
+      {data.leads.length > 0 && <p className="small muted leads-sum">{t('leads.open', { n: open.length })} · {t('leads.pipeline')}: <b>{money(sum(open, (l) => l.value))}</b></p>}
 
       {!data.leads.length ? (
-        <Empty title={t('leads.empty')} action={<Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)}>{t('leads.new')}</Button>}>{t('leads.emptyHint')}</Empty>
+        <Card className="work-none"><Empty title={t('leads.empty')} action={<Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)}>{t('leads.new')}</Button>}>{t('leads.emptyHint')}</Empty></Card>
       ) : view === 'board' ? (
         <Board leads={base} onMove={move} />
       ) : !rows.length ? (
-        <Empty title={t('common.noResults')} action={<Button onClick={clear}>{t('common.clearFilters')}</Button>} />
+        <Card className="work-none"><Empty title={t('common.noResults')} action={<Button onClick={clear}>{t('common.clearFilters')}</Button>} /></Card>
       ) : (
         <Card flush>
           <div className="table-wrap">
@@ -142,6 +144,9 @@ function Board({ leads, onMove }: { leads: Lead[]; onMove: (l: Lead, to: LeadSta
   const { t } = useApp();
   const [over, setOver] = useState<LeadStage | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  /** The card that was just moved and where to, so it can settle once in its new column. */
+  const [landed, setLanded] = useState<{ id: string; to: LeadStage } | null>(null);
+  const moveTo = (l: Lead, to: LeadStage) => { if (l.status !== to) setLanded({ id: l.id, to }); onMove(l, to); };
   const next = useNextStep();
   return (
     <div className="kanban leads-board" data-testid="leads-board">
@@ -150,18 +155,18 @@ function Board({ leads, onMove }: { leads: Lead[]; onMove: (l: Lead, to: LeadSta
         return (
           <section key={s} className={cx('kcol', over === s && 'over')} aria-label={t('ls_' + s)} data-stage={s}
             onDragOver={(e) => { e.preventDefault(); setOver(s); }} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOver(null); }}
-            onDrop={(e) => { e.preventDefault(); setOver(null); const l = leads.find((x) => x.id === (e.dataTransfer.getData('text/plain') || dragging)); if (l) onMove(l, s); setDragging(null); }}>
+            onDrop={(e) => { e.preventDefault(); setOver(null); const l = leads.find((x) => x.id === (e.dataTransfer.getData('text/plain') || dragging)); if (l) moveTo(l, s); setDragging(null); }}>
             <div className="kcol-h"><span>{t('ls_' + s)} <span className="count">{col.length}</span></span><span className="small muted">{money(sum(col, (l) => l.value))}</span></div>
             <div className="kcol-b">
               {col.map((l) => {
                 const n = next(l);
                 return (
-                  <article key={l.id} className="kcard" draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', l.id); e.dataTransfer.effectAllowed = 'move'; setDragging(l.id); }} onDragEnd={() => { setDragging(null); setOver(null); }} data-lead={l.id}>
+                  <article key={l.id} className={cx('kcard', dragging === l.id && 'drag', landed?.id === l.id && landed.to === l.status && 'landed')} draggable onDragStart={(e) => { e.dataTransfer.setData('text/plain', l.id); e.dataTransfer.effectAllowed = 'move'; setDragging(l.id); }} onDragEnd={() => { setDragging(null); setOver(null); }} data-lead={l.id}>
                     <div className="row between nowrap top"><A to={`/leads/${l.id}`} className="t leads-name">{l.name}</A><PriorityBadge pri={l.pri} /></div>
                     <div className="small muted">{t('ty_' + l.type)}{l.value ? ` · ${money(l.value)}` : ''}</div>
                     {n && <div className={cx('xs', n.late ? 'neg strong' : 'dim')}>{n.text}</div>}
-                    <label className="leads-move"><span className="sr">{t('leads.moveTo')}</span>
-                      <select value={l.status} onChange={(e) => onMove(l, e.target.value as LeadStage)} aria-label={`${t('leads.moveTo')}: ${l.name}`}>
+                    <label className="leads-move"><span><LuArrowRightLeft aria-hidden="true" />{t('leads.moveTo')}<LuChevronDown aria-hidden="true" /></span>
+                      <select value={l.status} onChange={(e) => moveTo(l, e.target.value as LeadStage)} aria-label={`${t('leads.moveTo')}: ${l.name}`}>
                         {STAGES.map((x) => <option key={x} value={x}>{t('ls_' + x)}</option>)}
                       </select>
                     </label>
@@ -242,7 +247,7 @@ function LeadDetail({ id }: { id: string }) {
       <div className="split">
         <div className="stack">
           {open ? (
-            <Card title={t('leads.stage')}>
+            <Card title={t('leads.stage')} className="leads-stage raised">
               <p className="small muted" style={{ marginBottom: 10 }}>{t('leads.stageHint')}</p>
               <Seg label={t('leads.stage')} value={lead.status} onChange={(s) => act(setLeadStage, lead.id, s)} options={OPEN_STAGES.map((s) => ({ value: s, label: t('ls_' + s) }))} />
               <div className="leads-next">

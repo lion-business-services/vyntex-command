@@ -1,7 +1,6 @@
 // VYNTEX EVENTS: industry pack for event setup & staffing.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
-import { seed } from './seed';
 
 export const eventsPack: IndustryPack = {
   id: "events",
@@ -187,5 +186,4 @@ export const eventsPack: IndustryPack = {
     { en: "Ask the client for a review", es: "Pedir una reseña al cliente", dueIn: 3, for: 'owner', pri: 'low' },
   ],
   compliance: true,
-  seed,
 };

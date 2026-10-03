@@ -1,0 +1,84 @@
+/* VYNTEX brand pieces. Everything uses the tokens of ui/styles.css. */
+
+/* scroll reveal: fade, rise, clear. Quick, so nobody waits for information. */
+.vx-reveal{opacity:0;transform:translateY(16px);filter:blur(4px);transition:opacity var(--motion-reveal) var(--ease-vyntex),transform var(--motion-reveal) var(--ease-vyntex),filter var(--motion-reveal) var(--ease-vyntex);will-change:opacity,transform}
+.vx-reveal.panel{transform:translateY(24px) scale(.985);filter:none}
+.vx-reveal.in{opacity:1;transform:none;filter:none;will-change:auto}
+
+/* flat mark */
+.vx-mark{display:block;flex:none;object-fit:contain;height:auto}
+
+/* dimensional mark */
+.vx3d{position:relative;aspect-ratio:680/538;perspective:1200px;--px:0;--py:0;width:100%}
+.vx3d-light{position:absolute;inset:-10% -14% -14%;background:radial-gradient(46% 44% at 56% 50%,rgba(10,139,240,.38),transparent 70%),radial-gradient(30% 28% at 50% 80%,rgba(0,221,255,.26),transparent 72%);filter:blur(26px);transform:translate3d(calc(var(--px)*-10px),calc(var(--py)*-10px),0);opacity:.9}
+/* a soft copy of the mark set back in space: the light it throws behind itself */
+.vx3d-glow{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform:translateZ(-60px) scale(1.06);filter:blur(16px) saturate(1.5);opacity:.42}
+.vx3d-float{position:absolute;inset:0;transform-style:preserve-3d}
+.vx3d-plane{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateY(calc(-5deg + var(--px)*3deg)) rotateX(calc(3deg + var(--py)*-2.5deg)) translate3d(calc(var(--px)*8px),calc(var(--py)*8px),0)}
+.vx3d-plane>img:not(.vx3d-glow){position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 22px 26px rgba(0,0,0,.5))}
+.vx3d-sweep{position:absolute;inset:0;clip-path:polygon(5.1% 6.9%,26.9% 6.9%,53.8% 56.7%,48.8% 65.4%,29% 26%,15.4% 26%);background:linear-gradient(105deg,transparent 43%,rgba(255,255,255,.2) 47%,rgba(255,255,255,.78) 50%,rgba(255,255,255,.2) 53%,transparent 57%);background-size:220% 100%;background-position:100% 0;opacity:0;transform:translateZ(1px)}
+.vx3d-circuit{position:absolute;inset:0;width:100%;height:100%;transform:translateZ(1px);overflow:visible}
+.vx3d-circuit .p{stroke:var(--ice);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:9 91;stroke-dashoffset:109;opacity:0;filter:drop-shadow(0 0 5px var(--cyan))}
+.vx3d-circuit .n{fill:var(--ice);stroke:none;opacity:0;filter:drop-shadow(0 0 7px var(--cyan));transform-box:fill-box;transform-origin:center}
+.vx3d[data-live] .vx3d-float{animation:vx-float var(--motion-ambient) ease-in-out infinite}
+.vx3d[data-live] .vx3d-light{animation:vx-breathe var(--motion-ambient) ease-in-out infinite}
+.vx3d[data-live] .vx3d-sweep{animation:vx-sweep var(--motion-ambient) ease-in-out .7s infinite}
+.vx3d[data-live] .vx3d-circuit .p{animation:vx-pulse var(--motion-ambient) linear 2s infinite}
+.vx3d[data-live] .vx3d-circuit .p2{animation-delay:3.4s}.vx3d[data-live] .vx3d-circuit .p3{animation-delay:4.8s}
+.vx3d[data-live] .vx3d-circuit .n{animation:vx-node var(--motion-ambient) ease-out 2s infinite}
+.vx3d[data-live] .vx3d-circuit .n2{animation-delay:3.4s}.vx3d[data-live] .vx3d-circuit .n3{animation-delay:3.9s}.vx3d[data-live] .vx3d-circuit .n4{animation-delay:4.8s}
+@keyframes vx-float{0%,100%{transform:translate3d(0,-5px,0)}50%{transform:translate3d(0,6px,0)}}
+@keyframes vx-breathe{0%,100%{opacity:.7}50%{opacity:1}}
+@keyframes vx-sweep{0%{background-position:100% 0;opacity:0}2%{opacity:1}18%{background-position:30% 0;opacity:1}21%,100%{background-position:30% 0;opacity:0}}
+@keyframes vx-pulse{0%{stroke-dashoffset:109;opacity:0}2%{opacity:1}17%{stroke-dashoffset:9;opacity:1}20%,100%{stroke-dashoffset:9;opacity:0}}
+@keyframes vx-node{0%,24%,100%{opacity:0;transform:scale(.6)}3%{opacity:.95;transform:scale(1)}14%{opacity:.4;transform:scale(1)}}
+
+/* lockup */
+.vx-lockup{display:inline-flex;align-items:center;gap:10px;text-decoration:none;min-width:0}
+.vx-lockup-t{display:flex;flex-direction:column;min-width:0;line-height:1.05}
+.vx-word{font-family:var(--font-display);font-weight:800;letter-spacing:.14em;font-size:15px;white-space:nowrap}
+.vx-lockup.sm .vx-word{font-size:13.5px;letter-spacing:.13em}
+.vx-lockup.lg .vx-word{font-size:22px;letter-spacing:.15em}
+.vx-lockup .vx-tag{font-size:10.5px;font-weight:650;color:var(--text-3);letter-spacing:.02em;margin-top:4px;white-space:nowrap}
+.vx-lockup.lg .vx-tag{font-size:12.5px;margin-top:6px}
+
+/* circuit trace */
+.vx-trace{display:block;overflow:visible;pointer-events:none}
+.vx-trace .l{stroke:var(--accent);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:100;stroke-dashoffset:100;opacity:.75;transition:stroke-dashoffset var(--motion-cinematic) var(--ease-vyntex)}
+.vx-trace.in .l{stroke-dashoffset:0}
+.vx-trace .nd{fill:var(--bg);stroke:var(--accent);stroke-width:1.5;opacity:0;transition:opacity var(--motion-reveal) var(--ease-vyntex) calc(var(--motion-cinematic) * .7)}
+.vx-trace.in .nd{opacity:1}
+.vx-trace .s{stroke:var(--ice);stroke-width:2;stroke-linecap:round;stroke-dasharray:6 94;stroke-dashoffset:106;opacity:0;filter:drop-shadow(0 0 4px var(--cyan))}
+.vx-trace.in.pulse .s{animation:vx-run 6s linear 1.2s infinite}
+@keyframes vx-run{0%{stroke-dashoffset:106;opacity:0}5%{opacity:1}45%{stroke-dashoffset:6;opacity:1}50%,100%{stroke-dashoffset:6;opacity:0}}
+
+/* product window */
+.vx-frame{position:relative;background:linear-gradient(180deg,#0E1420,#0A0F18);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 30px 70px rgba(0,0,0,.55),0 0 60px rgba(10,139,240,.10);overflow:hidden;min-width:0}
+.vx-frame::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(200,215,235,.55) 22%,rgba(0,221,255,.75) 68%,transparent)}
+.vx-frame.tilt{transform:perspective(1600px) rotateY(-3.2deg) rotateX(1.6deg);transform-origin:60% 50%}
+.vx-frame-h{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.015)}
+.vx-frame-b{flex:none;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent);font:800 12px var(--font-display)}
+.vx-frame-b:empty{display:none}
+.vx-frame-t{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.vx-frame-t b{font:700 13.5px var(--font-display);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vx-frame-t small{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text-3)}
+.vx-frame-dots{display:flex;gap:5px}.vx-frame-dots i{width:7px;height:7px;border-radius:50%;background:var(--surface-4)}
+.vx-frame-n{padding:6px 14px;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-bottom:1px solid var(--line)}
+.vx-frame-c{padding:14px}
+@media (max-width:900px){.vx-frame.tilt{transform:none}}
+
+/* scroll progress */
+.vx-progress{position:fixed;left:0;right:0;top:0;height:2px;z-index:120;pointer-events:none;--p:0}
+.vx-progress::before{content:"";position:absolute;left:0;top:0;height:1px;width:100%;background:linear-gradient(90deg,var(--blue),var(--cyan));transform-origin:0 0;transform:scaleX(var(--p));opacity:.85}
+.vx-progress i{position:absolute;top:-2px;left:calc(var(--p) * 100%);width:5px;height:5px;margin-left:-3px;border-radius:50%;background:var(--ice);box-shadow:0 0 8px var(--cyan)}
+
+@media (prefers-reduced-motion:reduce){
+  .vx-reveal{opacity:1;transform:none;filter:none}
+  .vx-trace .l{stroke-dashoffset:0}.vx-trace .nd{opacity:1}
+  .vx-progress{display:none}
+}
+@media print{
+  .vx-progress,.vx3d{display:none!important}
+  .vx-reveal{opacity:1!important;transform:none!important;filter:none!important;transition:none!important}
+  .vx-trace .l{stroke-dashoffset:0!important}.vx-trace .nd{opacity:1!important}
+}
