@@ -74,3 +74,7 @@
 }
 @media (pointer:coarse),(max-width:980px){.reports .btn,.reports .seg button{min-height:40px}}
 
+
+/* professional services: many breakdowns per tab, so the selector scrolls sideways on a phone instead of wrapping */
+.reports-bar>div .seg{max-width:100%;overflow-x:auto}
+.reports-emptynote{text-align:center;margin:0 auto 6px}

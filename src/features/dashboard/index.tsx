@@ -3,26 +3,31 @@
 // 6 what the automations handled · 7 next steps suggested by VYNTEX AI.
 // Every figure is derived from the data (domain/selectors plus ./insights) and every figure opens the list behind it.
 // Note for memo dependencies: the store replaces `data` on every change but keeps the lists inside it, so depend on `data`.
-import { Fragment, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { Fragment, lazy, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import {
   LuArrowUpRight, LuBanknote, LuBriefcase, LuCalendarCheck, LuCalendarClock, LuCalendarDays, LuChartColumn, LuChevronRight, LuCircleCheckBig, LuClockAlert, LuCompass,
   LuFilePen, LuFileWarning, LuListChecks, LuPhoneCall, LuPlus, LuShieldAlert, LuSparkles, LuUserPlus, LuWallet, LuX, LuZap,
 } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
+import { DEPLOY } from '@/config/deployment';
 import { A, go, refPath } from '@/app/router';
 import type { PageProps } from '@/app/routes';
 import { setPrefs } from '@/store/store';
 import { Button, Card, IconButton, Seg, cx, type Tone } from '@/ui';
-import { ActivityList, JobStatusBadge, PlanBadge, TaskRow } from '@/app/shared';
+import { ActivityList, JobStatusBadge, PlanBadge, TaskRow, CanWrite } from '@/app/shared';
 import { ClientPaymentModal, TaskFormModal } from '@/app/forms';
 import { Arrow } from '@/brand';
 import { assigneeName, byId, calendarEvents, isActiveJob, isDueToday, isOpenLead, isOverdue, jobMoney, kpiValues, notices, type CalEvent, type EventKind, type Notice } from '@/domain/selectors';
+import { openStages } from '@/domain/config';
 import type { Permission } from '@/domain/permissions';
 import type { LeadStage, Task } from '@/domain/types';
 import type { KpiId } from '@/packs/types';
 import { addDays, fmtDate, relDay, today } from '@/lib/dates';
 import { money, pct, sum } from '@/lib/money';
-import { ruleName, stepText } from '@/features/automations/format';
+import { runRuleName, stepText } from '@/features/automations/format';
+import { assistantOn } from '@/features/assistant/deploy';
+import { visibleLeads } from '@/domain/access';
+import { effectiveRules, shippedRules } from '@/domain/rules/engine';
 import { VISIT_DAYS, WEEKS, collectedByMonth, figures, recommendations, stateParts, trends, type RecIcon } from './insights';
 import { Quiet, Spark, Swap, TrendMark } from './parts';
 import './dashboard.css';
@@ -55,15 +60,23 @@ const GROUPS: { kind: Notice['kind']; more: string; needs?: Permission; icon: Re
   { kind: 'newLead', more: '/leads', icon: <LuUserPlus /> },
 ];
 const TONES: Notice['tone'][] = ['bad', 'warn', 'info'];
-const OPEN_STAGES: LeadStage[] = ['new', 'contacted', 'scheduled', 'sent'];
 const EVENT_TONE: Record<EventKind, Tone> = { appt: 'violet', follow: 'warn', start: 'info', end: 'ok', visit: 'accent', task: 'neutral' };
 const PRI_RANK = { high: 0, medium: 1, low: 2 } as const;
 const REC_ICON: Record<RecIcon, ReactNode> = { follow: <LuPhoneCall />, task: <LuClockAlert />, balance: <LuWallet />, paper: <LuFileWarning />, doc: <LuFilePen />, lead: <LuUserPlus />, calendar: <LuCalendarDays />, money: <LuBanknote /> };
 const compact = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 });
 const TASKS_SHOWN = 3, JOBS_SHOWN = 5, EVENTS_SHOWN = 5;
 
-export default function DashboardPage(_: PageProps) {
-  const { t, data, prefs, pack, lang, can, date, day, time, dateTime } = useApp();
+/** The home screen of an office that serves clients through engagements and appointments (./practice.tsx). */
+const PracticeDashboard = lazy(() => import('./practice'));
+
+/** Which home screen an edition gets is the edition's own choice (`family` in its pack): field work, or a practice. */
+export default function DashboardPage(props: PageProps) {
+  const { pack } = useApp();
+  return pack.family === 'practice' ? <PracticeDashboard /> : <FieldDashboard {...props} />;
+}
+
+function FieldDashboard(_: PageProps) {
+  const { t, data, prefs, pack, lang, can, perms, user, date, day, time, dateTime, live } = useApp();
   const [taskForm, setTaskForm] = useState<{ task?: Task } | null>(null);
   const [payForm, setPayForm] = useState(false);
   const [whose, setWhose] = useState<'mine' | 'team' | null>(null);
@@ -91,8 +104,10 @@ export default function DashboardPage(_: PageProps) {
   /** "1 item" and "3 items" are separate sentences in both languages. */
   const n1 = (key: string, n: number, extra?: Record<string, string | number>) => t(n === 1 ? key + '.one' : key, { n, ...extra });
 
-  const kpi = useMemo(() => kpiValues(data), [data]);
-  const allNotices = useMemo(() => notices(data, { compliance: pack.compliance }), [data, pack.compliance]);
+  // leads of other offices stay out of the figures and the notices, as they do in the lead list
+  const myLeads = useMemo(() => visibleLeads(data, user, perms), [data, user, perms]);
+  const kpi = useMemo(() => kpiValues(data, myLeads), [data, myLeads]);
+  const allNotices = useMemo(() => { const mayOpen = new Set(myLeads.map((l) => l.id)); return notices(data, { compliance: pack.compliance }).filter((n) => n.ref.type !== 'lead' || mayOpen.has(n.ref.id)); }, [data, pack.compliance, myLeads]);
   const fig = useMemo(() => figures(data, kpi), [data, kpi]);
   const trend = trends(fig, t, lang);
 
@@ -140,8 +155,8 @@ export default function DashboardPage(_: PageProps) {
   const activeShown = active.slice(0, JOBS_SHOWN);
 
   /* ---------- 5. pipeline and revenue ---------- */
-  const openLeads = data.leads.filter(isOpenLead);
-  const stages = OPEN_STAGES.map((s) => { const list = openLeads.filter((l) => l.status === s); return { stage: s, n: list.length, value: sum(list, (l) => l.value) }; });
+  const openLeads = myLeads.filter((l) => isOpenLead(l, data));
+  const stages = openStages(data, pack).map(({ id: s }) => { const list = openLeads.filter((l) => l.status === s); return { stage: s, n: list.length, value: sum(list, (l) => l.value) }; });
   const byValue = stages.some((s) => s.value > 0);
   const pipeMax = Math.max(1, ...stages.map((s) => (byValue ? s.value : s.n)));
   const months = useMemo(() => (can('money') ? collectedByMonth(data, lang) : []), [data, lang, prefs.viewAs]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -151,9 +166,10 @@ export default function DashboardPage(_: PageProps) {
   const moneyKinds = /^(payment\.|worker\.paid|expense\.|invoice\.)/;
   const activity = data.activity.filter((a) => (can('money') || !moneyKinds.test(a.kind)) && (can('team') || a.ref.type !== 'worker'));
   const runs = can('automations') ? data.automation.runs.slice(0, 4) : [];
+  const rules = effectiveRules(data, pack); const shipped = shippedRules(pack);
 
   /* ---------- 7. suggested next steps ---------- */
-  const recs = useMemo(() => (can('assistant') ? recommendations({ data, pack, lang, t, can, date, day, notices: allNotices, kpi }) : []), [data, pack, lang, prefs.viewAs, allNotices, kpi]); // eslint-disable-line react-hooks/exhaustive-deps
+  const recs = useMemo(() => (can('assistant') && assistantOn(data, pack) ? recommendations({ data, pack, lang, t, can, date, day, notices: allNotices, kpi }) : []), [data, pack, lang, prefs.viewAs, allNotices, kpi]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ---------- 2. key figures ---------- */
   const tiles = pack.kpis.filter((id) => KPI[id] && (!KPI[id].needs || can(KPI[id].needs!)));
@@ -229,7 +245,7 @@ export default function DashboardPage(_: PageProps) {
               {runs.map((r) => (
                 <li key={r.id}>
                   <A to="/automations" className="dash-run dash-row">
-                    <span className="grow"><b>{ruleName(r.ruleId, t)}</b><span className="small muted dash-ev-s">{r.steps[0] ? stepText(r.steps[0], t, date) : ''}{r.steps.length > 1 ? ` ${t('dash.auto.more', { n: r.steps.length - 1 })}` : ''}</span></span>
+                    <span className="grow"><b>{runRuleName(r.ruleId, rules, shipped, t, lang)}</b><span className="small muted dash-ev-s">{r.steps[0] ? stepText(r.steps[0], t, date) : ''}{r.steps.length > 1 ? ` ${t('dash.auto.more', { n: r.steps.length - 1 })}` : ''}</span></span>
                     <span className="xs dim nowrap">{dateTime(r.at)}</span>
                   </A>
                 </li>
@@ -259,14 +275,15 @@ export default function DashboardPage(_: PageProps) {
           </p>
         </div>
         <div className="dash-actions" role="group" aria-label={t('dash.actions')}>
-          {can('leads') && <A to="/leads" className="btn" data-testid="dash-new-lead"><LuUserPlus aria-hidden="true" />{t('dash.act.lead')}</A>}
-          {can('tasks') && <Button icon={<LuListChecks aria-hidden="true" />} onClick={() => setTaskForm({})} data-testid="dash-new-task">{t('dash.act.task')}</Button>}
-          {can('money') && <Button icon={<LuWallet aria-hidden="true" />} onClick={() => setPayForm(true)} data-testid="dash-record-payment">{t('dash.act.payment')}</Button>}
-          {can('jobs') && <A to="/jobs?new=1" className="btn primary" data-testid="dash-new-job"><LuBriefcase aria-hidden="true" />{t('newProject')}</A>}
+          {can('leads') && <CanWrite><A to="/leads" className="btn" data-testid="dash-new-lead"><LuUserPlus aria-hidden="true" />{t('dash.act.lead')}</A></CanWrite>}
+          {can('tasks') && <CanWrite><Button icon={<LuListChecks aria-hidden="true" />} onClick={() => setTaskForm({})} data-testid="dash-new-task">{t('dash.act.task')}</Button></CanWrite>}
+          {can('money') && <CanWrite><Button icon={<LuWallet aria-hidden="true" />} onClick={() => setPayForm(true)} data-testid="dash-record-payment">{t('dash.act.payment')}</Button></CanWrite>}
+          {can('jobs') && <CanWrite><A to="/jobs?new=1" className="btn primary" data-testid="dash-new-job"><LuBriefcase aria-hidden="true" />{t('newProject')}</A></CanWrite>}
         </div>
       </header>
 
-      {!prefs.tourSeen && (
+      {/* the guided tour exists only in the public demo */}
+      {DEPLOY.publicDemo && !live && !prefs.tourSeen && (
         <section className="dash-tour" data-testid="dash-tour" aria-label={t('demo.tour')}>
           <LuCompass aria-hidden="true" className="dash-tour-ico" />
           <p className="grow"><b>{t('dash.tour.title')}</b> <span className="muted dash-tour-t">{t('dash.tour.text')}</span></p>
@@ -336,7 +353,7 @@ export default function DashboardPage(_: PageProps) {
             <Card flush className="dash-o3" title={<>{t('dash.active.title')}{active.length > 0 && <span className="count">{active.length}</span>}</>} actions={<A to="/jobs" className="btn sm ghost">{t('dash.active.all')}</A>}>
               <div data-testid="dash-active">
                 {!active.length ? (
-                  <Quiet pad icon={<LuBriefcase />} title={<><b>{t('dash.active.empty')}</b> {t('dash.active.emptyHint')}</>}><A to="/jobs?new=1" className="btn sm"><LuPlus aria-hidden="true" />{t('newProject')}</A></Quiet>
+                  <Quiet pad icon={<LuBriefcase />} title={<><b>{t('dash.active.empty')}</b> {t('dash.active.emptyHint')}</>}><CanWrite><A to="/jobs?new=1" className="btn sm"><LuPlus aria-hidden="true" />{t('newProject')}</A></CanWrite></Quiet>
                 ) : (
                   <div className="table-wrap">
                     <table className="tbl stackable dash-jobs">
@@ -406,7 +423,7 @@ export default function DashboardPage(_: PageProps) {
                   <section data-testid="dash-revenue" aria-label={t('dash.rev.title')}>
                     <h3 className="dash-h3">{t('dash.rev.title')}</h3>
                     {!months.length ? (
-                      <Quiet icon={<LuChartColumn />} title={t('dash.rev.empty')}><Button size="sm" icon={<LuPlus aria-hidden="true" />} onClick={() => setPayForm(true)}>{t('dash.act.payment')}</Button></Quiet>
+                      <Quiet icon={<LuChartColumn />} title={t('dash.rev.empty')}><CanWrite><Button size="sm" icon={<LuPlus aria-hidden="true" />} onClick={() => setPayForm(true)}>{t('dash.act.payment')}</Button></CanWrite></Quiet>
                     ) : (
                       <>
                         <ol className="dash-rev" style={{ '--cols': months.length } as CSSProperties}>
@@ -465,7 +482,7 @@ export default function DashboardPage(_: PageProps) {
                         <Quiet icon={<LuListChecks />} title={dueNow.length ? t('dash.today.emptyMine', { n: dueNow.length }) : <><b>{t('dash.today.empty')}</b> {t('dash.today.emptyHint')}</>}>
                           {dueNow.length
                             ? <Button size="sm" onClick={() => setWhose('team')}>{t('dash.today.showTeam')}</Button>
-                            : <Button size="sm" icon={<LuPlus aria-hidden="true" />} onClick={() => setTaskForm({})}>{t('dash.act.task')}</Button>}
+                            : <CanWrite><Button size="sm" icon={<LuPlus aria-hidden="true" />} onClick={() => setTaskForm({})}>{t('dash.act.task')}</Button></CanWrite>}
                         </Quiet>
                       )}
                     </div>
@@ -480,7 +497,7 @@ export default function DashboardPage(_: PageProps) {
           )}
 
           {/* 7. next steps suggested by VYNTEX AI: rules over the records, the assistant takes it from there */}
-          {can('assistant') && (
+          {can('assistant') && assistantOn(data, pack) && (
             <section className="card premium dash-ai dash-o6" data-testid="dash-ai" aria-labelledby="dash-ai-h">
               <div className="dash-ai-h">
                 <span className="dash-ai-mark cut" aria-hidden="true"><LuSparkles /></span>

@@ -1,8 +1,9 @@
 // VYNTEX BUILD: industry pack for construction.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
+import { fieldPack } from '../blueprint';
 
-export const buildPack: IndustryPack = {
+export const buildPack: IndustryPack = /* @__PURE__ */ fieldPack({
   id: "build",
   product: "VYNTEX BUILD",
   label: { en: "Construction", es: "Construcción" },
@@ -88,4 +89,4 @@ export const buildPack: IndustryPack = {
     { en: "Send the warranty letter and ask for a review", es: "Enviar la carta de garantía y pedir una reseña", dueIn: 7, for: 'owner', pri: 'low' },
   ],
   compliance: true,
-};
+});

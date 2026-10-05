@@ -1,0 +1,143 @@
+# Runs on every pull request and on every change to main. A pull request cannot be merged until every job here passes
+# (branch protection, docs/security/github-settings.md).
+#
+# Security of this workflow itself:
+#   * it uses NO secrets. A pull request from a fork runs exactly the same steps with a read-only token, and there is
+#     nothing for it to steal. The event is "pull_request", never "pull_request_target".
+#   * every action is pinned to a full commit, with the version in a comment. Dependabot proposes updates.
+#   * the token starts with no permissions; each job asks for the one it needs (reading the code).
+#   * the database is a throwaway PostgreSQL inside the job. No job here can reach a Supabase project.
+#   * library install scripts do not run (npm ci --ignore-scripts).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  # a newer push to the same pull request replaces the older run; runs on main always finish
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Typecheck, checks and both builds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install libraries exactly as package-lock.json records them
+        run: npm ci --ignore-scripts
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Pricing, wording and sample data checks
+        run: npm run check
+      - name: Build VYNTEX Command
+        run: node scripts/build.mjs
+      - name: Build LBS Command
+        run: node scripts/build.mjs --deploy lbs
+      - name: The two builds are separate products (neither carries the other's brand, name or routes)
+        run: npm run test:split
+      - name: Bundle scan, VYNTEX Command
+        run: node scripts/security/scan-bundle.mjs dist --deploy vyntex
+      - name: Bundle scan, LBS Command
+        run: node scripts/security/scan-bundle.mjs dist-lbs --deploy lbs
+      - name: Browser protections in vercel.json
+        run: node scripts/security/check-headers.mjs
+
+  tests:
+    name: Unit, server and security tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install libraries exactly as package-lock.json records them
+        run: npm ci --ignore-scripts
+      # The server tests start their own throwaway PostgreSQL (tests/server/pg_local.sh), and the backup drill does
+      # too. Both need the PostgreSQL programs and age; they are installed from the runner's own package source when
+      # the runner image does not already have them.
+      - name: PostgreSQL programs and age
+        run: |
+          if [ ! -x /usr/lib/postgresql/16/bin/initdb ] || ! command -v age >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-16 age
+          fi
+          /usr/lib/postgresql/16/bin/initdb --version
+          age --version
+      - name: Secret scan of the working tree
+        run: node scripts/security/scan-secrets.mjs
+      - name: Personal data scan of the working tree
+        run: node scripts/security/scan-pii.mjs
+      - name: Unit tests
+        run: npm run test:unit
+      # Server tests: sign-in, sessions, second step, CSRF, rate limits, webhooks, integrations with imitated
+      # providers. Their own runner starts one throwaway PostgreSQL and runs the files one after another.
+      - name: Server tests
+        run: npm run test:server
+      - name: Security tests (the scans, the header check, the container server)
+        run: node --test "tests/security/*.test.mjs"
+      - name: Security documents point at files and tests that exist, and no screen claims a certification
+        run: node scripts/security/check-evidence.mjs
+      - name: Backup and restore drill (encrypted backup, restore on a new server, compare)
+        run: bash scripts/backup/restore-test.sh
+
+  database:
+    name: Database rules on PostgreSQL 16
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    services:
+      postgres:
+        # A throwaway server for this job only: no data, no secret, reachable only from this job, gone when it ends.
+        # That is why it may accept connections without a password. To pin the image by digest, replace the tag with
+        # postgres:16@sha256:<digest> (docker buildx imagetools inspect postgres:16 prints it).
+        image: postgres:16
+        env:
+          POSTGRES_USER: supabase_admin
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U supabase_admin"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install libraries exactly as package-lock.json records them
+        run: npm ci --ignore-scripts
+      - name: psql
+        run: |
+          command -v psql >/dev/null || { sudo apt-get update -qq; sudo apt-get install -y -qq postgresql-client; }
+          psql --version
+      - name: Isolation, role matrix, audit, encryption, consent, and parity with the app code
+        run: bash .github/scripts/db-tests.sh

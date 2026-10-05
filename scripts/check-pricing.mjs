@@ -1,8 +1,12 @@
 // Guards the commercial source of truth: every plan-based capability in src/domain/entitlements.ts must quote a line
 // that exists in config/vyntex-build-pricing.json for that plan, and no price may be typed anywhere in src/.
+// An edition may be missing from the pricing file only when its pack says so (`priced: false`): then it shows no plan and no
+// price anywhere and is quoted on request. A pack that says it is priced must be in the file, and the other way round.
+import { buildSync } from 'esbuild';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pricing = JSON.parse(fs.readFileSync(path.join(root, 'config/vyntex-build-pricing.json'), 'utf8'));
 const ent = fs.readFileSync(path.join(root, 'src/domain/entitlements.ts'), 'utf8');
@@ -46,5 +50,29 @@ for (const p of pricing.plans) for (const k of ['applies_to', 'excludes', 'yearl
   const line = p.welcome_credit?.[k];
   if (line && !pricingPage.includes(line.replace(/'/g, "\\'")) && !pricingPage.includes(line)) { console.error(`✗ welcome credit condition of ${p.name} has no wording on the pricing page: "${line}"`); bad++; }
 }
+
+// editions against the pricing file
+const packsOut = path.join(fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'vx-pricing-')), 'packs.mjs');
+buildSync({
+  stdin: { contents: `import { PACK_LIST } from '@/packs'; import { PRICED_EDITIONS, plansFor, planByTier } from '@/lib/pricing'; import { standing } from '@/domain/entitlements';
+    globalThis.__pricing = { packs: PACK_LIST.map((p) => ({ id: p.id, product: p.product, priced: p.priced, plans: plansFor(p.id).length, tier0: !!planByTier(p.id, 0), standing: standing('core', p.id, 0).state })), inFile: PRICED_EDITIONS };`, resolveDir: root, loader: 'ts' },
+  bundle: true, format: 'esm', outfile: packsOut, alias: { '@': path.join(root, 'src') }, loader: { '.json': 'json', '.css': 'empty' }, logLevel: 'error', platform: 'node',
+  define: { 'process.env.NODE_ENV': '"production"', __VX_DEPLOY__: '"vyntex"', __VX_SAMPLE_PREVIEW__: 'false' },
+});
+await import(pathToFileURL(packsOut).href);
+const products = new Set([pricing.product, ...pricing.other_industries.products]);
+let unpriced = 0;
+for (const p of globalThis.__pricing.packs) {
+  const listed = products.has(p.product);
+  if (p.priced && !listed) { console.error(`✗ edition ${p.id} (${p.product}) says it is priced but is not in the pricing file`); bad++; }
+  if (!p.priced && listed) { console.error(`✗ edition ${p.id} (${p.product}) is in the pricing file but its pack says it is not priced`); bad++; }
+  if (p.priced && p.plans !== 3) { console.error(`✗ edition ${p.id}: expected 3 plans, the pricing library returns ${p.plans}`); bad++; }
+  if (!p.priced) {
+    unpriced++;
+    // an edition that is quoted must get nothing from the pricing library: no plan list, no plan by tier, no plan standing
+    if (p.plans !== 0 || p.tier0 || p.standing !== 'none') { console.error(`✗ edition ${p.id} is not priced, yet the pricing library still answers with a plan for it`); bad++; }
+  }
+}
+for (const name of products) if (!globalThis.__pricing.packs.some((p) => p.product === name)) { console.error(`✗ the pricing file lists "${name}" but no edition has that product name`); bad++; }
 if (bad) { console.error(`${bad} pricing problem(s)`); process.exit(1); }
-console.log('pricing check passed (version ' + pricing.version + ')');
+console.log(`pricing check passed (version ${pricing.version}, ${globalThis.__pricing.packs.length - unpriced} priced editions, ${unpriced} quoted on request)`);

@@ -7,7 +7,7 @@ import { LuRotateCcw, LuSparkles } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
 import { Link, appPath } from '@/app/router';
 import { Arrow, Reveal, useInView, usePrefersReducedMotion } from '@/brand';
-import { can as roleCan } from '@/domain/permissions';
+import { can as roleCan } from '@/domain/config';
 import { isOpenLead } from '@/domain/selectors';
 import { describe, interpret, suggestions, type Block, type Card, type Env, type Item, type Reply } from '@/features/assistant/engine';
 import { today } from '@/lib/dates';
@@ -51,12 +51,12 @@ export function AiSection() {
   // the same environment the Assistant page builds, always as the owner of the sample company
   const env: Env = useMemo(() => {
     const owner = app.data.users.find((u) => u.role === 'owner') ?? app.data.users[0];
-    return { data: app.data, pack: app.pack, lang: app.lang, t: app.t, can: (p) => roleCan('owner', p), date: app.date, day: app.day, time: app.time, actor: owner?.id ?? '' };
+    return { data: app.data, pack: app.pack, lang: app.lang, t: app.t, can: (p) => roleCan(app.data, app.pack, 'owner', p), date: app.date, day: app.day, time: app.time, actor: owner?.id ?? '' };
   }, [app]);
   const talk = useMemo(() => {
     const ask = firstUnderstood([t('mk.s.ai.q1'), t('mk.s.ai.q1b'), t('asst.chip.due')], env, 'answer');
     const td = today();
-    const lead = data.leads.find((l) => isOpenLead(l) && !!l.followUp && l.followUp <= td) ?? data.leads.find(isOpenLead);
+    const lead = data.leads.find((l) => isOpenLead(l, data) && !!l.followUp && l.followUp <= td) ?? data.leads.find((l) => isOpenLead(l, data));
     const act = firstUnderstood([t('mk.s.ai.q2'), ...(lead ? [t('mk.s.ai.q2b', { name: lead.name })] : []), t('asst.chip.task')], env, 'proposal');
     const card: Card | null = act?.reply.proposal ? describe(act.reply.proposal, env) : null;
     return { ask, act, card, lines: ask ? toLines(ask.reply.blocks) : [], more: suggestions(env).filter((q) => q !== ask?.q && q !== act?.q).slice(0, 3) };

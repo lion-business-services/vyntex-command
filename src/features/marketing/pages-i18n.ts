@@ -47,6 +47,8 @@ export const dict: Dict = {
     'mk.p2.rd.done.sent': 'What we received',
     'mk.p2.rd.done.demo': 'Explore the demo meanwhile',
     'mk.p2.rd.notSent': 'Not sent',
+    'mk.p2.pr.quoted.lede': 'This edition is set up and quoted for each business.', 'mk.p2.pr.quoted.h': 'Quoted on request',
+    'mk.p2.pr.quoted.p': '{product} has no published plan or price. Tell us about the business and what it needs, and we prepare a quote.', 'mk.p2.pr.quoted.cta': 'Request a quote',
   },
   es: {
     'mk.p2.cta.request': 'Solicitar una demo',
@@ -89,5 +91,7 @@ export const dict: Dict = {
     'mk.p2.rd.done.sent': 'Lo que recibimos',
     'mk.p2.rd.done.demo': 'Explorar la demo mientras tanto',
     'mk.p2.rd.notSent': 'No enviada',
+    'mk.p2.pr.quoted.lede': 'Esta edición se configura y se cotiza para cada negocio.', 'mk.p2.pr.quoted.h': 'Se cotiza a pedido',
+    'mk.p2.pr.quoted.p': '{product} no tiene un plan ni un precio publicado. Cuéntenos del negocio y de lo que necesita, y preparamos una cotización.', 'mk.p2.pr.quoted.cta': 'Solicitar una cotización',
   },
 };

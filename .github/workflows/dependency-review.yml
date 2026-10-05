@@ -1,0 +1,33 @@
+# Reads the libraries a pull request adds or changes and stops it when one has a known vulnerability of moderate
+# severity or worse. The summary in the job also lists each new library's licence, for a person to read.
+#
+# On a private repository this needs GitHub Code Security (the dependency graph is free; the review is not, at the
+# time of writing; confirm on GitHub's pricing page). docs/security/github-settings.md, step 6.
+#
+# No secrets are used, so it also runs for pull requests from forks. The action is pinned to a full commit.
+name: Dependency review
+
+on:
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: dependency-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: New or changed libraries
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: never

@@ -1,8 +1,9 @@
 // VYNTEX HAUL: industry pack for junk removal & moving.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
+import { fieldPack } from '../blueprint';
 
-export const haulPack: IndustryPack = {
+export const haulPack: IndustryPack = /* @__PURE__ */ fieldPack({
   id: "haul",
   product: "VYNTEX HAUL",
   label: { en: "Junk removal & moving", es: "Retiro de basura y mudanzas" },
@@ -186,4 +187,4 @@ export const haulPack: IndustryPack = {
     { en: "Ask the client for a review", es: "Pedir una reseña al cliente", dueIn: 3, for: 'owner', pri: 'low' },
   ],
   compliance: true,
-};
+});

@@ -2,7 +2,7 @@
 // Every entry points at the exact line in the pricing file it comes from, and scripts/check-pricing.mjs fails the
 // build if that line disappears. Capabilities the pricing file does not mention are marked `preview`, never "included".
 import type { IndustryId } from './types';
-import { ADD_ONS, planByTier, type Plan, type PlanTier } from '@/lib/pricing';
+import { ADD_ONS, isPriced, planByTier, type Plan, type PlanTier } from '@/lib/pricing';
 
 export type Commercial =
   | { kind: 'plan'; tier: PlanTier; /** Exact feature text in the pricing file. */ source: string }
@@ -45,15 +45,22 @@ export const ENTITLEMENTS = {
 export type EntitlementId = keyof typeof ENTITLEMENTS;
 
 export interface Standing {
-  /** included = part of the viewed plan; upgrade = part of a higher plan; the rest mirror the commercial kind. */
-  state: 'included' | 'upgrade' | 'addon' | 'usage' | 'custom' | 'preview';
+  /**
+   * included = part of the viewed plan; upgrade = part of a higher plan; the rest mirror the commercial kind.
+   * none = plans do not apply here (an edition that is quoted, or a deployment that shows no plans): nothing is shown.
+   */
+  state: 'included' | 'upgrade' | 'addon' | 'usage' | 'custom' | 'preview' | 'none';
   /** Plan where the capability first appears, when it is plan-based. */
   plan?: Plan;
   addOnId?: string;
 }
 
+/** What every capability answers where plans do not apply. */
+export const NO_PLANS: Standing = { state: 'none' };
+
 /** How a capability stands for someone on the given plan of the given edition. */
 export function standing(id: EntitlementId, industry: IndustryId, tier: PlanTier): Standing {
+  if (!isPriced(industry)) return NO_PLANS;
   const e: Commercial = ENTITLEMENTS[id];
   if (e.kind === 'plan') return { state: tier >= e.tier ? 'included' : 'upgrade', plan: planByTier(industry, e.tier) };
   if (e.kind === 'preview') return { state: 'preview' };

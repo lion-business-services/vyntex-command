@@ -1,8 +1,9 @@
 // VYNTEX TURNOVER: industry pack for property turnover & make-ready.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
+import { fieldPack } from '../blueprint';
 
-export const turnoverPack: IndustryPack = {
+export const turnoverPack: IndustryPack = /* @__PURE__ */ fieldPack({
   id: "turnover",
   product: "VYNTEX TURNOVER",
   label: { en: "Property turnover & make-ready", es: "Preparación de propiedades (make-ready)" },
@@ -184,4 +185,4 @@ export const turnoverPack: IndustryPack = {
     { en: "Pay the subcontractors", es: "Pagar a los subcontratistas", dueIn: 3, for: 'owner' },
   ],
   compliance: true,
-};
+});

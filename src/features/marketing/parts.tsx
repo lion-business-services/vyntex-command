@@ -8,7 +8,7 @@ import { setLanguage } from '@/store/store';
 import { BRAND } from '@/config/brand';
 import { Lockup, ScrollProgress } from '@/brand';
 import type { IndustryPack } from '@/packs/types';
-import type { TFn } from '@/i18n';
+import { pick, type TFn } from '@/i18n';
 import { cx } from '@/ui';
 
 export type MkPageId = 'home' | 'pricing' | 'request';
@@ -179,9 +179,9 @@ export function MkFooter({ current }: { current?: MkPageId }) {
     <footer className="mk-foot">
       <div className="mk-wrap mk-foot-in">
         <div className="mk-foot-brand">
-          <Lockup size="md" tagline={BRAND.descriptor[lang]} />
+          <Lockup size="md" tagline={pick(BRAND.descriptor, lang)} />
           <p className="mk-foot-legal">{t('mk.foot.legal', { legal: BRAND.legalName, company: BRAND.company })}</p>
-          <p className="mk-foot-tag">{BRAND.tagline[lang]}</p>
+          <p className="mk-foot-tag">{pick(BRAND.tagline, lang)}</p>
         </div>
         <div className="mk-foot-co">
           <h2>{t('mk.foot.contact')}</h2>

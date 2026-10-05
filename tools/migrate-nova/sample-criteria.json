@@ -1,0 +1,22 @@
+{
+  "_readme": "The explicit list of what counts as a sample or test record. A record that matches is skipped, listed in the needs-review file with the rule that matched, and can be let through with the decision 'load'. Nothing else is ever treated as a sample.",
+  "recordIds": [
+    "dddddddd-2000-0000-0000-000000000001",
+    "dddddddd-2000-0000-0000-000000000002",
+    "bbbbbbbb-0000-0000-0000-000000000001",
+    "bbbbbbbb-0000-0000-0000-000000000002",
+    "aaaaaaaa-0000-0000-0000-000000000001",
+    "aaaaaaaa-0000-0000-0000-000000000002",
+    "aaaaaaaa-0000-0000-0000-000000000003",
+    "aaaaaaaa-0000-0000-0000-000000000004",
+    "aaaaaaaa-0000-0000-0000-000000000005"
+  ],
+  "legacyServiceNames": [
+    "Individual Tax Return (1040)", "ITIN Application", "Business Formation (LLC)", "Monthly Bookkeeping", "Payroll Service",
+    "Weekly lawn maintenance", "Spring cleanup", "Snow removal", "Window cleaning", "Pressure washing"
+  ],
+  "emailDomains": ["example.com", "example.org", "example.net", "test.com"],
+  "emailTlds": ["example", "test", "localhost"],
+  "phonePatterns": ["555[^0-9]?01[0-9]{2}$"],
+  "nameWords": ["test", "testing", "tester", "sample", "example", "ejemplo", "prueba", "demo"]
+}

@@ -1,14 +1,16 @@
-// Writes tests/.pack-facts.json: per industry, the product, sample company and which BUILD words the pack itself legitimately uses.
+// Writes tests/.pack-facts.json: per edition, the product, sample company, whether it is priced, its screens and stages, and which
+// BUILD words the pack itself legitimately uses.
 import { buildSync } from 'esbuild'; import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os'; import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(fs.mkdtempSync(path.join(process.env.TMPDIR || os.tmpdir(), 'vx-facts-')), 'f.mjs');
-buildSync({ stdin: { contents: `import { PACK_LIST } from '@/packs'; import { loadAllSeeds, seedOf } from '@/packs/seeds'; globalThis.__seeds = { loadAllSeeds, seedOf }; import { makeT } from '@/i18n'; import { plansFor } from '@/lib/pricing'; globalThis.__f = { PACK_LIST, makeT, plansFor };`, resolveDir: root, loader: 'ts' }, bundle: true, format: 'esm', outfile: out, alias: { '@': path.join(root, 'src') }, loader: { '.json': 'json' }, logLevel: 'error', platform: 'node' });
+buildSync({ stdin: { contents: `import { PACK_LIST } from '@/packs'; import { loadAllSeeds, seedOf } from '@/packs/seeds'; globalThis.__seeds = { loadAllSeeds, seedOf }; import { makeT } from '@/i18n'; import { plansFor } from '@/lib/pricing'; globalThis.__f = { PACK_LIST, makeT, plansFor };`, resolveDir: root, loader: 'ts' }, bundle: true, format: 'esm', outfile: out, alias: { '@': path.join(root, 'src') }, loader: { '.json': 'json' }, logLevel: 'error', platform: 'node', define: { __VX_DEPLOY__: '"vyntex"', __VX_SAMPLE_PREVIEW__: 'false' } });
 await import(pathToFileURL(out).href);
 await globalThis.__seeds.loadAllSeeds();
 const { PACK_LIST, makeT, plansFor } = globalThis.__f;
 const BANNED = { en: ['project', 'subcontractor', 'contract'], es: ['proyecto', 'subcontratista', 'contrato'] };
 const facts = PACK_LIST.map((p) => {
-  const o = { id: p.id, product: p.product, company: p.sampleCompany.name, recurring: p.recurring, kpis: p.kpis, plans: plansFor(p.id).map((x) => ({ id: x.id, name: x.name, nameEs: x.nameEs, monthly: x.monthly, yearly: x.yearly, setup: x.setup })), allowed: {}, words: {} };
+  const o = { id: p.id, product: p.product, company: p.sampleCompany.name, recurring: p.recurring, kpis: p.kpis, family: p.family, priced: p.priced, usesWorkers: p.usesWorkers, compliance: p.compliance,
+    modules: p.modules, stages: p.leadStages.map((s) => ({ id: s.id, kind: s.kind, role: s.role ?? null })), plans: plansFor(p.id).map((x) => ({ id: x.id, name: x.name, nameEs: x.nameEs, monthly: x.monthly, yearly: x.yearly, setup: x.setup })), allowed: {}, words: {} };
   for (const lang of ['en', 'es']) {
     const t = makeT(lang, p);
     const texts = [];

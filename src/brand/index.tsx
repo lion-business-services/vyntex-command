@@ -1,10 +1,20 @@
-// VYNTEX brand pieces shared by the sales pages and the workspace: the V mark (flat and dimensional), the product lockup,
-// circuit traces, the product window frame and the scroll-reveal helpers. Motion here follows the tokens in ui/styles.css
-// and switches itself off for visitors who ask for reduced motion, on touch devices and while off screen.
+// Brand pieces shared by the sales pages and the workspace: the V mark (flat and dimensional), the product lockup,
+// circuit traces, the product window frame and the scroll-reveal helpers. `BrandMark` and `BrandLockup` give the mark and
+// lockup of the deployment being built (VYNTEX Command or LBS Command); the LBS pieces themselves are in ./lbs.
+// Motion here follows the tokens in ui/styles.css and switches itself off for visitors who ask for reduced motion,
+// on touch devices and while off screen.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { asset } from '@/app/router';
 import { BRAND } from '@/config/brand';
+import { LbsLockup, LionMark } from './lbs';
 import './brand.css';
+
+// Which brand this bundle carries. `BrandMark` and `BrandLockup` test the build constant itself (the one
+// config/deployment.ts turns into DEPLOY), written out at the branch: the bundler folds that test to true or false and
+// leaves the other brand's components and the addresses of its pictures out of the bundle. It does not do that for a
+// value read from another file, or for a named constant, so the test is repeated rather than shared.
+// `DEPLOY.theme` says the same thing at run time.
+declare const __VX_DEPLOY__: string | undefined;
 
 /* ---------- environment ---------- */
 export function usePrefersReducedMotion(): boolean {
@@ -108,6 +118,19 @@ export function Lockup({ size = 'md', tagline, mark = true }: { size?: 'sm' | 'm
       </span>
     </span>
   );
+}
+
+/* ---------- the brand of this deployment ---------- */
+/**
+ * The mark of whichever product this bundle is: the V for VYNTEX Command, the lion for LBS Command. Same props as `VMark`.
+ * `size` is the width of the V; the lion is taller than wide, so it is drawn a little taller to carry the same weight.
+ */
+export function BrandMark({ size = 28, className }: { size?: number; className?: string }) {
+  return typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs' ? <LionMark size={Math.round(size * 1.3)} className={className} /> : <VMark size={size} className={className} />;
+}
+/** The product lockup of this deployment. Same props as `Lockup`. Use this in shared screens (sidebar, sign-in, emails). */
+export function BrandLockup(props: { size?: 'sm' | 'md' | 'lg'; tagline?: string; mark?: boolean }) {
+  return typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs' ? <LbsLockup {...props} /> : <Lockup {...props} />;
 }
 
 /* ---------- circuit trace ---------- */

@@ -1,8 +1,9 @@
 // VYNTEX LANDSCAPE: industry pack for landscaping.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
+import { fieldPack } from '../blueprint';
 
-export const landscapePack: IndustryPack = {
+export const landscapePack: IndustryPack = /* @__PURE__ */ fieldPack({
   id: "landscape",
   product: "VYNTEX LANDSCAPE",
   label: { en: "Landscaping", es: "Jardinería" },
@@ -195,4 +196,4 @@ export const landscapePack: IndustryPack = {
     { en: "Ask for a review and offer a maintenance plan", es: "Pedir una reseña y ofrecer un plan de mantenimiento", dueIn: 5, for: 'owner', pri: 'low' },
   ],
   compliance: true,
-};
+});

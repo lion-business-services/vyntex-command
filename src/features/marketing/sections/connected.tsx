@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '@/app/hooks';
 import { Lockup, Reveal, useInView } from '@/brand';
 import { BRAND } from '@/config/brand';
+import { pick } from '@/i18n';
 import { cx } from '@/ui';
 import { Head, useMedia } from './shared';
 import './connected.css';
@@ -78,7 +79,7 @@ export function ConnectedSection() {
             <div className="mks-co-hub">
               <Lockup size="md" />
               <div className="mks-co-say" data-testid="mk-co-say">
-                {cur ? <><p><b>{name(cur.id)}.</b> {t(`mk.s.co.${cur.id}.p`)}</p><p className="mks-co-joins">{joins(cur)}</p></> : <p className="mks-co-tag">{BRAND.descriptor[lang]}</p>}
+                {cur ? <><p><b>{name(cur.id)}.</b> {t(`mk.s.co.${cur.id}.p`)}</p><p className="mks-co-joins">{joins(cur)}</p></> : <p className="mks-co-tag">{pick(BRAND.descriptor, lang)}</p>}
               </div>
             </div>
             <ul className="mks-co-nodes">
@@ -98,7 +99,7 @@ export function ConnectedSection() {
         </Reveal>
       ) : (
         <div className="mks-co-stack">
-          <Reveal className="mks-co-top"><Lockup size="md" tagline={BRAND.descriptor[lang]} /></Reveal>
+          <Reveal className="mks-co-top"><Lockup size="md" tagline={pick(BRAND.descriptor, lang)} /></Reveal>
           <ul className="mks-co-list" data-testid="mk-co-list">
             {PARTS.map((p, i) => (
               <Reveal as="li" key={p.id} delay={Math.min(i, 6) * 40} className={p.id === 'ai' ? 'ai' : undefined}>

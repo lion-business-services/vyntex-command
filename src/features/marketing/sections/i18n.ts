@@ -119,6 +119,8 @@ export const dict: Dict = {
     'mk.s.cl.h1': 'Your business.', 'mk.s.cl.h2': 'Under command.',
     'mk.s.cl.p': 'One intelligent platform configured around your team, workflows, clients and operations.',
     'mk.s.cl.request': 'Request your demo', 'mk.s.cl.demo': 'Explore live demo',
+    'mk.s.pl.quoted.h': 'Quoted on request:', 'mk.s.pl.quoted.p': '{product} has no published plan or price. It is set up and quoted for each business.',
+    'mk.s.pl.quoted.note': 'Tell us about the business and what it needs, and we prepare a quote.', 'mk.s.pl.quoted.cta': 'Request a quote',
   },
   es: {
     'mk.s.sample': 'Empresa de ejemplo. Los registros son inventados, el producto es real.',
@@ -236,5 +238,7 @@ export const dict: Dict = {
     'mk.s.cl.h1': 'Su negocio.', 'mk.s.cl.h2': 'Bajo su mando.',
     'mk.s.cl.p': 'Una plataforma inteligente configurada alrededor de su equipo, sus procesos, sus clientes y su operación.',
     'mk.s.cl.request': 'Solicite su demo', 'mk.s.cl.demo': 'Explorar la demo en vivo',
+    'mk.s.pl.quoted.h': 'Se cotiza a pedido:', 'mk.s.pl.quoted.p': '{product} no tiene un plan ni un precio publicado. Se configura y se cotiza para cada negocio.',
+    'mk.s.pl.quoted.note': 'Cuéntenos del negocio y de lo que necesita, y preparamos una cotización.', 'mk.s.pl.quoted.cta': 'Solicitar una cotización',
   },
 };

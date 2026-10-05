@@ -262,3 +262,73 @@ button.dash-more{margin-top:10px}
   .dash-kpi-h{padding-right:0}
 }
 @media (max-width:380px){.dash-actions .btn{padding:6px 8px;font-size:13px;gap:6px}}
+
+/* =====================================================================================================================
+   Home screen of the professional-services edition (./practice.tsx) and the client links block (./links.tsx).
+   Same tokens and the same row and tile language as above; nothing here names a brand.
+   ===================================================================================================================== */
+/* a count in the greeting is a button: it opens that list in "Today at a glance" */
+.dash-statebtn{background:none;border:0;padding:0;font:inherit;color:var(--text);font-weight:700;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px;text-decoration-color:var(--line-strong);transition:text-decoration-color var(--motion-fast) var(--ease-vyntex)}
+.dash-statebtn:hover{text-decoration-color:var(--accent)}
+
+/* client links */
+.dash-linkcard{display:flex;flex-direction:column;gap:12px}
+.dash-linkcard-h h2{font-size:17px}
+.dash-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px}
+.dash-links.compact{grid-template-columns:minmax(0,1fr)}
+.dash-link{display:flex;align-items:center;gap:12px;min-width:0;padding:12px 14px;border:1px solid var(--line-strong);border-radius:var(--radius);background:var(--surface-2)}
+.dash-link.unset{border-style:dashed;background:transparent}
+.dash-link-ico{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:var(--radius-s);background:var(--accent-soft);color:var(--accent)}
+.dash-link.unset .dash-link-ico{background:var(--neutral-soft);color:var(--text-3)}
+.dash-link-ico svg{width:17px;height:17px}
+.dash-link-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dash-link-t b{font-size:15px;overflow-wrap:anywhere}
+.dash-link-url{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-link-none{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dash-link-a{flex:none;flex-wrap:wrap;justify-content:flex-end}
+.dash-links-add{display:inline-flex;align-items:center;gap:5px;justify-self:start;align-self:center}
+.dash-links-add svg{width:14px;height:14px}
+.dash-linkadd{display:flex;align-items:center;gap:6px 14px;flex-wrap:wrap}
+.dash-linkadd .dash-links{display:block}
+@media (max-width:640px){
+  .dash-link{flex-wrap:wrap}
+  .dash-link-t{flex:1 1 60%}
+  .dash-link-a{flex:1 1 100%;justify-content:flex-start;padding-left:46px}
+  .dash-link-a .btn.sm{min-height:40px}
+}
+
+/* today at a glance: eight counts as tabs, the panel under them lists what was counted */
+.dash-glance{display:flex;flex-direction:column;gap:14px}
+.dash-glance-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.dash-glance-h h2{font-size:18px}
+.dash-g-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.dash-g-tile{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"ico v" "k k" "h h";align-items:center;column-gap:10px;row-gap:2px;padding:12px 14px;min-width:0;text-align:left;color:inherit;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);transition:border-color var(--motion-fast) var(--ease-vyntex),background var(--motion-fast) var(--ease-vyntex),transform var(--motion-fast) var(--ease-vyntex)}
+.dash-g-tile:hover{border-color:var(--accent-line);transform:translateY(-1px)}
+.dash-g-tile[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 -2px 0 var(--accent)}
+.dash-g-ico{grid-area:ico;display:grid;place-items:center;width:30px;height:30px;border-radius:var(--radius-s);background:var(--surface-3);color:var(--text-2)}
+.dash-g-ico svg{width:16px;height:16px}
+.dash-g-tile[aria-selected="true"] .dash-g-ico{background:var(--accent);color:var(--accent-ink)}
+.dash-g-v{grid-area:v;font-family:var(--font-title);font-size:24px;font-weight:700;line-height:1.25;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dash-g-tile.zero .dash-g-v{color:var(--text-3)}
+.dash-g-tile.late .dash-g-v{color:var(--bad)}
+.dash-g-k{grid-area:k;font-size:12.5px;font-weight:650;color:var(--text-2);line-height:1.3;margin-top:4px}
+.dash-g-h{grid-area:h;font-size:12px;color:var(--text-3)}
+.dash-g-panel{border-top:1px solid var(--line);padding-top:12px}
+.dash-g-ph{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.dash-g-ph h3{display:flex;align-items:center;gap:8px;font-size:14.5px}
+.dash-g-ph .btn svg{width:14px;height:14px}
+.dash-g-rows{list-style:none;margin:0;padding:0}
+.dash-g-row{display:flex;align-items:center;gap:12px;padding:9px 10px;margin:0 -10px;border-radius:var(--radius-s);text-decoration:none;color:inherit;min-width:0}
+.dash-g-rt{display:flex;flex-direction:column;min-width:0}
+.dash-g-rt b{overflow-wrap:anywhere}
+.dash-g-rt .small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-g-warn{color:var(--warn);font-weight:650}
+@media (max-width:1100px){.dash-g-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}.dash-g-tile{padding:10px 11px}.dash-g-v{font-size:21px}}
+@media (max-width:760px){.dash-g-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* the firm's figures */
+.dash-firm{display:flex;flex-direction:column;gap:10px}
+.dash-firm-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dash-firm-h h2{font-size:18px}
+.dash-pr-grid.one{grid-template-columns:minmax(0,1fr)}
+.dash-p .dash-day+.dash-day{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}

@@ -1,0 +1,26 @@
+# REFERENCE ONLY. The one way in from the internet: HTTPS only, one host. The overlay sets the host name.
+# The certificate secret is created by the cluster's certificate tool (for example cert-manager); it is not in Git.
+# The application sends its own security headers (the same as vercel.json), so none are added here.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: command
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "5m"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: ["HOST.example.com"]
+      secretName: command-tls
+  rules:
+    - host: HOST.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: command
+                port:
+                  name: http

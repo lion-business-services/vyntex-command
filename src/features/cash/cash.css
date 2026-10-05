@@ -1,0 +1,57 @@
+/* Petty cash, and the small pieces the office screens share (.ops-*). Tokens only, so both brands and both themes follow. */
+.cash-drawers{margin:-4px 0 14px;max-width:100%;overflow-x:auto}
+.cash-kpis{margin-bottom:18px}
+.cash-kpis .kpi .v{font-size:24px}
+@media (min-width:700px){.cash-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:699px){.cash-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cash .tabs{margin-bottom:12px}
+.cash-date{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--text-2)}
+.cash-date .input{width:auto;min-height:38px;padding:6px 9px;font-size:14px;font-weight:500;color:var(--text)}
+.cash-tbl td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.cash-what{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.cash-what>span:last-child{min-width:0}
+.cash-dir{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--neutral-soft);color:var(--text-2)}
+.cash-dir.in{background:var(--ok-soft);color:var(--ok)}
+.cash-dir svg{width:14px;height:14px}
+.cash-memo{display:block;overflow-wrap:anywhere;font-weight:500}
+.cash-receipt{display:block;margin-top:2px}
+.cash-act{width:1%;white-space:nowrap}
+.cash-lock{display:inline-flex;align-items:center;gap:4px;color:var(--text-3)}
+.cash-lock svg{width:13px;height:13px}
+/* the count of a day reads as a ruled line across the ledger, not as one more entry */
+.cash-closeline td{background:var(--surface-2);border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong)}
+.cash-closetag{display:inline-flex;align-items:center;gap:6px;font-weight:700}
+.cash-closetag svg{width:15px;height:15px;color:var(--accent)}
+.cash-ok{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--ok);font-weight:650}
+.cash-ok svg{width:14px;height:14px}
+.cash-foot{margin-top:10px;max-width:86ch}
+.cash-formnote{margin-bottom:12px}
+.cash-histnote{margin-bottom:10px}
+.cash-expected{display:flex;align-items:center;min-height:40px;font-family:var(--font-title);font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.cash .note,.modal .note{margin-top:12px}
+.cash-cats{list-style:none;margin:0 0 12px;padding:0;border:1px solid var(--line);border-radius:var(--radius-s)}
+.cash-cats li{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-bottom:1px solid var(--line);font-size:14px}
+.cash-cats li:last-child{border-bottom:0}
+/* wide enough for its placeholder to be read whole */
+.cash-filters .searchbox{min-width:260px}
+@media (max-width:720px){
+  .cash-date{flex:1 1 140px}.cash-date .input{flex:1;min-width:0}
+  .cash-filters .searchbox{flex:1 1 100%;max-width:none}
+  .cash-filters select{flex:1 1 calc(50% - 4px);min-width:0;min-height:40px}
+  table.tbl.stackable td.cash-act{width:100%;justify-content:flex-end}
+  table.cash-tbl tfoot{display:block;width:100%;border-top:1px solid var(--line-strong)}
+}
+@media (pointer:coarse),(max-width:980px){.cash .btn.sm,.cash-filters select{min-height:40px}}
+
+/* shared by the office screens */
+.ops-money{display:flex;align-items:center;gap:0;min-height:40px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--radius-s);transition:border-color var(--motion-fast) var(--ease-vyntex),box-shadow var(--motion-fast) var(--ease-vyntex)}
+.ops-money>span{padding:0 2px 0 11px;color:var(--text-3);font-weight:700}
+.field .ops-money input,.ops-money input{flex:1;min-width:0;width:100%;min-height:38px;padding:8px 11px 8px 4px;background:transparent;border:0;box-shadow:none;color:var(--text);font-variant-numeric:tabular-nums}
+.field .ops-money input:focus,.ops-money input:focus{outline:none;box-shadow:none}
+.ops-money:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field.err .ops-money{border-color:var(--bad)}
+.ops-file{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ops-file svg{width:14px;height:14px;flex:none;color:var(--text-3)}
+.ops-filelink{display:inline-flex;align-items:center;gap:4px;max-width:100%}
+.ops-filelink svg{width:13px;height:13px;flex:none}
+.ops-fileimg{display:block;max-width:100%;max-height:60vh;margin:0 auto;border-radius:var(--radius-s)}

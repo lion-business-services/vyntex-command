@@ -1,33 +1,29 @@
-// Business actions for Messages. In demo mode an email is only ever prepared or marked as "sent in the demo":
-// nothing leaves the browser.
+// The actions the list of prepared emails has always used, kept under their names because other modules call them
+// (Documents prepares its "email to client" with `composeMessage`). Each one now goes through the one function that
+// decides what may be written to a client, `queueMessage` in src/domain/actions/messages.ts, so the same rules apply
+// whoever asks. In a sample workspace an email is only ever prepared or marked as sent: nothing leaves the browser.
 import type { DemoState, Message, Ref } from '@/domain/types';
-import { type Ctx, logActivity } from '@/domain/context';
+import type { Ctx } from '@/domain/context';
+import { discardDraft, queueMessage, sendDraft, updateDraft } from '@/domain/actions/messages';
 import { nowIso } from '@/lib/dates';
 import { uid } from '@/lib/id';
 
 export interface MessageInput { to: string; subject: string; body: string; ref: Ref }
 
-const also = (d: DemoState, ref: Ref): Ref[] | undefined => {
-  if (ref.type !== 'job') return undefined;
-  const j = d.jobs.find((x) => x.id === ref.id);
-  return j ? [{ type: 'client', id: j.clientId }] : undefined;
-};
-
-/** Prepares an email for review (status `draft`). */
+/**
+ * Prepares an email for review (status `draft`). A person is writing it, so it may be saved before the address is known
+ * and to a client who opted out of the automatic emails; both are asked about again when it is sent.
+ */
 export function composeMessage(d: DemoState, ctx: Ctx, input: MessageInput): Message {
-  const m: Message = { id: uid('m'), at: nowIso(), channel: 'email', to: input.to.trim(), subject: input.subject.trim(), body: input.body.trim(), status: 'draft', ref: input.ref };
+  const out = queueMessage(d, ctx, { channel: 'email', ...input, mode: 'draft', personal: true });
+  if (out.ok) return out.message;
+  // Email is switched off for this company. Callers have always received a message back, so they still do: it is kept as
+  // a draft that cannot be sent until the channel is on again.
+  const m: Message = { id: uid('m'), at: nowIso(), channel: 'email', to: input.to.trim(), subject: input.subject.trim(), body: input.body.trim(), status: 'draft', ref: input.ref, by: ctx.actor };
   d.messages.unshift(m);
-  logActivity(d, ctx.actor, 'message.drafted', input.ref, { subject: m.subject }, also(d, input.ref));
   return m;
 }
-export function updateMessage(d: DemoState, _ctx: Ctx, id: string, patch: Pick<Message, 'to' | 'subject' | 'body'>) {
-  const m = d.messages.find((x) => x.id === id); if (!m || m.status !== 'draft') return;
-  m.to = patch.to.trim(); m.subject = patch.subject.trim(); m.body = patch.body.trim();
-}
-/** Demo "send": the message is marked as sent in this demo and stamped with the time. No email goes out. */
-export function sendMessageDemo(d: DemoState, ctx: Ctx, id: string) {
-  const m = d.messages.find((x) => x.id === id); if (!m || m.status === 'demo') return;
-  m.status = 'demo'; m.at = nowIso();
-  logActivity(d, ctx.actor, 'message.demoSent', m.ref, { subject: m.subject }, also(d, m.ref));
-}
-export function discardMessage(d: DemoState, _ctx: Ctx, id: string) { d.messages = d.messages.filter((m) => m.id !== id); }
+export function updateMessage(d: DemoState, ctx: Ctx, id: string, patch: Pick<Message, 'to' | 'subject' | 'body'>) { updateDraft(d, ctx, id, patch); }
+/** Sample "send": the message is marked as sent in this sample workspace and stamped with the time. No email goes out. */
+export function sendMessageDemo(d: DemoState, ctx: Ctx, id: string) { return sendDraft(d, ctx, id); }
+export function discardMessage(d: DemoState, ctx: Ctx, id: string) { discardDraft(d, ctx, id); }

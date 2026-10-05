@@ -6,6 +6,10 @@ import type {
   Priority, Repeat, SeedData, Task, TaskStatus, TeamUser, Worker, WorkerPayment,
 } from '@/domain/types';
 import { addDays, at } from '@/lib/dates';
+import { FIELD_STAGES } from './blueprint';
+
+/** Whether a stage of the field editions' pipeline is open, won or lost. The sample businesses written with this kit use those stages. */
+const stageKind = (id: string) => FIELD_STAGES.find((s) => s.id === id)?.kind;
 
 export const SAMPLE_USERS: TeamUser[] = [
   { id: 'u1', name: 'Jordan Blake', role: 'owner', email: 'jordan@example.com', phone: '609-555-0001' },
@@ -65,8 +69,8 @@ export function seedKit(lang: Lang, prefix: string) {
         created: addDays(o.created), notes: notes(o.id, o.notes, owner), lostReason: o.lostReason, clientId: o.clientId, jobId: o.jobId,
       });
       activity.push({ id: 'a-' + o.id, at: stamp(o.created, 13), kind: 'lead.created', params: { lead: o.name, source: o.source }, ref: { type: 'lead', id: o.id }, by: o.source === 'website' ? 'automation' : owner });
-      if (o.status === 'won') activity.push({ id: 'a-' + o.id + '-won', at: stamp(Math.min(0, o.created + 4), 15), kind: 'lead.won', ref: { type: 'lead', id: o.id }, also: o.clientId ? [{ type: 'client', id: o.clientId }] : undefined, by: owner });
-      if (o.status === 'lost') activity.push({ id: 'a-' + o.id + '-lost', at: stamp(Math.min(0, o.created + 6), 15), kind: 'lead.lost', ref: { type: 'lead', id: o.id }, by: owner });
+      if (stageKind(o.status) === 'won') activity.push({ id: 'a-' + o.id + '-won', at: stamp(Math.min(0, o.created + 4), 15), kind: 'lead.won', ref: { type: 'lead', id: o.id }, also: o.clientId ? [{ type: 'client', id: o.clientId }] : undefined, by: owner });
+      if (stageKind(o.status) === 'lost') activity.push({ id: 'a-' + o.id + '-lost', at: stamp(Math.min(0, o.created + 6), 15), kind: 'lead.lost', ref: { type: 'lead', id: o.id }, by: owner });
     },
     job(o: JobIn) {
       const client = clients.find((c) => c.id === o.clientId);

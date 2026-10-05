@@ -8,6 +8,7 @@ import { useApp } from '@/app/hooks';
 import { DocStatusBadge, DueBadge, JobStatusBadge, LeadStageBadge } from '@/app/shared';
 import { usePrefersReducedMotion } from '@/brand';
 import { assigneeName, byId, calendarEvents, clientMoney, docsOfJob, isActiveJob, isOpenLead, jobMoney, kpiValues } from '@/domain/selectors';
+import { leadIsWon, openStages } from '@/domain/config';
 import type { Client, DemoState, Job, Lead, LeadStage } from '@/domain/types';
 import { ruleLine, ruleName, stepText } from '@/features/automations/format';
 import { addDays, fmtDate, today } from '@/lib/dates';
@@ -18,7 +19,6 @@ import './walkthrough.css';
 
 const STEPS = ['lead', 'convert', 'schedule', 'tasks', 'docs', 'insight'] as const;
 type StepId = (typeof STEPS)[number];
-const OPEN_STAGES: LeadStage[] = ['new', 'contacted', 'scheduled', 'sent'];
 /** Screen each step shows, as a path inside the workspace, and the wording key of that screen. */
 const PAGE: Record<StepId, { to: string; label: string }> = {
   lead: { to: '/leads', label: 'nav.leads' }, convert: { to: '/jobs', label: 'nav.jobs' }, schedule: { to: '/calendar', label: 'nav.calendar' },
@@ -28,7 +28,7 @@ const PAGE: Record<StepId, { to: string; label: string }> = {
 /** The records the story follows, looked up in whatever the sample business holds right now. */
 interface Story { lead?: Lead; job?: Job; client?: Client; docJob?: Job }
 function pickStory(d: DemoState): Story {
-  const won = d.leads.filter((l) => l.status === 'won' && byId(d.jobs, l.jobId)).sort((a, b) => b.created.localeCompare(a.created))[0];
+  const won = d.leads.filter((l) => leadIsWon(d, l) && byId(d.jobs, l.jobId)).sort((a, b) => b.created.localeCompare(a.created))[0];
   const job = won ? byId(d.jobs, won.jobId) : d.jobs.find(isActiveJob) ?? d.jobs[0];
   // for documents and payment: a job with papers, ideally part paid, so the bar has something to say
   const score = (j: Job) => { const m = jobMoney(d, j); const docs = docsOfJob(d, j.id); return (docs.length ? 4 : 0) + (docs.some((x) => x.kind === 'invoice') ? 2 : 0) + (m.received > 0 && m.clientOwes > 0 ? 3 : m.received > 0 ? 1 : 0); };
@@ -100,8 +100,8 @@ export function Walkthrough() {
 
 /* ---------- 1. lead captured: the pipeline with the open leads ---------- */
 function LeadsPane() {
-  const { data, t } = useApp();
-  const open = data.leads.filter(isOpenLead);
+  const { data, pack, t } = useApp();
+  const open = data.leads.filter((l) => isOpenLead(l, data));
   const newest = [...open].sort((a, b) => b.created.localeCompare(a.created)).slice(0, 4);
   return (
     <SampleFrame page={t('nav.leads')}>
@@ -109,7 +109,7 @@ function LeadsPane() {
       {open.length ? (
         <>
           <ul className="mks-wt-stages">
-            {OPEN_STAGES.map((s) => {
+            {openStages(data, pack).map(({ id: s }) => {
               const list = open.filter((l) => l.status === s);
               return <li key={s} className={cx(!list.length && 'zero')}><b>{list.length}</b><span>{t('ls_' + s)}</span>{sum(list, (l) => l.value) > 0 && <small>{money(sum(list, (l) => l.value))}</small>}</li>;
             })}

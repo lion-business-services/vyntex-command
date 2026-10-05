@@ -46,7 +46,7 @@ async def main():
             rec(f'keyboard {path}: every focused control shows a focus ring', not noring, noring[:3])
             if path == '/': print('first stops on /:', [s['text'] for s in seen[:8]])
         # command palette
-        await pg.goto('http://localhost:4173/demo'); await pg.wait_for_timeout(800)
+        await pg.goto(BASE + '/demo'); await pg.wait_for_timeout(800)
         await pg.keyboard.press('Control+k'); await pg.wait_for_timeout(300)
         rec('Ctrl+K opens the command palette', await pg.locator('.palette').count() == 1)
         await pg.keyboard.type('leads'); await pg.wait_for_timeout(200); await pg.keyboard.press('Enter'); await pg.wait_for_timeout(500)

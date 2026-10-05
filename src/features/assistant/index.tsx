@@ -7,12 +7,17 @@ import { LuArrowRight, LuCheck, LuEraser, LuSend, LuShieldCheck, LuSparkles, LuT
 import { useApp } from '@/app/hooks';
 import { A, useRoute } from '@/app/router';
 import type { PageProps } from '@/app/routes';
-import { DemoTag, PlanBadge } from '@/app/shared';
+import { DemoTag, PlanBadge, CanWrite } from '@/app/shared';
 import { Badge, Button, Card, Dot, PageHeader, cx } from '@/ui';
 import { describe, examples, interpret, isNo, isYes, suggestions, type Block, type Card as ProposalCard, type Choice, type Env, type Proposal } from './engine';
 import { execute, type Outcome } from './run';
 import { askModel, checkConfigured, type Turn } from './remote';
 import { SuccessCheck } from '@/features/documents/success';
+import { mutate } from '@/store/store';
+import { Empty, toast } from '@/ui';
+import { assistantOn, setAssistant } from './deploy';
+import { maskTaxIds } from './records';
+import { scopedData } from './scope';
 import './assistant.css';
 
 type CardState = 'asking' | 'pending' | 'done' | 'cancelled' | 'replaced' | 'failed';
@@ -29,12 +34,29 @@ interface BotMsg {
 }
 type Msg = UserMsg | BotMsg;
 
-export default function AssistantPage(_: PageProps) {
+/**
+ * The assistant can be switched off for a company (and starts off in a deployment that says so). While it is off this
+ * page reads nothing: it says so, and someone who may change the company's setup can switch it on.
+ */
+export default function AssistantPage(props: PageProps) {
+  const { t, data, pack, can } = useApp();
+  if (assistantOn(data, pack)) return <Conversation {...props} />;
+  const may = can('config') && can('write');
+  return (
+    <>
+      <PageHeader title={t('asst.title')} />
+      <Card><div data-testid="asst-off"><Empty title={t('asst.off.title')} action={may ? <Button variant="primary" onClick={() => { mutate((d) => setAssistant(d, true), 'config'); toast(t('asst.off.done')); }} data-testid="asst-turn-on">{t('asst.off.on')}</Button> : undefined}>{t('asst.off.text')} {may ? '' : t('asst.off.how')}</Empty></div></Card>
+    </>
+  );
+}
+
+function Conversation(_: PageProps) {
   const app = useApp();
   const { t, data, prefs } = app;
   const env: Env = useMemo(() => ({
-    data: app.data, pack: app.pack, lang: app.lang, t: app.t, can: app.can, date: app.date, day: app.day, time: app.time,
-    actor: app.data.users.find((u) => u.role === app.prefs.viewAs)?.id ?? app.data.users[0]?.id ?? '',
+    // only what the person asking may see on the screens: a client of another office is not there for the assistant either
+    data: scopedData(app.data, app.user, app.perms), pack: app.pack, lang: app.lang, t: app.t, can: app.can, date: app.date, day: app.day, time: app.time,
+    actor: app.user?.id ?? app.data.users.find((u) => u.role === app.prefs.viewAs)?.id ?? app.data.users[0]?.id ?? '',
   }), [app]);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [draft, setDraft] = useState('');
@@ -72,7 +94,8 @@ export default function AssistantPage(_: PageProps) {
   const send = async (raw: string) => {
     const q = raw.trim(); if (!q || busy) return;
     setDraft(''); focus();
-    const user: UserMsg = { id: ++seq.current, from: 'user', text: q };
+    // what the person typed is shown back with anything shaped like a tax ID masked, and is never kept otherwise
+    const user: UserMsg = { id: ++seq.current, from: 'user', text: maskTaxIds(q) };
     // "yes" and "no" answer the card that is waiting
     if (open?.state === 'pending' && isYes(q)) { push(user); confirm(open); return; }
     if (open?.state === 'pending' && isNo(q)) { push(user); cancel(open); return; }
@@ -98,7 +121,7 @@ export default function AssistantPage(_: PageProps) {
         <div className="row tight">
           <Dot tone={mode === 'connected' ? 'ok' : 'accent'} />
           <b>{t(mode === 'connected' ? 'asst.mode.connected' : 'asst.mode.builtin')}</b>
-          <PlanBadge feature="assistant" />
+          {app.priced && <PlanBadge feature="assistant" />}
         </div>
         <p className="small muted">{t('asst.mode.note')}</p>
       </div>
@@ -146,7 +169,7 @@ export default function AssistantPage(_: PageProps) {
                       {m.card.note && m.state === 'pending' && <p className="xs muted asst-card-note">{m.card.note}</p>}
                       {m.state === 'pending' && (
                         <div className="asst-card-f">
-                          <Button variant="primary" icon={<LuCheck aria-hidden="true" />} onClick={() => confirm(m)} data-testid="asst-confirm">{t('common.confirm')}</Button>
+                          <CanWrite><Button variant="primary" icon={<LuCheck aria-hidden="true" />} onClick={() => confirm(m)} data-testid="asst-confirm">{t('common.confirm')}</Button></CanWrite>
                           <Button variant="ghost" icon={<LuX aria-hidden="true" />} onClick={() => cancel(m)} data-testid="asst-cancel">{t('common.cancel')}</Button>
                         </div>
                       )}

@@ -1,0 +1,27 @@
+# Allow-list for scripts/security/scan-pii.mjs.
+#
+# Add a line here only after a person has looked at the finding and is sure the file holds no real person's data.
+# Every line needs a comment with the date, who reviewed it and why.
+#
+# Forms:
+#   path:<file>                          skip one file
+#   path:<folder>/                       skip everything under a folder
+#   <rule>:<file>                        allow one rule in one file
+#   <rule>:<file>:<fingerprint>          allow one exact value (the scan prints the fingerprint with each finding)
+
+# 2026-10-03, security operations review: a made-up number in ITIN format that the gateway test plants and then
+# searches every column for, to prove a tax ID never comes back in a row. It belongs to nobody.
+ssn:supabase/tests/gateway.sql:e55a941cddb8e4ed
+
+# 2026-10-05, build lead review: placeholder numbers used to show or test a FORMAT, never a person's number.
+# The textbook stand-in for the employer-number shape appears as a documented example (a comment in the assistant's masking code)
+# and in tests that prove such a number is masked before anything leaves the building.
+ein:src/features/assistant/records.ts:489553f3942f7a33
+ein:tests/unit/assistant.test.mjs:489553f3942f7a33
+ein:tests/integrations/ai.adapter.test.mjs:489553f3942f7a33
+# Textbook stand-in numbers: the AI adapter test plants them and asserts they are masked in the request.
+ssn:tests/integrations/ai.adapter.test.mjs:650f05f95d8be8ee
+# The vault test plants well-known stand-in numbers and format edge cases, runs every vault
+# operation, then searches every column of every table to prove none is stored or logged in clear.
+ssn:supabase/tests/modules/40_vault.test.sql:cdbb217022f1a7e3
+ein:supabase/tests/modules/40_vault.test.sql:489553f3942f7a33

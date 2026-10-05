@@ -1,0 +1,34 @@
+# REFERENCE ONLY. Not applied anywhere. VYNTEX Command (client companies).
+# Everything of this deployment lives in its own namespace, with its own image, settings, secrets and network rules.
+# Nothing here refers to the other deployment, and the two are never applied to the same namespace.
+#
+# The Secret "command-secrets" is NOT in this file and never in Git. It is created in the cluster from the secret
+# store (see secret.example.yaml for the names it must hold).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: vyntex-command
+resources:
+  - namespace.yaml
+  - ../../base
+images:
+  - name: REGISTRY/REPOSITORY
+    newName: REGISTRY.example.com/vyntex-command
+    digest: sha256:REPLACE_WITH_THE_IMAGE_DIGEST
+configMapGenerator:
+  - name: command-settings
+    literals:
+      - VX_DEPLOY=vyntex
+      - VX_ENV=production
+      - APP_ORIGIN=https://command.vyntexusa.com
+      - PORT=8080
+      # Requests arrive through the ingress only (see the network rules), so its forwarded address is believed.
+      - TRUST_PROXY=1
+patches:
+  - target: { kind: Ingress, name: command }
+    patch: |-
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: command.vyntexusa.com
+      - op: replace
+        path: /spec/rules/0/host
+        value: command.vyntexusa.com

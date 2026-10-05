@@ -12,7 +12,7 @@ export const nowIso = (): ISODateTime => new Date().toISOString();
 export function at(daysFromToday: number, hour = 10, minute = 0): ISODateTime { const d = new Date(); d.setDate(d.getDate() + daysFromToday); d.setHours(hour, minute, 0, 0); return d.toISOString(); }
 export const daysBetween = (a: ISODate, b: ISODate) => Math.round((parseDate(b).getTime() - parseDate(a).getTime()) / 86400000);
 
-const locale = (lang: Lang) => (lang === 'es' ? 'es-US' : 'en-US');
+const locale = (lang: Lang) => (lang === 'es' ? 'es-US' : lang === 'zh' ? 'zh-CN' : 'en-US');
 export function fmtDate(date: ISODate | '' | undefined, lang: Lang, opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }): string {
   if (!date) return '—';
   return parseDate(date).toLocaleDateString(locale(lang), opts);

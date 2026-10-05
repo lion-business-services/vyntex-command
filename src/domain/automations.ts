@@ -1,13 +1,21 @@
 // Workflow automation. Rules react to business events (a new lead, a won lead, a status change, a payment, the start of a day)
 // and do the follow-up work a person would otherwise have to remember: tasks, records, documents and prepared emails.
 // In demo mode emails are only prepared (status "draft"); nothing leaves the browser.
+//
+// The eight rules in this file are the coded rules every edition has had from the start. They are run by the rule engine
+// (src/domain/rules/engine.ts) through the shipped rule definitions of each edition, whose one step is `builtin`: what
+// they do has not changed. Rules a company builds itself, and the other shipped rules, are plain data and need no code here.
 import type { DemoState, Job, Lead, Ref, Task, Worker } from './types';
 import type { EntitlementId } from './entitlements';
 import type { TaskTemplate } from '@/packs/types';
 import { type Ctx, logActivity } from './context';
+import { stageRole } from './config';
 import { addDays, addDaysFrom, nowIso, today } from '@/lib/dates';
 import { uid } from '@/lib/id';
 import { sum } from '@/lib/money';
+import { emit as engineEmit, registerShipped } from './rules/engine';
+import { practiceRules } from '@/packs/practice/rules';
+import { runTimed } from './actions/daily';
 
 export type AutoEvent =
   | { type: 'lead.created'; lead: Lead }
@@ -71,7 +79,7 @@ export const RULES: AutomationRule[] = [
   {
     id: 'visit-prep', trigger: 'lead.stage', thens: 2,
     run(d, ctx, e: { lead: Lead }) {
-      const l = e.lead; if (l.status !== 'scheduled' || !l.apptDate) return null;
+      const l = e.lead; if (stageRole(d, ctx.pack, l.status) !== 'visit' || !l.apptDate) return null;
       const task = addTask(d, `visit-prep:${l.id}:${l.apptDate}`, { title: ctx.t('auto.task.visitPrep', { lead: l.name }), leadId: l.id, assignee: 'u:' + l.ownerId, due: l.apptDate, pri: 'medium' });
       if (!task) return null;
       const steps: Step[] = [{ key: 'auto.step.calendar', params: { date: l.apptDate } }, { key: 'auto.step.task', params: { task: task.title } }];
@@ -81,7 +89,7 @@ export const RULES: AutomationRule[] = [
   {
     id: 'estimate-follow-up', trigger: 'lead.stage', thens: 2,
     run(d, ctx, e: { lead: Lead }) {
-      const l = e.lead; if (l.status !== 'sent') return null;
+      const l = e.lead; if (stageRole(d, ctx.pack, l.status) !== 'proposal') return null;
       l.followUp = addDays(3);
       const task = addTask(d, `estimate-follow-up:${l.id}`, { title: ctx.t('auto.task.estimateFollowUp', { lead: l.name }), leadId: l.id, assignee: 'u:' + l.ownerId, due: l.followUp, pri: 'medium' });
       if (!task) return null;
@@ -93,9 +101,11 @@ export const RULES: AutomationRule[] = [
     id: 'lead-won', trigger: 'lead.won', entitlement: 'clientEmails', thens: 4,
     run(d, ctx, e: { lead: Lead; job: Job }) {
       const { lead, job } = e; const steps: Step[] = [{ key: 'auto.step.client' }, { key: 'auto.step.job', params: { job: job.name } }];
-      const list = ctx.pack.kickoffTasks.length ? ctx.pack.kickoffTasks : DEFAULT_KICKOFF;
+      // office editions: when the service's own playbook already created the kickoff tasks for this engagement, the edition's generic list would only repeat them
+      const playbook = ctx.pack.family === 'practice' && d.tasks.some((t) => t.jobId === job.id && !!t.auto && t.auto.startsWith('playbook:'));
+      const list = playbook ? [] : ctx.pack.kickoffTasks.length ? ctx.pack.kickoffTasks : DEFAULT_KICKOFF;
       let n = 0;
-      list.forEach((tpl, i) => { if (addTask(d, `lead-won:${job.id}:${i}`, { title: tpl[ctx.lang], jobId: job.id, clientId: job.clientId, assignee: 'u:' + job.managerId, due: addDays(tpl.dueIn), pri: tpl.pri ?? 'medium' })) n++; });
+      list.forEach((tpl, i) => { if (addTask(d, `lead-won:${job.id}:${i}`, { title: tpl[ctx.lang] ?? tpl.en, jobId: job.id, clientId: job.clientId, assignee: 'u:' + job.managerId, due: addDays(tpl.dueIn), pri: tpl.pri ?? 'medium' })) n++; });
       steps.push({ key: 'auto.step.tasks', params: { n } });
       const client = d.clients.find((c) => c.id === job.clientId);
       if (client && !client.emailOptOut && prepareEmail(d, `lead-won:${job.id}`, client.email, ctx.t('auto.mail.welcome.subject', { company: d.company.name }), ctx.t('auto.mail.welcome.body', { name: firstName(lead.name), company: d.company.name, job: job.name }), { type: 'job', id: job.id }))
@@ -127,7 +137,7 @@ export const RULES: AutomationRule[] = [
         steps.push({ key: 'auto.step.invoice' });
       }
       const list = ctx.pack.closeoutTasks.length ? ctx.pack.closeoutTasks : DEFAULT_CLOSEOUT; let n = 0;
-      list.forEach((tpl, i) => { if (addTask(d, `job-completed:${j.id}:${i}`, { title: tpl[ctx.lang], jobId: j.id, clientId: j.clientId, assignee: 'u:' + j.managerId, due: addDays(tpl.dueIn), pri: tpl.pri ?? 'medium' })) n++; });
+      list.forEach((tpl, i) => { if (addTask(d, `job-completed:${j.id}:${i}`, { title: tpl[ctx.lang] ?? tpl.en, jobId: j.id, clientId: j.clientId, assignee: 'u:' + j.managerId, due: addDays(tpl.dueIn), pri: tpl.pri ?? 'medium' })) n++; });
       if (n) steps.push({ key: 'auto.step.tasks', params: { n } });
       const owes = j.price - sum(j.received, (r) => r.amount);
       const client = d.clients.find((c) => c.id === j.clientId);
@@ -165,27 +175,47 @@ export const RULES: AutomationRule[] = [
     },
   },
 ];
+// The shipped rules of the professional-services edition are plain data (src/packs/practice/rules.ts). The engine reads an
+// edition's rules from its pack; this makes them known to it as well, so they are in force even where the pack's own list
+// does not name them yet.
+registerShipped('practice', practiceRules);
+
 /** Shown in the Automations page alongside the rules above; repeat visits are generated straight onto the calendar. */
 export const ALWAYS_ON = ['recurring-visits'] as const;
 
-/** Runs every enabled rule that listens to the event and records what each one did. */
+/**
+ * Announces an event the way the actions always have. It is handed to the rule engine (src/domain/rules/engine.ts), which
+ * runs the coded rules above through their shipped rule definitions and every rule a company built on the same event.
+ * New code calls the engine's `emit` directly; this entry stays for the events that were announced here before.
+ */
 export function emit(d: DemoState, ctx: Ctx, e: AutoEvent) {
-  for (const rule of RULES) {
-    if (rule.trigger !== e.type) continue;
-    if (d.automation.enabled[rule.id] === false) continue;
-    const res = rule.run(d, ctx, e);
-    if (!res || !res.steps.length) continue;
-    d.automation.runs.unshift({ id: uid('r'), at: nowIso(), ruleId: rule.id, steps: res.steps, ref: res.ref });
-    if (d.automation.runs.length > 120) d.automation.runs.length = 120;
+  const clientOf = (j: Job) => d.clients.find((c) => c.id === j.clientId);
+  switch (e.type) {
+    case 'lead.created': return engineEmit(d, ctx, e.type, { ref: { type: 'lead', id: e.lead.id }, lead: e.lead });
+    case 'lead.stage': return engineEmit(d, ctx, e.type, { ref: { type: 'lead', id: e.lead.id }, lead: e.lead, extra: { from: e.from, to: e.lead.status } });
+    case 'lead.won': return engineEmit(d, ctx, e.type, { ref: { type: 'lead', id: e.lead.id }, lead: e.lead, job: e.job, client: clientOf(e.job) });
+    case 'job.status': return engineEmit(d, ctx, e.type, { ref: { type: 'job', id: e.job.id }, job: e.job, client: clientOf(e.job), extra: { from: e.from, to: e.job.status } });
+    case 'payment.received': {
+      // the payment just recorded is the last one on the job
+      const payment = [...e.job.received].reverse().find((p) => Math.abs(p.amount - e.amount) < 0.005) ?? e.job.received[e.job.received.length - 1];
+      return engineEmit(d, ctx, e.type, { ref: { type: 'job', id: e.job.id }, job: e.job, client: clientOf(e.job), ...(payment ? { payment } : {}), extra: { amount: e.amount, balance: Math.max(0, e.job.price - sum(e.job.received, (r) => r.amount)) } });
+    }
+    case 'daily': return engineEmit(d, ctx, e.type, {});
   }
 }
 
 /**
  * A fresh demo starts with a few emails already prepared, so Messages shows what the rules produce before the visitor does anything.
  * They use the same wording and the same keys as the rules, so the rules never prepare a duplicate later.
+ * Then the rules that count days look at the sample records (an idle lead, an overdue task, a deadline coming up), so the
+ * run history shows real runs from the first moment.
  */
 export function primeDemo(d: DemoState, ctx: Ctx) {
-  if (d.messages.length) return;
+  if (!d.messages.length) primeEmails(d, ctx);
+  // the history a fresh sample starts with is what the rules really do with its records: nothing is typed in
+  runTimed(d, ctx);
+}
+function primeEmails(d: DemoState, ctx: Ctx) {
   const prep = (j: Job | undefined, auto: string, subject: string, bodyKey: string) => {
     if (!j) return;
     const c = d.clients.find((x) => x.id === j.clientId);

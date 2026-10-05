@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Stand-in for pg_ctl, used only by .github/scripts/db-tests.sh. The CI service is started and stopped by GitHub
+# Actions, so "start" and "stop" have nothing to do.
+exit 0

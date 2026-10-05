@@ -1,0 +1,99 @@
+# REFERENCE ONLY. Network rules for one deployment's namespace. They need a cluster network that enforces
+# NetworkPolicy (most managed clusters offer one; confirm it is switched on, or these rules do nothing).
+#
+# 1. Nothing in the namespace may receive or send anything, unless a later rule allows it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+---
+# 2. The application accepts connections from the ingress controller only. Adjust the namespace label to the
+#    controller your cluster uses.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: command-from-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: command
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        # and from the two scheduled jobs of this namespace (cronjobs.yaml)
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: command-cron
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# 2b. The scheduled jobs may look up names and call the application, nothing else.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: command-cron-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: command-cron
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: command
+      ports:
+        - { protocol: TCP, port: 8080 }
+---
+# 3. The application may look up names and may call out over HTTPS (the database service and the connected
+#    providers). It may not reach other namespaces, the cluster's private ranges or the cloud metadata address.
+#    Standard NetworkPolicy cannot name hosts. To allow only the exact hosts (the Supabase project, Resend, Google and
+#    so on), use the host-based rules of the cluster network (Cilium or Calico) or an egress gateway.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: command-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: command
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 100.64.0.0/10
+              - 169.254.0.0/16
+      ports:
+        - { protocol: TCP, port: 443 }

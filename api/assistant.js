@@ -8,8 +8,10 @@
 //   ANTHROPIC_API_KEY   required. Without it every POST answers 503 { ok: false, configured: false } and the page stays on the built-in assistant.
 //   ASSISTANT_MODEL     optional. Defaults to claude-haiku-4-5.
 //
-// Before turning this on for customers: put it behind the workspace sign-in and add per-company rate limits.
-// The demo has no accounts, so this function only checks the request shape, its size and that it comes from the same site.
+// Before turning this on for customers: put it behind the workspace sign-in and add per-company limits.
+// The demo has no accounts, so this function checks the request shape, its size, that it comes from the same site,
+// and limits how often one network address may ask (30 questions in five minutes).
+import { hit, addressKey } from './_lib/ratelimit.js';
 
 const UPSTREAM_URL = 'https://api.anthropic.com/v1/messages';
 const API_VERSION = '2023-06-01';
@@ -193,6 +195,8 @@ export async function GET() {
 export async function POST(request) {
   if (!isConfigured()) return json(503, { ok: false, configured: false });
   if (crossSite(request)) return json(403, { ok: false, configured: true, error: 'forbidden' });
+  const allowed = await hit('assistant.addr', addressKey(request), 30, 300);
+  if (!allowed.allowed) return json(429, { ok: false, configured: true, error: 'busy' }, { 'retry-after': String(allowed.retryAfter) });
   if (!/^application\/json\b/i.test(request.headers.get('content-type') || '')) return json(415, { ok: false, configured: true, error: 'unsupported_media_type' });
 
   let raw;

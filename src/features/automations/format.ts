@@ -1,6 +1,6 @@
 // How an automation step is worded for display. Shared by the Automations page and the dashboard.
 import type { TFn } from '@/i18n';
-import type { AutomationRun } from '@/domain/types';
+import type { AutomationRun, Lang, RuleDef } from '@/domain/types';
 import { money } from '@/lib/money';
 
 type Step = AutomationRun['steps'][number];
@@ -25,4 +25,19 @@ export function ruleName(ruleId: string, t: TFn): string {
   const k = `auto.${ruleId}.name`;
   const s = t(k);
   return s === k ? t('common.automation') : s;
+}
+
+/**
+ * The name of a rule on screen. A shipped rule that still has the name it shipped with reads from the dictionary, so it
+ * follows the edition's wording; a rule the company named, or renamed, reads as they wrote it.
+ */
+export function ruleTitle(rule: RuleDef, shipped: RuleDef | undefined, t: TFn, lang: Lang): string {
+  const key = `auto.${rule.id}.name`; const worded = t(key);
+  if (worded !== key && (!shipped || JSON.stringify(shipped.name) === JSON.stringify(rule.name))) return worded;
+  return rule.name[lang] || rule.name.en || rule.name.es || worded;
+}
+/** The name of the rule behind a run. A rule that no longer exists still reads from the dictionary when it was a shipped one. */
+export function runRuleName(ruleId: string, rules: RuleDef[], shipped: RuleDef[], t: TFn, lang: Lang): string {
+  const own = rules.find((r) => r.id === ruleId) ?? shipped.find((r) => r.id === ruleId);
+  return own ? ruleTitle(own, shipped.find((r) => r.id === ruleId), t, lang) : ruleName(ruleId, t);
 }

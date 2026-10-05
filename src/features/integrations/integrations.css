@@ -1,0 +1,36 @@
+/* Integrations: one card per outside service, grouped by what it is for. Tokens only (src/ui/styles.css). */
+.integrations-sample{margin-bottom:16px}
+.integrations-back{display:flex;gap:10px;align-items:flex-start;margin-bottom:16px}
+.integrations-back>svg{width:18px;height:18px;flex:none;margin-top:1px;color:var(--ok)}
+.integrations-back.bad>svg{color:var(--bad)}
+.integrations-groups{gap:26px;margin-bottom:20px}
+.integrations-gh{font-size:15px;margin-bottom:10px;color:var(--text-2)}
+.integrations-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:14px;align-items:start}
+.integrations-card{display:flex;flex-direction:column;gap:9px;max-width:640px}
+.integrations-card.on{border-color:var(--line-strong)}
+.integrations-ch{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.integrations-ch h3{font-size:16px;min-width:0;overflow-wrap:anywhere}
+.integrations-ic{display:grid;place-items:center;width:34px;height:34px;border-radius:var(--radius-s);background:var(--surface-3);border:1px solid var(--line-strong);color:var(--text);flex:none}
+.integrations-ic svg{width:17px;height:17px}
+.integrations-reason{padding:7px 10px;border-left:2px solid var(--line-strong);background:var(--surface-2);border-radius:0 var(--radius-s) var(--radius-s) 0;overflow-wrap:anywhere}
+.integrations-card[data-state="attention"] .integrations-reason,.integrations-card[data-state="reauth"] .integrations-reason{border-left-color:var(--warn)}
+.integrations-card[data-state="error"] .integrations-reason{border-left-color:var(--bad)}
+.integrations-card[data-state="setup"] .integrations-reason{border-left-color:var(--accent)}
+.integrations-missing code,.integrations-scopes code{font-size:11.5px;background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin:0 4px 3px 0;display:inline-block;overflow-wrap:anywhere}
+.integrations-kv{font-size:13px;gap:4px 14px}
+.integrations-mode{display:flex;gap:6px 8px;align-items:flex-start}
+.integrations-mode>svg{width:13px;height:13px;color:var(--text-3);flex:none;margin-top:2px}
+.integrations-result{padding:7px 10px;border-radius:var(--radius-s);background:var(--surface-2)}
+.integrations-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:auto;padding-top:4px}
+.integrations-more{display:inline-flex;align-items:center;gap:4px;margin-left:auto;text-decoration:none}
+.integrations-more:hover{text-decoration:underline;text-underline-offset:3px}
+.integrations-more svg{width:14px;height:14px;transition:transform var(--motion-fast) var(--ease-vyntex)}
+.integrations-more svg.up{transform:rotate(180deg)}
+.integrations-need{border-top:1px solid var(--line);padding-top:10px;display:grid;gap:7px}
+.integrations-need ul{margin:0;padding-left:18px;display:grid;gap:5px;font-size:13px;color:var(--text-2)}
+.integrations-shield{width:15px;height:15px;vertical-align:-2px;color:var(--accent)}
+@media (max-width:560px){
+  .integrations-actions .btn{min-height:40px}
+  .integrations-more{margin-left:0;min-height:40px}
+}
+@media (prefers-reduced-motion:reduce){.integrations-more svg{transition:none}}

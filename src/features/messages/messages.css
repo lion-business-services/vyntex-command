@@ -28,3 +28,131 @@ a.messages-auto:hover{filter:brightness(1.12);text-decoration:underline}
 @media (min-width:721px){.messages-tbl td.t1{min-width:200px}}
 
 @media (pointer:coarse),(max-width:980px){.messages-none .btn{min-height:40px}}
+
+/* ---------- the communications center: conversations on the left, one conversation on the right ---------- */
+.messages-sample{margin-bottom:16px}
+.messages-inbox{display:grid;grid-template-columns:minmax(300px,372px) minmax(0,1fr);gap:16px;align-items:start}
+.messages-pane,.messages-main{min-width:0}
+.messages-filters{margin-bottom:8px}
+.messages-filters .searchbox{min-width:0;flex:1 1 100%;max-width:none}
+.messages-filters select{flex:1 1 200px;min-width:0}
+.messages-views{display:flex;flex-wrap:wrap;margin-bottom:10px}
+.messages-views button{padding:6px 9px;font-size:13px}
+.messages-list{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden;box-shadow:var(--shadow-1)}
+.messages-list li+li{border-top:1px solid var(--line)}
+.messages-conv{display:flex;gap:10px;width:100%;text-align:left;background:none;border:0;border-left:3px solid transparent;padding:11px 12px 11px 9px;color:inherit;align-items:flex-start;transition:background var(--motion-instant) linear}
+.messages-conv:hover{background:var(--blue-soft)}
+.messages-conv.on{background:var(--surface-2);border-left-color:var(--accent)}
+.messages-cmain{display:grid;gap:2px;min-width:0;flex:1}
+.messages-ctop{display:flex;justify-content:space-between;gap:8px;align-items:baseline;min-width:0}
+.messages-cname{font-weight:650;min-width:0}
+.messages-conv.unread .messages-cname{font-weight:800}
+.messages-conv.unread .messages-cline{color:var(--text)}
+.messages-cline{font-size:13px;color:var(--text-2)}
+.messages-cmeta{display:flex;gap:6px;align-items:center;margin-top:3px;min-width:0}
+.messages-cicons{display:inline-flex;gap:5px;color:var(--text-3)}
+.messages-chi{width:14px;height:14px;flex:none}
+.messages-tiny{font-size:11px;padding:0 7px}
+.messages-cwho{margin-left:auto}
+.messages-moreconv{display:block;margin:10px auto 0}
+/* notices: what the platform wrote for the office. Same rows as the conversations, with the whole text readable */
+.messages-nhead{gap:12px;align-items:baseline;margin:0 2px 8px}
+.messages-nhead .linkbtn{display:inline-flex;align-items:center;gap:5px}
+.messages-nico{display:grid;place-items:center;width:28px;height:28px;flex:none;border-radius:50%;background:var(--surface-3);color:var(--text-3)}
+.messages-nico svg{width:15px;height:15px}
+.messages-notice.unread .messages-nico{background:var(--accent-soft);color:var(--accent)}
+.messages-nline{font-size:13px;color:var(--text-2);overflow-wrap:anywhere}
+.messages-notice.unread .messages-nline{color:var(--text)}
+.messages-pick{min-height:240px;display:grid;align-items:center}
+
+.messages-thread{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);min-width:0;box-shadow:var(--shadow-1)}
+.messages-thread.embedded{border:0;background:none;box-shadow:none}
+.messages-th{display:flex;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.messages-who{min-width:120px}
+.messages-name{font-family:var(--font-display);font-weight:700;font-size:16px;text-decoration:none;color:inherit}
+a.messages-name:hover{text-decoration:underline;text-underline-offset:3px}
+.messages-tha{margin-left:auto}
+.messages-back{display:none}
+.messages-assign,.messages-attach{min-height:34px;padding:5px 8px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--radius-s);max-width:210px;font-size:13.5px}
+.messages-tl{display:flex;flex-direction:column;gap:10px;padding:14px;max-height:min(56vh,620px);overflow-y:auto;overscroll-behavior:contain}
+.messages-thread.embedded .messages-tl{padding:4px 0 14px}
+.messages-earlier{align-self:center}
+.messages-e{display:flex;flex-direction:column;gap:10px;min-width:0}
+.messages-day{display:flex;justify-content:center}
+.messages-day span{font-size:11.5px;color:var(--text-3);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 10px}
+.messages-msg{max-width:min(82%,620px);min-width:min(240px,100%);border:1px solid var(--line);border-radius:var(--radius);padding:9px 12px;background:var(--surface-2)}
+.messages-msg.in{align-self:flex-start}
+.messages-msg.out{align-self:flex-end;background:var(--accent-soft);border-color:var(--accent-line)}
+.messages-msg.draft{background:var(--surface);border-style:dashed;border-color:var(--line-strong)}
+.messages-msg.failed{border-color:var(--bad)}
+.messages-mh{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap}
+.messages-ch{display:inline-flex;gap:5px;align-items:center;font-size:12.5px;font-weight:700;color:var(--text-2)}
+.messages-ch svg{width:14px;height:14px;flex:none}
+.messages-subject{font-weight:700;margin-bottom:2px;overflow-wrap:anywhere}
+.messages-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.5}
+.messages-mf{display:flex;gap:6px 8px;align-items:center;flex-wrap:wrap;margin-top:7px}
+.messages-mf .messages-auto{margin-top:0}
+.messages-about{color:var(--text-2);overflow-wrap:anywhere}
+.messages-note,.messages-call{display:flex;gap:9px;align-items:flex-start;padding:8px 12px;border-radius:var(--radius-s);font-size:14px;min-width:0}
+.messages-note{border:1px dashed var(--line-strong);background:var(--warn-soft)}
+.messages-call{border:1px solid var(--line);background:var(--surface-2)}
+.messages-note>svg,.messages-call>svg{width:15px;height:15px;margin-top:3px;flex:none;color:var(--text-2)}
+.messages-notel{color:var(--text-2)}
+.messages-sys{display:flex;justify-content:center;align-items:baseline;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--text-2);text-align:center;padding:0 8px}
+.messages-files{list-style:none;margin:8px 0 0;padding:0;display:flex;gap:4px 12px;flex-wrap:wrap;font-size:13px}
+.messages-files li{display:inline-flex;gap:5px;align-items:center;overflow-wrap:anywhere}
+.messages-files svg{width:13px;height:13px;flex:none;color:var(--text-3)}
+
+.messages-composer{border-top:1px solid var(--line);padding:12px 14px 14px;display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.messages-composer .stack{min-width:0}
+.messages-thread.embedded .messages-composer{padding:12px 0 0}
+.messages-ro{padding:12px 14px;border-top:1px solid var(--line)}
+.messages-chs{display:flex;gap:6px;flex-wrap:wrap}
+.messages-chb{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text-2);transition:border-color var(--motion-fast) var(--ease-vyntex),background var(--motion-fast) var(--ease-vyntex)}
+.messages-chb .messages-ch{color:inherit}
+.messages-chb:hover{color:var(--text)}
+.messages-chb[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
+.messages-chb.off{border-style:dashed}
+.messages-chb.off .messages-ch{opacity:.7}
+.messages-cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px;align-items:start}
+.messages-cgrid select{min-width:0}
+.messages-to{grid-column:span 2;min-width:0}
+.messages-addr2{min-height:40px;display:flex;align-items:center;font-weight:650;overflow-wrap:anywhere}
+.messages-sig{font:inherit;font-size:13px;color:var(--text-2);white-space:pre-wrap;margin:0;padding:4px 10px;border-left:2px solid var(--line-strong)}
+.messages-cfoot{display:flex;gap:8px 10px;align-items:center;flex-wrap:wrap}
+.messages-callhint{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap}
+.messages-approval{display:flex;gap:6px 8px;align-items:center;flex-wrap:wrap}
+
+.messages-picker{display:grid;gap:2px;margin-top:14px}
+.messages-picker .item{background:none;border:0;color:inherit;text-align:left;align-items:center;margin:0}
+.messages-picker .xs.strong{margin-top:8px}
+.messages-pline{display:block;overflow-wrap:anywhere}
+.messages-tabh{margin-bottom:10px}
+.messages-quiet{display:grid;grid-template-columns:repeat(2,minmax(0,170px));gap:12px}
+.messages-fields{margin-top:10px;line-height:1.9}
+.messages-fields code{font-size:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-right:4px;white-space:nowrap}
+
+/* tablets and phones: the list, then the conversation that was picked, each on its own screen */
+@media (max-width:980px){
+  .messages-inbox{grid-template-columns:minmax(0,1fr)}
+  .messages-inbox .messages-main{display:none}
+  .messages-inbox.picked .messages-pane{display:none}
+  .messages-inbox.picked .messages-main{display:block}
+  .messages-back{display:inline-grid}
+  .messages-tl{max-height:none;overflow:visible}
+  .messages-msg{max-width:92%}
+  .messages-to{grid-column:auto}
+  .messages-views{overflow-x:auto}
+}
+@media (max-width:560px){
+  .messages-tha{margin-left:0;width:100%}
+  .messages-assign{flex:1;max-width:none}
+  .messages-cfoot .btn{flex:1 1 40%}
+  .messages-cfoot .grow{display:none}
+  .messages-note,.messages-call{flex-wrap:wrap}
+  .messages-note>.grow,.messages-call>.grow{flex:1 1 70%}
+  .messages-note>.nowrap,.messages-call>.row{flex-basis:100%;padding-left:24px}
+  .messages-cmodes .seg{flex:1 1 100%}
+  .messages-conv,.messages-chb{min-height:44px}
+  .messages-composer .seg button{min-height:38px}
+}

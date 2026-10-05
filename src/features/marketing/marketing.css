@@ -2,23 +2,26 @@
    whatever theme the workspace uses. Signature moments: the dimensional V behind the product window, the circuit trace
    that follows the chosen industry, and the convergence of eight tools into one window. Everything else stays calm. */
 .mk{
-  --bg:#070A11;--surface:#0C111B;--surface-2:#121927;--surface-3:#1A2334;--surface-4:#232E44;
-  --line:#1B2535;--line-strong:#2B3850;--line-chrome:rgba(200,210,225,.20);
-  --text:#EEF2F8;--text-2:#AEB8C8;--text-3:#7E8A9C;
+  --bg:#111829;--surface:#182135;--surface-2:#1F2A42;--surface-3:#293651;--surface-4:#354464;
+  --line:#28344D;--line-strong:#3D4D6E;--line-chrome:rgba(200,210,225,.22);
+  --text:#F0F4FA;--text-2:#B9C3D3;--text-3:#97A3B8;
   --accent:#00DDFF;--accent-2:#0A8BF0;--accent-ink:#00141C;--accent-soft:rgba(0,200,255,.11);--accent-line:rgba(0,221,255,.36);
   --blue-soft:rgba(10,139,240,.13);--cobalt-soft:rgba(11,63,168,.22);
   --chrome-hi:#F6F8FB;--chrome:#B4BCC8;--chrome-lo:#646D7B;
   --grad-chrome:linear-gradient(178deg,#FFFFFF 0%,#D5DAE3 30%,#8A93A1 52%,#E6EAF0 62%,#A2AAB7 100%);
   --grad-cta:linear-gradient(180deg,#8CEBFF 0%,#19D3FF 46%,#00B6F2 100%);
   --grad-edge:linear-gradient(90deg,var(--chrome) 0%,var(--cyan) 100%);
-  --ok:#3DDC97;--ok-soft:rgba(61,220,151,.13);--warn:#F7B955;--warn-soft:rgba(247,185,85,.14);--bad:#FF6B76;--bad-soft:rgba(255,107,118,.14);
-  --info:#6CB6FF;--info-soft:rgba(108,182,255,.14);--violet:#B69CFF;--violet-soft:rgba(182,156,255,.14);--neutral-soft:rgba(174,184,200,.11);
+  --ok:#3DDC97;--ok-soft:rgba(61,220,151,.13);--warn:#F7B955;--warn-soft:rgba(247,185,85,.14);--bad:#FF7A85;--bad-soft:rgba(255,122,133,.15);--bad-ink:#2B0509;
+  --info:#7CBEFF;--info-soft:rgba(124,190,255,.14);--violet:#BDA6FF;--violet-soft:rgba(189,166,255,.14);--neutral-soft:rgba(185,195,211,.11);
   --shadow:0 22px 60px rgba(0,0,0,.58);--shadow-1:0 1px 0 rgba(255,255,255,.035) inset;--shadow-2:0 1px 0 rgba(255,255,255,.05) inset,0 10px 30px rgba(0,0,0,.34);
   --glow:0 0 0 1px rgba(0,221,255,.30),0 6px 22px rgba(0,160,255,.26);--glow-soft:0 0 18px rgba(0,190,255,.16);
   /* legacy names still used by the pricing and request pages */
   --mk-chrome:var(--grad-chrome);--mk-blue:var(--grad-brand);--mk-glow:rgba(0,221,255,.65);
   --mk-pad:32px;--mk-top:64px;
-  color-scheme:dark;background:var(--bg);color:var(--text);min-height:100vh;font-size:16px;line-height:1.6;overflow-x:clip;
+  color-scheme:dark;color:var(--text);min-height:100vh;font-size:16px;line-height:1.6;overflow-x:clip;
+  /* the ground is navy with a wide cobalt light that returns down the page, alternating sides, so no stretch reads as flat black */
+  background:radial-gradient(1000px 760px at 104% 22%,rgba(11,63,168,.24),transparent 70%),radial-gradient(1000px 760px at -4% 72%,rgba(11,63,168,.20),transparent 70%),var(--bg);
+  background-size:100% 3000px,100% 3000px,auto;background-repeat:repeat-y,repeat-y,repeat;
 }
 .mk-wrap{width:100%;max-width:1264px;margin:0 auto;padding-left:var(--mk-pad);padding-right:var(--mk-pad)}
 .mk main:focus{outline:none}

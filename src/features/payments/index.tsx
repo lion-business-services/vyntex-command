@@ -1,6 +1,7 @@
 // Payments: every dollar in and out in one place. Received from clients, paid to workers, expenses and who still owes whom.
 // Payments are recorded by hand; nothing here charges a card.
-import { useMemo, useState } from 'react';
+import { CanWrite } from '@/app/shared';
+import { lazy, useMemo, useState } from 'react';
 import { LuBanknote, LuDownload, LuHandCoins } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
 import { A, useRoute, PREVIEW } from '@/app/router';
@@ -11,18 +12,31 @@ import { byId, jobMoney, kpiValues, workerMoney } from '@/domain/selectors';
 import type { PayMethod } from '@/domain/types';
 import { money, money2, sum } from '@/lib/money';
 import { monthLabel, today } from '@/lib/dates';
-import { csvAmount, downloadCsv, periodText } from '@/features/team/util';
+import { csvAmount, periodText } from '@/features/team/util';
+import { downloadCsv } from '@/features/data/csv';
 import './payments.css';
 
 type Tab = 'received' | 'workers' | 'expenses' | 'balances';
 const TABS: Tab[] = ['received', 'workers', 'expenses', 'balances'];
 const isTab = (v: string | null): v is Tab => !!v && (TABS as string[]).includes(v);
 
-export default function PaymentsPage(_: PageProps) {
-  const { t, data, date, lang } = useApp();
+/** What clients paid a professional-services firm and what they still owe (./practice.tsx). */
+const PracticePayments = lazy(() => import('./practice'));
+
+/** Field editions keep the money-in, money-out screen below; a practice has its own ledger of client payments. */
+export default function PaymentsPage(props: PageProps) {
+  const { pack } = useApp();
+  return pack.family === 'practice' ? <PracticePayments {...props} /> : <FieldPayments {...props} />;
+}
+
+function FieldPayments(_: PageProps) {
+  const { t, data, date, lang, pack } = useApp();
+  // an edition without field workers pays nobody per job: that tab, its figures and its button are left out
+  const crew = pack.usesWorkers;
+  const tabs = TABS.filter((k) => k !== 'workers' || crew);
   const route = useRoute();
   const asked = route.query.get('tab');
-  const [tab, setTab] = useState<Tab>(isTab(asked) ? asked : 'received');
+  const [tab, setTab] = useState<Tab>(isTab(asked) && (asked !== 'workers' || crew) ? asked : 'received');
   const [from, setFrom] = useState(''); const [to, setTo] = useState('');
   const [method, setMethod] = useState<'' | PayMethod>('');
   const [recv, setRecv] = useState<string | null>(null);
@@ -76,19 +90,19 @@ export default function PaymentsPage(_: PageProps) {
   return (
     <>
       <PageHeader title={t('nav.money')} sub={t('payments.sub')} actions={<>
-        <Button icon={<LuBanknote />} onClick={() => setPay('')} data-testid="payments-pay">{t('form.pay.worker')}</Button>
-        <Button variant="primary" icon={<LuHandCoins />} onClick={() => setRecv('')} data-testid="payments-record">{t('form.pay.record')}</Button>
+        {crew && <CanWrite><Button icon={<LuBanknote />} onClick={() => setPay('')} data-testid="payments-pay">{t('form.pay.worker')}</Button></CanWrite>}
+        <CanWrite><Button variant="primary" icon={<LuHandCoins />} onClick={() => setRecv('')} data-testid="payments-record">{t('form.pay.record')}</Button></CanWrite>
       </>} />
 
       <div className="kpis payments-kpis">
         <Stat label={t('payments.k.received')} value={money(kpi.collectedMonth)} hint={monthLabel(month, lang)} onClick={() => thisMonth('received')} testId="payments-kpi-received" />
         <Stat label={t('payments.k.clientsOwe')} value={money(kpi.clientsOwe)} hint={t('payments.k.clientsOweHint')} onClick={() => setTab('balances')} testId="payments-kpi-owing" />
-        <Stat label={t('payments.k.paid')} value={money(paidMonth)} hint={monthLabel(month, lang)} onClick={() => thisMonth('workers')} testId="payments-kpi-paid" />
-        <Stat label={t('payments.k.owed')} value={money(kpi.oweWorkers)} hint={t('team.k.owedHint')} onClick={() => setTab('balances')} testId="payments-kpi-owed" />
+        {crew && <Stat label={t('payments.k.paid')} value={money(paidMonth)} hint={monthLabel(month, lang)} onClick={() => thisMonth('workers')} testId="payments-kpi-paid" />}
+        {crew && <Stat label={t('payments.k.owed')} value={money(kpi.oweWorkers)} hint={t('team.k.owedHint')} onClick={() => setTab('balances')} testId="payments-kpi-owed" />}
       </div>
 
       <div className="tabs payments-tabs" role="tablist">
-        {TABS.map((k) => <button key={k} role="tab" type="button" aria-selected={k === tab} onClick={() => setTab(k)} data-testid={`payments-tab-${k}`}>{t('payments.tab.' + k)}{counts[k] > 0 && <span className="count">{counts[k]}</span>}</button>)}
+        {tabs.map((k) => <button key={k} role="tab" type="button" aria-selected={k === tab} onClick={() => setTab(k)} data-testid={`payments-tab-${k}`}>{t('payments.tab.' + k)}{counts[k] > 0 && <span className="count">{counts[k]}</span>}</button>)}
       </div>
 
       <div className="filters payments-filters">
@@ -108,7 +122,7 @@ export default function PaymentsPage(_: PageProps) {
 
       {tab === 'received' && (
         <Card flush className="payments-list">
-          {!allReceived.length ? <Empty title={t('payments.empty.received')} action={<Button variant="primary" onClick={() => setRecv('')}>{t('form.pay.record')}</Button>}>{t('payments.empty.receivedHint')}</Empty>
+          {!allReceived.length ? <Empty title={t('payments.empty.received')} action={<CanWrite><Button variant="primary" onClick={() => setRecv('')}>{t('form.pay.record')}</Button></CanWrite>}>{t('payments.empty.receivedHint')}</Empty>
             : !received.length ? noMatch : (
               <div className="table-wrap">
                 <table className="tbl stackable payments-tbl" data-testid="payments-table-received">
@@ -134,7 +148,7 @@ export default function PaymentsPage(_: PageProps) {
 
       {tab === 'workers' && (
         <Card flush className="payments-list">
-          {!allPaid.length ? <Empty title={t('payments.empty.workers')} action={<Button variant="primary" onClick={() => setPay('')}>{t('form.pay.worker')}</Button>}>{t('payments.empty.workersHint')}</Empty>
+          {!allPaid.length ? <Empty title={t('payments.empty.workers')} action={<CanWrite><Button variant="primary" onClick={() => setPay('')}>{t('form.pay.worker')}</Button></CanWrite>}>{t('payments.empty.workersHint')}</Empty>
             : !paid.length ? noMatch : (
               <div className="table-wrap">
                 <table className="tbl stackable payments-tbl" data-testid="payments-table-workers">
@@ -197,7 +211,7 @@ export default function PaymentsPage(_: PageProps) {
                         <td data-label={t('common.price')} className="num">{money(m.price)}</td>
                         <td data-label={t('payments.col.received')} className="num">{money(m.received)}</td>
                         <td data-label={t('common.balance')} className="num strong">{money2(m.clientOwes)}</td>
-                        <td className="num payments-rowact"><Button size="sm" onClick={() => setRecv(j.id)} data-testid="payments-record-row" aria-label={`${t('form.pay.record')}: ${j.name}`}>{t('form.pay.record')}</Button></td>
+                        <td className="num payments-rowact"><CanWrite><Button size="sm" onClick={() => setRecv(j.id)} data-testid="payments-record-row" aria-label={`${t('form.pay.record')}: ${j.name}`}>{t('form.pay.record')}</Button></CanWrite></td>
                       </tr>
                     ))}
                   </tbody>
@@ -206,7 +220,7 @@ export default function PaymentsPage(_: PageProps) {
               </div>
             ) : <p className="muted payments-pad">{t('payments.bal.noClients')}</p>}
           </Card>
-          <Card flush title={t('payments.k.owed')}>
+          {crew && <Card flush title={t('payments.k.owed')}>
             <p className="small muted payments-pad">{t('team.k.owedHint')}</p>
             {owed.length ? (
               <div className="table-wrap">
@@ -219,7 +233,7 @@ export default function PaymentsPage(_: PageProps) {
                         <td data-label={t('team.col.agreed')} className="num">{money(m.agreed)}</td>
                         <td data-label={t('team.col.paid')} className="num">{money(m.paid)}</td>
                         <td data-label={t('team.col.owed')} className="num strong">{money2(m.owed)}</td>
-                        <td className="num payments-rowact">{w.active !== false && <Button size="sm" onClick={() => setPay(w.id)} data-testid="payments-pay-row" aria-label={`${t('team.pay')}: ${w.name}`}>{t('team.pay')}</Button>}</td>
+                        <td className="num payments-rowact">{w.active !== false && <CanWrite><Button size="sm" onClick={() => setPay(w.id)} data-testid="payments-pay-row" aria-label={`${t('team.pay')}: ${w.name}`}>{t('team.pay')}</Button></CanWrite>}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -227,7 +241,7 @@ export default function PaymentsPage(_: PageProps) {
                 </table>
               </div>
             ) : <p className="muted payments-pad">{t('payments.bal.noWorkers')}</p>}
-          </Card>
+          </Card>}
         </div>
       )}
 

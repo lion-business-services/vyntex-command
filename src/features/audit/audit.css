@@ -1,0 +1,22 @@
+/* The audit trail: a read-only table with its filters. */
+.audit-filters select{min-width:0;max-width:220px}
+.audit-date{display:inline-flex;align-items:center;gap:6px;font-weight:650}
+.audit-date .input{width:auto;min-height:38px;padding:5px 8px}
+.audit-tbl th:first-child,.audit-tbl td:first-child{padding-left:18px}
+.audit-tbl th:last-child,.audit-tbl td:last-child{padding-right:18px}
+.audit-when{font-weight:600;font-variant-numeric:tabular-nums}
+.audit-what{font-weight:600}
+.audit-record{display:grid;gap:1px;min-width:0;overflow-wrap:anywhere}
+.audit-detail{overflow-wrap:anywhere;max-width:36ch}
+.audit-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+.audit-fixed{margin-top:12px;max-width:90ch}
+@media (min-width:721px) and (max-width:1180px){
+  .audit-tbl th:nth-child(5),.audit-tbl td:nth-child(5){display:none}
+}
+@media (max-width:720px){
+  .audit-filters .searchbox,.audit-filters select{flex:1 1 100%;max-width:none}
+  .audit-date{flex:1 1 140px}.audit-date .input{flex:1;min-width:0;min-height:40px}
+  table.tbl.stackable.audit-tbl td{align-items:center}
+  .audit-record{text-align:right;justify-items:end}
+  .audit-detail{max-width:none;text-align:right}
+}

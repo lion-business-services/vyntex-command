@@ -1,0 +1,161 @@
+/* LBS Command brand layer: the look of the Lion Business Services workspace.
+   Everything here sits under :root[data-brand="lbs"], so it does nothing in the VYNTEX deployment. It redefines the same
+   tokens the app already uses, so every screen follows without a line of feature CSS changing.
+
+   Where it comes from: the official logo (a gold lion on a ground that runs from near-black green through emerald to a
+   bronze corner) and the paper a tax and bookkeeping firm lives on, the ledger and the letterhead.
+   The rules: the ground is that directional green, never flat black and never flat green. Gold is the only accent and it is
+   a metal, so it is always a gradient from bronze through gold to a pale highlight: the identity, the one main action, the
+   key edges and keyboard focus. A calm green marks what is selected. Text is ivory.
+   Shape: rounded like the letters of the wordmark (no cut corners, no circuit lines, no glow), and one ruled line borrowed
+   from the letterhead and the ledger: a thick rule over a thin one under a page title, a double rule under column heads
+   and a gold one over a totals row. docs/BRAND.md has the values and the contrast figures. */
+
+/* Stand-ins used until the web fonts arrive (or when they are blocked). Their sizes are adjusted to the real faces'
+   proportions, so text does not reflow when the real font replaces them. */
+@font-face{font-family:"LBS Serif Fallback";font-weight:100 500;src:local("Times New Roman"),local("Liberation Serif"),local("Tinos"),local("Times");size-adjust:111.26%;ascent-override:97.25%;descent-override:22.56%;line-gap-override:0%}
+@font-face{font-family:"LBS Serif Fallback";font-weight:600 900;src:local("Times New Roman Bold"),local("TimesNewRomanPS-BoldMT"),local("Liberation Serif Bold"),local("Tinos Bold"),local("Times Bold");size-adjust:111.26%;ascent-override:97.25%;descent-override:22.56%;line-gap-override:0%}
+@font-face{font-family:"LBS Sans Fallback";font-weight:100 500;src:local("Arial"),local("Liberation Sans"),local("Arimo"),local("Helvetica Neue"),local("Helvetica");size-adjust:112.16%;ascent-override:93.62%;descent-override:31.21%;line-gap-override:8.92%}
+@font-face{font-family:"LBS Sans Fallback";font-weight:600 900;src:local("Arial Bold"),local("Arial-BoldMT"),local("Liberation Sans Bold"),local("Arimo Bold"),local("Helvetica Neue Bold"),local("Helvetica Bold");size-adjust:112.16%;ascent-override:93.62%;descent-override:31.21%;line-gap-override:8.92%}
+
+/* ---------- tokens: dark (the default) ---------- */
+:root[data-brand="lbs"]{
+  /* emerald foundation */
+  --bg:#06160E;--surface:#0E2A1B;--surface-2:#133423;--surface-3:#1A412C;--surface-4:#225138;
+  --line:#1E402C;--line-strong:#2F5C42;--line-chrome:rgba(214,226,208,.24);
+  --text:#F8F4E6;--text-2:#C5CFBF;--text-3:#9BAD99;
+  /* the ground of the logo, held darker than any card: near-black green at the top left, emerald, a bronze corner */
+  --ground:linear-gradient(135deg,#020805 0%,#051209 26%,#082015 62%,#0A2718 86%,#18190A 100%);
+  /* the gold of the lion, from deep bronze to the pale highlight. These four names carry the blue spectrum in VYNTEX. */
+  --cobalt:#6C2E01;--blue:#D98909;--cyan:#FEC848;--ice:#FEF8C8;
+  --chrome-hi:#FEF8C8;--chrome:#E3A93A;--chrome-lo:#8A5A12;
+  --grad-chrome:linear-gradient(176deg,#FEF8C8 0%,#FEC848 30%,#C27A08 54%,#FDE08A 68%,#D98909 100%);
+  --grad-brand:linear-gradient(100deg,#D98909 0%,#FEC848 56%,#FEF8C8 100%);
+  --grad-cta:linear-gradient(180deg,#FEEFB2 0%,#FAD264 20%,#EAA821 50%,#CF8A0B 76%,#DFA01F 100%);
+  --grad-edge:linear-gradient(90deg,#FEC848 0%,#D98909 46%,rgba(217,137,9,0) 100%);
+  /* the ruled line of the letterhead and the ledger */
+  --rule:rgba(254,200,72,.62);--rule-2:rgba(254,200,72,.30);
+  /* what is selected or under the pointer: a calm green, so gold stays rare */
+  --select:#3F9A6B;--blue-soft:rgba(84,176,124,.16);--cobalt-soft:rgba(46,125,84,.20);
+  /* status. None of them is gold and none is the emerald of the surfaces: mint, tangerine, rose, iris, orchid. */
+  --ok:#74E4B8;--ok-soft:rgba(116,228,184,.14);--warn:#FF9052;--warn-soft:rgba(255,144,82,.15);--bad:#FF8795;--bad-soft:rgba(255,135,149,.15);--bad-ink:#2B0509;
+  --info:#C9B6FF;--info-soft:rgba(201,182,255,.15);--violet:#EDA4E4;--violet-soft:rgba(237,164,228,.14);--neutral-soft:rgba(214,226,208,.10);
+  /* sidebar: the logo's own ground, in either theme */
+  --side:#04110A;--side-2:#0A2416;--side-line:rgba(214,226,208,.12);--side-text:#DCE2D2;--side-text-2:#A3B4A0;
+  /* depth: a lit top edge and a soft shadow, like embossed paper. No glow. */
+  --shadow:0 24px 60px rgba(0,6,3,.62);--shadow-1:inset 0 1px 0 rgba(254,248,200,.05),0 1px 2px rgba(0,6,3,.28);--shadow-2:inset 0 1px 0 rgba(254,248,200,.07),0 10px 28px rgba(0,6,3,.40);
+  --glow:0 0 0 1px rgba(108,46,1,.55),0 1px 2px rgba(0,6,3,.45),0 6px 16px rgba(108,46,1,.30);--glow-soft:0 6px 18px rgba(0,6,3,.30);
+  --radius:14px;--radius-s:10px;--cut:0px;
+  --font-title:'Playfair Display','LBS Serif Fallback',Georgia,'Times New Roman',serif;
+  --font-display:'Poppins','LBS Sans Fallback','Segoe UI',system-ui,sans-serif;
+  --font-body:'Poppins','LBS Sans Fallback','Segoe UI',system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+/* Gold is the accent here whatever colour the company record carries: the workspace frame sets these four inline, and in
+   this deployment the brand decides, so they are restated on the frame with priority. */
+:root[data-brand="lbs"],:root[data-brand="lbs"] .shell{
+  --accent:#FEC848!important;--accent-2:#D98909;--accent-ink:#1C1300!important;--accent-soft:rgba(254,200,72,.12)!important;--accent-line:rgba(254,200,72,.38)!important;
+}
+
+/* ---------- tokens: light (ledger paper, green ink, bronze for action) ---------- */
+:root[data-brand="lbs"][data-theme="light"]{
+  --bg:#EDF1EA;--surface:#FFFEFA;--surface-2:#F5F7F1;--surface-3:#E6ECE3;--surface-4:#D8E1D5;
+  --line:#D3DCD0;--line-strong:#AEBFAE;--line-chrome:rgba(22,60,38,.30);
+  --text:#0A1F14;--text-2:#3B5244;--text-3:#566B5C;
+  --ground:linear-gradient(135deg,#F3F6F0 0%,#EDF1EA 55%,#E9EDE1 100%);
+  --cobalt:#6C3F00;--blue:#8A5300;--cyan:#B87A0A;--ice:#E0A93A;
+  --chrome-hi:#5E3A00;--chrome:#9A6A14;--chrome-lo:#C9A866;
+  --grad-chrome:linear-gradient(176deg,#6C3F00 0%,#A86A00 40%,#5E3A00 58%,#B87A0A 100%);
+  --grad-brand:linear-gradient(100deg,#6C3F00 0%,#8A5300 56%,#B87A0A 100%);
+  --grad-cta:linear-gradient(180deg,#9A5F00 0%,#8A5300 52%,#744400 100%);
+  --grad-edge:linear-gradient(90deg,#8A5300 0%,#B87A0A 46%,rgba(184,122,10,0) 100%);
+  --rule:rgba(138,83,0,.78);--rule-2:rgba(138,83,0,.40);
+  --select:#1F7A50;--blue-soft:rgba(31,122,80,.10);--cobalt-soft:rgba(31,122,80,.07);
+  --ok:#085A3E;--ok-soft:rgba(8,90,62,.11);--warn:#9E3A0A;--warn-soft:rgba(158,58,10,.11);--bad:#B3213F;--bad-soft:rgba(179,33,63,.10);--bad-ink:#FFFFFF;
+  --info:#6741B8;--info-soft:rgba(103,65,184,.10);--violet:#96309A;--violet-soft:rgba(150,48,154,.10);--neutral-soft:rgba(10,31,20,.07);
+  --shadow:0 18px 44px rgba(10,40,24,.18);--shadow-1:0 1px 2px rgba(10,40,24,.06);--shadow-2:0 1px 2px rgba(10,40,24,.07),0 10px 26px rgba(10,40,24,.10);
+  --glow:0 0 0 1px rgba(94,58,0,.55),0 1px 2px rgba(10,40,24,.20),0 6px 14px rgba(108,63,0,.22);--glow-soft:0 6px 16px rgba(10,40,24,.10);
+  color-scheme:light;
+}
+:root[data-brand="lbs"][data-theme="light"],:root[data-brand="lbs"][data-theme="light"] .shell{
+  --accent:#8A5300!important;--accent-2:#6C3F00;--accent-ink:#FFFDF5!important;--accent-soft:rgba(138,83,0,.10)!important;--accent-line:rgba(138,83,0,.42)!important;
+}
+/* the main action and its edge follow the brand even when a company colour is saved (features/settings derives them from it) */
+:root[data-brand="lbs"] .shell{--grad-cta:linear-gradient(180deg,#FEEFB2 0%,#FAD264 20%,#EAA821 50%,#CF8A0B 76%,#DFA01F 100%);--glow:0 0 0 1px rgba(108,46,1,.55),0 1px 2px rgba(0,6,3,.45),0 6px 16px rgba(108,46,1,.30);--glow-soft:0 6px 18px rgba(0,6,3,.30)}
+:root[data-brand="lbs"][data-theme="light"] .shell{--grad-cta:linear-gradient(180deg,#9A5F00 0%,#8A5300 52%,#744400 100%);--glow:0 0 0 1px rgba(94,58,0,.55),0 1px 2px rgba(10,40,24,.20),0 6px 14px rgba(108,63,0,.22);--glow-soft:0 6px 16px rgba(10,40,24,.10)}
+
+/* ---------- type: Playfair Display for page titles, section titles and large figures; Poppins for everything else ---------- */
+:root[data-brand="lbs"] body{letter-spacing:-.004em}
+:root[data-brand="lbs"] :is(h1,h2,h3,h4){letter-spacing:-.008em}
+:root[data-brand="lbs"] h1{font-size:30px;letter-spacing:0;line-height:1.16}
+:root[data-brand="lbs"] h2{font-family:var(--font-title);font-size:19px;font-weight:700;letter-spacing:.002em}
+/* figures: lining and equal width, so columns of money line up in the serif too */
+:root[data-brand="lbs"] :is(.kpi .v,.jobs-fig .v,.jobs-total b,.reports-figs dd:not(.h),.settings-price,.settings-counts dd,.portal-sum dd,.docs-figs dd.tot){font-family:var(--font-title);font-variant-numeric:lining-nums tabular-nums;letter-spacing:0}
+:root[data-brand="lbs"] .kpi .v{font-size:28px;line-height:1.2}
+/* a status badge that sits inside a title keeps the plain face */
+:root[data-brand="lbs"] :is(h1,h2) :is(.badge,.count){font-family:var(--font-body);letter-spacing:0}
+@media (max-width:560px){:root[data-brand="lbs"] h1{font-size:25px}}
+
+/* ---------- shape: rounded, ruled, no cut corners ---------- */
+:root[data-brand="lbs"] :is(.cut,.card.premium){clip-path:none}
+:root[data-brand="lbs"] .card{background:linear-gradient(180deg,var(--surface-2) -30%,var(--surface) 96px)}
+:root[data-brand="lbs"] .card.raised{background:linear-gradient(180deg,var(--surface-3) -30%,var(--surface-2) 30%,var(--surface))}
+:root[data-brand="lbs"] .card.premium{background:linear-gradient(160deg,var(--cobalt-soft),transparent 46%),var(--surface);border-color:var(--rule-2)}
+:root[data-brand="lbs"] .card.premium::before{left:var(--radius);width:96px;height:2px;border-radius:0 0 2px 2px}
+/* page title: the letterhead rule, thick over thin, fading out to the right */
+:root[data-brand="lbs"] .page-h{padding-bottom:17px;background:linear-gradient(90deg,var(--rule),transparent 46%) 0 calc(100% - 3px)/100% 2px no-repeat,linear-gradient(90deg,var(--rule-2),transparent 82%) 0 100%/100% 1px no-repeat}
+/* buttons: the main one is a bar of brushed gold */
+:root[data-brand="lbs"] .btn{font-weight:600}
+:root[data-brand="lbs"] .btn.primary{font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(108,46,1,.30),var(--glow)}
+:root[data-brand="lbs"] .btn.primary:hover{filter:brightness(1.05) saturate(1.04)}
+:root[data-brand="lbs"][data-theme="light"] .btn.primary{box-shadow:inset 0 1px 0 rgba(255,236,190,.38),var(--glow)}
+/* figures on the home screen: a short gold rule at the top edge instead of the cut corner */
+:root[data-brand="lbs"] .kpi{background:linear-gradient(180deg,var(--surface-2),var(--surface) 70%)}
+:root[data-brand="lbs"] .kpi::after{display:none}
+:root[data-brand="lbs"] .kpi::before{left:16px;top:0;width:40px;height:2px;border-radius:0 0 2px 2px;opacity:1}
+/* tables: a double rule under the column heads, and a gold one over the totals row, the way a ledger column is summed */
+:root[data-brand="lbs"] .tbl th{color:var(--text-2);font-weight:600;border-bottom:3px double var(--line-strong)}
+:root[data-brand="lbs"] .tbl tfoot td{border-top:3px double var(--rule);border-bottom:0}
+:root[data-brand="lbs"] .tbl tbody tr.click:hover,:root[data-brand="lbs"] .item.click:hover{background:var(--blue-soft)}
+@media (max-width:720px){
+  :root[data-brand="lbs"] table.tbl.stackable tfoot td{border-top:0}
+  :root[data-brand="lbs"] table.tbl.stackable tfoot tr{border-top:3px double var(--rule)}
+}
+:root[data-brand="lbs"] .seg button{border-radius:7px}
+:root[data-brand="lbs"] .menu button,:root[data-brand="lbs"] .menu a,:root[data-brand="lbs"] .dm-actions button,:root[data-brand="lbs"] .palette .hit{border-radius:9px}
+/* empty state: the icon in a ringed seal, no circuit trace */
+:root[data-brand="lbs"] .empty > svg{padding:11px;margin-bottom:14px;border-radius:50%;box-shadow:0 0 0 3px var(--surface),0 0 0 4px var(--accent-line)}
+:root[data-brand="lbs"] .empty:has(> svg)::before,:root[data-brand="lbs"] .empty:has(> svg)::after{display:none}
+/* dialogs and the command palette: larger corners and a gilt top edge */
+:root[data-brand="lbs"] .overlay{background:rgba(1,8,4,.70)}
+:root[data-brand="lbs"][data-theme="light"] .overlay{background:rgba(10,31,20,.46)}
+:root[data-brand="lbs"] .modal{border-radius:18px;border-top-color:var(--rule-2);box-shadow:var(--shadow)}
+:root[data-brand="lbs"] .palette{border-color:var(--rule-2);box-shadow:var(--shadow)}
+:root[data-brand="lbs"] .palette .hit[aria-selected="true"]::before{border-radius:0 2px 2px 0}
+@media (max-width:560px){:root[data-brand="lbs"] .modal{border-radius:18px 18px 0 0}:root[data-brand="lbs"] .palette{border-radius:16px}}
+:root[data-brand="lbs"] .toast{border-radius:12px}
+:root[data-brand="lbs"] .scrim.open{background:rgba(1,8,4,.62)}
+
+/* ---------- app frame ---------- */
+/* the sidebar is the logo's ground: near-black green at the top, emerald below, the bronze corner at the foot */
+:root[data-brand="lbs"] .side{background:linear-gradient(168deg,#020805 0%,#05150D 28%,#0A2F1D 72%,#0C3F23 94%,#241D07 116%);border-right-color:transparent;box-shadow:inset -1px 0 0 rgba(254,200,72,.16);scrollbar-color:#1A412C transparent}
+/* it stays dark in the light theme, so it keeps the dark theme's gold */
+:root[data-brand="lbs"][data-theme="light"] .side{--chrome-hi:#FEF8C8;--chrome:#E3A93A;--chrome-lo:#8A5A12;--grad-chrome:linear-gradient(176deg,#FEF8C8 0%,#FEC848 30%,#C27A08 54%,#FDE08A 68%,#D98909 100%);--grad-brand:linear-gradient(100deg,#D98909 0%,#FEC848 56%,#FEF8C8 100%);--cyan:#FEC848;--ice:#FEF8C8;--accent:#FEC848!important;--accent-ink:#1C1300!important;--accent-soft:rgba(254,200,72,.12)!important;--accent-line:rgba(254,200,72,.38)!important;--bad:#FF8795;--bad-ink:#2B0509}
+:root[data-brand="lbs"] .side-top{padding:20px 16px 14px}
+:root[data-brand="lbs"] .side-brand{border-radius:12px;background:rgba(254,248,200,.035)}
+:root[data-brand="lbs"] .side-brand .logo{border-radius:10px}
+:root[data-brand="lbs"] .side-brand b{font-weight:600;color:#F8F4E6}
+:root[data-brand="lbs"] .nav a{border-radius:10px;font-weight:500}
+:root[data-brand="lbs"] .nav a:hover{background:rgba(214,226,208,.07);color:#F8F4E6}
+:root[data-brand="lbs"] .nav a[aria-current="page"]{background:linear-gradient(90deg,rgba(63,154,107,.34),rgba(63,154,107,.10));color:#FFFDF5;font-weight:600}
+:root[data-brand="lbs"] .nav a[aria-current="page"]::before{top:7px;bottom:7px;width:3px;border-radius:0 3px 3px 0;background:var(--grad-chrome);box-shadow:none}
+:root[data-brand="lbs"] .nav-cap{font-weight:600}
+:root[data-brand="lbs"] .side-demo i{background:#FEC848;box-shadow:0 0 0 3px rgba(254,200,72,.16)}
+:root[data-brand="lbs"] .topbar .gs:hover{box-shadow:var(--shadow-1)}
+:root[data-brand="lbs"] .demobar select{border-radius:8px}
+
+/* ---------- printable documents (always paper-white): green ink and bronze instead of navy and cyan ---------- */
+:root[data-brand="lbs"] .paper{color:#14241B}
+:root[data-brand="lbs"] .paper h2,:root[data-brand="lbs"] .paper h4{color:#0B2A1A}
+:root[data-brand="lbs"] .paper [contenteditable="true"]{outline-color:#B5C4B3}
+:root[data-brand="lbs"] .paper [contenteditable="true"]:focus{outline-color:#8A5300;background:#FBF6E6}

@@ -53,7 +53,7 @@
 @keyframes vx-run{0%{stroke-dashoffset:106;opacity:0}5%{opacity:1}45%{stroke-dashoffset:6;opacity:1}50%,100%{stroke-dashoffset:6;opacity:0}}
 
 /* product window */
-.vx-frame{position:relative;background:linear-gradient(180deg,#0E1420,#0A0F18);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 30px 70px rgba(0,0,0,.55),0 0 60px rgba(10,139,240,.10);overflow:hidden;min-width:0}
+.vx-frame{position:relative;background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 30px 70px rgba(0,0,0,.55),0 0 60px rgba(10,139,240,.10);overflow:hidden;min-width:0}
 .vx-frame::before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(200,215,235,.55) 22%,rgba(0,221,255,.75) 68%,transparent)}
 .vx-frame.tilt{transform:perspective(1600px) rotateY(-3.2deg) rotateX(1.6deg);transform-origin:60% 50%}
 .vx-frame-h{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.015)}
@@ -82,3 +82,84 @@
   .vx-reveal{opacity:1!important;transform:none!important;filter:none!important;transition:none!important}
   .vx-trace .l{stroke-dashoffset:0!important}.vx-trace .nd{opacity:1!important}
 }
+
+/* ---------- LBS Command: the lion and the lockup ---------- */
+.lbs-mark,.lbs-word,.lbs-official{display:block;flex:none;width:auto;max-width:none}
+.lbs-lockup{display:inline-flex;align-items:center;gap:11px;text-decoration:none;min-width:0}
+.lbs-lockup-t{display:flex;flex-direction:column;min-width:0;line-height:1.12}
+/* the product name in the title face, in brushed gold (bronze on light paper) */
+.lbs-name{font-family:var(--font-title);font-weight:700;font-size:21px;letter-spacing:.005em;white-space:nowrap;padding-bottom:.1em;background:var(--grad-chrome);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.lbs-lockup.sm{gap:10px}.lbs-lockup.sm .lbs-name{font-size:19px}
+.lbs-tag{font-size:10.5px;font-weight:600;color:var(--text-3);letter-spacing:.01em;margin-top:1px;white-space:nowrap}
+.lbs-lockup.lg{gap:20px}
+.lbs-lockup.lg .lbs-lockup-t{padding:6px 0 6px 20px;border-left:1px solid var(--rule-2,var(--line-strong))}
+.lbs-lockup.lg .lbs-name{font-size:28px}
+.lbs-lockup.lg .lbs-tag{font-size:12.5px;margin-top:4px}
+@media (max-width:560px){
+  .lbs-lockup.lg{gap:14px}.lbs-lockup.lg .lbs-official{height:68px}
+  .lbs-lockup.lg .lbs-lockup-t{padding-left:14px}.lbs-lockup.lg .lbs-name{font-size:22px}
+}
+
+/* ---------- sign-in frame (both brands): the brand panel beside the form ---------- */
+.auth{display:grid;grid-template-columns:minmax(0,46fr) minmax(0,54fr);min-height:100vh;min-height:100dvh}
+/* the panel is always dark, like the sidebar: it is where the identity lives */
+.auth-brand{position:relative;isolation:isolate;display:grid;place-items:center;padding:56px 40px;overflow:hidden;color:#F4F6FA;color-scheme:dark}
+.auth-brand::after{content:"";position:absolute;right:0;top:0;bottom:0;width:1px}
+.auth-id{display:grid;justify-items:center;gap:30px;text-align:center;max-width:100%;animation:auth-in var(--motion-reveal) var(--ease-vyntex) both}
+.auth-id-t{display:grid;justify-items:center;min-width:0}
+/* starts dimmed, not empty: the brand is on screen from the first frame */
+@keyframes auth-in{from{opacity:.35;transform:translateY(8px)}}
+.auth-main{display:flex;flex-direction:column;min-width:0;padding:22px 32px 26px}
+.auth-tools{display:flex;justify-content:flex-end;align-items:center;gap:8px;min-height:40px}
+.auth-form{width:100%;max-width:412px;margin:auto;padding:28px 0}
+.auth-form:focus{outline:none}
+.auth-form h1{font-size:30px;line-height:1.15;margin-bottom:8px}
+.auth-sub{color:var(--text-2);margin-bottom:24px;max-width:44ch}
+.auth-form h1+:not(.auth-sub){margin-top:20px}
+.auth-foot{width:100%;max-width:412px;margin:0 auto;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--text-3)}
+.auth-foot a{color:var(--text-2)}
+
+/* VYNTEX: navy with the cobalt light and the faint grid of the sales pages, the V above the lockup */
+.auth-vx .auth-brand{background:radial-gradient(60% 46% at 50% 36%,rgba(11,63,168,.55),transparent 72%),radial-gradient(40% 30% at 72% 22%,rgba(10,139,240,.20),transparent 74%),linear-gradient(180deg,#0E1525,#0B1120);
+  --chrome-hi:#F6F8FB;--chrome:#B4BCC8;--chrome-lo:#646D7B;--grad-chrome:linear-gradient(178deg,#FFFFFF 0%,#D5DAE3 30%,#8A93A1 52%,#E6EAF0 62%,#A2AAB7 100%);--blue:#0A8BF0;--cyan:#00DDFF;--ice:#C4F1FF;--text-3:#97A3B8}
+.auth-vx .auth-brand::before{content:"";position:absolute;inset:0;z-index:-1;background-image:linear-gradient(rgba(200,210,225,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(200,210,225,.22) 1px,transparent 1px);background-size:64px 64px;background-position:50% 0;opacity:.2;-webkit-mask-image:radial-gradient(64% 56% at 50% 38%,#000,transparent 80%);mask-image:radial-gradient(64% 56% at 50% 38%,#000,transparent 80%)}
+.auth-vx .auth-brand::after{background:linear-gradient(180deg,transparent,rgba(180,188,200,.45) 28%,rgba(0,221,255,.55) 62%,transparent)}
+.auth-vx .auth-v{width:min(280px,58%);height:auto;filter:drop-shadow(0 22px 30px rgba(0,0,0,.45))}
+
+/* LBS: the ground of the logo itself (near-black green, emerald, the bronze corner), the lion large, the wordmark, a
+   letterhead rule and the product name */
+.auth-lbs .auth-brand{color:#F8F4E6;background:radial-gradient(46% 34% at 50% 36%,rgba(52,150,96,.26),transparent 72%),linear-gradient(135deg,#000301 0%,#041409 24%,#0A341E 58%,#0C3F23 74%,#1B2F14 88%,#2B1F06 100%)}
+.auth-lbs .auth-brand::after{background:linear-gradient(180deg,transparent,rgba(254,200,72,.55) 26%,rgba(217,137,9,.40) 70%,transparent)}
+.auth-lbs .auth-id{gap:26px}
+.auth-lion{display:block;width:auto;height:clamp(250px,44vh,400px);filter:drop-shadow(0 20px 28px rgba(0,3,1,.55))}
+.auth-word{display:block;width:min(318px,74%);height:auto}
+.auth-rule{display:block;width:min(318px,74%);height:5px;margin:22px 0 16px;background:linear-gradient(90deg,transparent,rgba(254,200,72,.85) 22%,rgba(254,200,72,.85) 78%,transparent) 0 0/100% 2px no-repeat,linear-gradient(90deg,transparent,rgba(254,200,72,.45) 22%,rgba(254,200,72,.45) 78%,transparent) 0 100%/100% 1px no-repeat}
+.auth-product{font-family:var(--font-title,var(--font-display));font-weight:700;font-size:34px;line-height:1.1;letter-spacing:.005em;padding-bottom:.1em;background:linear-gradient(176deg,#FEF8C8 0%,#FEC848 30%,#C27A08 54%,#FDE08A 68%,#D98909 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+
+@media (max-width:900px){
+  .auth{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
+  .auth-brand{padding:26px 20px 24px}
+  .auth-brand::after{left:0;top:auto;width:auto;height:1px}
+  .auth-vx .auth-brand::after{background:linear-gradient(90deg,transparent,rgba(180,188,200,.45) 28%,rgba(0,221,255,.55) 62%,transparent)}
+  .auth-lbs .auth-brand::after{background:linear-gradient(90deg,transparent,rgba(254,200,72,.55) 26%,rgba(217,137,9,.40) 70%,transparent)}
+  .auth-main{padding:14px 20px 22px}
+  .auth-form{padding:18px 0 24px;margin-top:0}
+  .auth-form h1{font-size:26px}
+  .auth-vx .auth-id{grid-auto-flow:column;gap:14px;align-items:center}
+  .auth-vx .auth-v{width:64px}
+  /* the lion beside the wordmark, the way the logo itself is laid out */
+  .auth-lbs .auth-id{grid-template-columns:auto minmax(0,auto);gap:16px;align-items:center;text-align:left}
+  .auth-lbs .auth-id-t{justify-items:start}
+  .auth-lion{height:104px}
+  .auth-word{width:156px}
+  .auth-rule{width:156px;margin:9px 0 6px;background:linear-gradient(90deg,rgba(254,200,72,.85),transparent) 0 0/100% 2px no-repeat,linear-gradient(90deg,rgba(254,200,72,.45),transparent) 0 100%/100% 1px no-repeat}
+  .auth-product{font-size:22px}
+}
+/* tablets held upright keep the band, with the logo at a size that still reads as the front door */
+@media (min-width:561px) and (max-width:900px){
+  .auth-brand{padding:34px 24px 32px}
+  .auth-lbs .auth-id{gap:22px}
+  .auth-lion{height:150px}.auth-word{width:230px}.auth-rule{width:230px;margin:13px 0 9px}.auth-product{font-size:29px}
+  .auth-vx .auth-v{width:88px}
+}
+@media print{.auth-brand{display:none}}

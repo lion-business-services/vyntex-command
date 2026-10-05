@@ -43,3 +43,94 @@
   .clients-kpis>:last-child:nth-child(odd){grid-column:1/-1}
   .clients-contact{align-items:flex-end;text-align:right}
 }
+.clients-other{margin-top:16px;border-style:dashed}
+
+/* ---------- the fuller client record ---------- */
+.clients-past .clients-name{color:var(--text-2)}
+.clients-marks,.clients-chips{display:inline-flex;gap:5px;flex-wrap:wrap;vertical-align:middle}
+.clients-marks .badge svg,.clients-chips .badge svg{width:12px;height:12px}
+.clients-chips .badge{white-space:normal;text-align:left;max-width:100%}
+.clients-who .clients-marks{margin-left:4px}
+.clients-head-marks{display:inline-flex;gap:6px;flex-wrap:wrap;vertical-align:middle;margin-left:4px}
+.clients-head-marks .badge{font-family:var(--font-body,inherit)}
+.clients-narrow{max-width:860px}
+
+/* what a person needs at a glance, under the name: office, who looks after the client, balance, next appointment */
+.clients-glance{display:flex;flex-wrap:wrap;gap:0;margin:-6px 0 18px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);overflow:hidden}
+.clients-glance>div{flex:1 1 170px;padding:11px 16px;border-right:1px solid var(--line);margin-right:-1px;min-width:0}
+.clients-glance>div.wide{flex:1 1 100%;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 16px}
+.clients-glance dt{font-size:12px;font-weight:700;color:var(--text-3);margin-bottom:2px}
+.clients-glance>div.wide dt{margin:0}
+.clients-glance dd{margin:0;font-size:14.5px;font-weight:650;overflow-wrap:anywhere;min-height:24px;display:flex;align-items:center}
+.clients-glance dd a{text-decoration:none}.clients-glance dd a:hover{text-decoration:underline;text-underline-offset:3px}
+.clients-figure{font-family:var(--font-title);font-size:19px!important;font-weight:700!important;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.clients-figure.owes{color:var(--bad)}
+
+/* the tab strip: scrolls sideways on a narrow screen, keeps the open tab in view, and fades at an edge that has more */
+.clients-tabs{position:relative;margin:0 0 16px}
+.clients-tabs .tabs{margin-bottom:0;scroll-behavior:smooth;overscroll-behavior-x:contain}
+.clients-tabs .tabs button{padding:10px 12px}
+.clients-tabs .tabs button{scroll-snap-align:center}
+.clients-tabs .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:6px 6px 0 0}
+.clients-tabs::before,.clients-tabs::after{content:"";position:absolute;top:0;bottom:1px;width:36px;pointer-events:none;opacity:0;transition:opacity var(--motion-fast) var(--ease-vyntex);z-index:1}
+.clients-tabs::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+.clients-tabs::after{right:0;background:linear-gradient(270deg,var(--bg),transparent)}
+.clients-tabs.more-left::before,.clients-tabs.more-right::after{opacity:1}
+@media (prefers-reduced-motion:reduce){.clients-tabs .tabs{scroll-behavior:auto}}
+
+/* add / edit */
+.clients-form>.seg{margin-bottom:14px}
+.clients-set{border:0;border-top:1px solid var(--line);padding:14px 0 0;margin:16px 0 0;min-width:0}
+.clients-set legend{font-size:14px;font-weight:700;padding:0 8px 0 0;float:left;width:100%;margin-bottom:4px}
+.clients-set legend+*{clear:both}
+.clients-set>.xs{margin-bottom:10px}
+.clients-people{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.clients-person{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr) 32px;gap:6px;align-items:center;width:100%}
+.clients-person:has(.clients-pct){grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 84px minmax(0,1fr) minmax(0,1.2fr) 32px}
+.clients-person .input{width:100%;min-width:0;min-height:36px;padding:6px 9px}
+.clients-pct{display:flex;align-items:center;gap:4px;color:var(--text-3);font-size:13px}
+.clients-dup{margin-top:14px}
+.clients-dup p svg{width:15px;height:15px;vertical-align:-2px}
+.clients-dup ul{margin:6px 0 8px;padding-left:18px;font-size:13.5px}
+
+/* how to reach them */
+.clients-prefs{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.clients-pref{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
+.clients-pref select{width:auto;min-width:150px;min-height:34px;padding:5px 9px}
+
+/* merge */
+.clients-merge{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center}
+.clients-merge>div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px dashed var(--line-strong);border-radius:var(--radius-s);min-width:0}
+.clients-merge>div.keep{border-style:solid;border-color:var(--accent-line);background:var(--accent-soft)}
+.clients-merge .t{font-weight:700;overflow-wrap:anywhere}
+.clients-merge>svg{width:18px;height:18px;color:var(--text-3)}
+.clients-moves{margin:6px 0 0;padding-left:18px;font-size:14px}
+.clients-pick{width:100%;text-align:left;background:none;border-left:0;border-right:0;color:inherit;font:inherit}
+
+/* other offices */
+.clients-other-find{margin-bottom:10px;max-width:320px}
+.clients-access{flex:none;align-items:center}
+.clients-closed h2{display:flex;gap:8px;align-items:center}
+
+@media (min-width:721px){
+  .clients-filters.full select{max-width:200px;text-overflow:ellipsis}
+}
+/* between a phone and a wide screen the person who looks after the client is left to the filter and the client page */
+@media (min-width:721px) and (max-width:1180px){
+  .clients-c-who{display:none}
+}
+@media (max-width:720px){
+  .clients-glance>div{flex:1 1 50%;border-bottom:1px solid var(--line);margin-bottom:-1px}
+  .clients-glance>div.wide{border-top:0}
+  .clients-person,.clients-person:has(.clients-pct){grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:10px;border:1px solid var(--line);border-radius:var(--radius-s)}
+  .clients-person .input{min-height:40px}
+  .clients-person>.iconbtn{justify-self:end}
+  .clients-pref select{min-height:40px}
+  .clients-merge{grid-template-columns:minmax(0,1fr)}
+  .clients-merge>svg{transform:rotate(90deg);justify-self:center}
+  .clients-tabs .tabs button{min-height:44px;padding:10px 13px}
+  .clients-access .btn{min-height:40px}
+}
+@media (max-width:560px){
+  .clients-filters.full select{flex:1 1 calc(50% - 4px);min-width:0;width:calc(50% - 4px)}
+}

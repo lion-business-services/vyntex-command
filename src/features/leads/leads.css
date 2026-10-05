@@ -19,3 +19,132 @@
   .leads-stage .seg{display:grid;grid-template-columns:1fr 1fr;width:100%}
   .leads-stage .seg button{justify-content:center;min-height:40px}
 }
+.leads-reasons{margin-top:10px;flex-wrap:wrap}
+
+/* ---------- what a lead needs: next action, last contact, close to a decision ---------- */
+.leads-flag{display:inline-flex;align-items:center;gap:5px}
+.leads-flag.warn{color:var(--warn);font-weight:650}
+.leads-flag svg{flex:none;width:14px;height:14px}
+.leads-today{color:var(--warn)}
+.leads-nextline{display:flex;flex-direction:column;gap:1px;min-width:0;overflow-wrap:anywhere}
+.leads-hot{display:inline-flex;vertical-align:-2px;margin-left:4px;color:var(--warn)}
+.leads-hot svg{width:15px;height:15px}
+.leads-attn{font-weight:700;color:var(--warn)}
+.leads-hidden{display:flex;gap:7px;align-items:center;margin-top:12px}
+.leads-hidden svg{flex:none;width:14px;height:14px;color:var(--text-3)}
+.leads-kfoot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:2px}
+.leads-more{justify-self:center;padding:6px}
+.leads-next-what{min-width:0;flex:1 1 220px}
+.leads-tags{display:flex;gap:5px;flex-wrap:wrap}
+/* a long service name wraps inside its chip instead of pushing the page sideways on a phone */
+.leads-tags .badge{white-space:normal;text-align:left;max-width:100%}
+.leads-who-actions{margin-top:12px}
+.leads-ico{flex:none;width:17px;height:17px;color:var(--text-3)}
+.leads-sub{display:block;font-weight:500;overflow-wrap:anywhere}
+.leads-won .item{text-decoration:none;align-items:center}
+
+/* the lead form: services of interest as chips (real checkboxes), and the notice when the person is already in the pipeline */
+.leads-services{border:0;padding:0;margin:14px 0 0;min-width:0}
+.leads-services legend,.leads-reasons legend{font-size:12.5px;font-weight:700;color:var(--text-2);padding:0;margin-bottom:6px}
+.leads-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.leads-chip{position:relative;display:inline-flex;align-items:center;min-height:32px;padding:5px 11px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface-2);font-size:13px;font-weight:650;color:var(--text-2);cursor:pointer;transition:border-color var(--motion-fast) var(--ease-vyntex),background var(--motion-fast) var(--ease-vyntex),color var(--motion-fast) var(--ease-vyntex)}
+.leads-chip input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.leads-chip:hover{border-color:var(--accent-line);color:var(--text)}
+.leads-chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+.leads-chip:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.leads-dup{margin-top:14px}
+.leads-dup p svg{width:15px;height:15px;vertical-align:-2px}
+.leads-dup ul{margin:6px 0 8px;padding-left:18px;font-size:13.5px}
+.leads-reasons{border:0;padding:0;margin:0 0 14px;min-width:0}
+.leads-reasons .row{margin-top:0}
+.leads-reasons .btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+.leads-reasons .neg{margin-top:8px}
+
+/* ---------- settings: lead pipeline ---------- */
+.leads-set-lead{margin:-4px 0 14px;max-width:74ch}
+.leads-set-rows{display:flex;flex-direction:column}
+.leads-set-head,.leads-set-row{display:grid;grid-template-columns:62px minmax(0,1.1fr) minmax(0,1.1fr) 104px minmax(0,1.5fr) 84px 32px;gap:8px;align-items:center}
+.leads-set-rows.opts .leads-set-head,.leads-set-rows.opts .leads-set-row{grid-template-columns:62px minmax(0,1fr) minmax(0,1fr) 84px 32px}
+.leads-set-head{font-size:12px;font-weight:700;color:var(--text-3);padding:0 0 6px}
+.leads-set-row{padding:6px 0;border-top:1px solid var(--line)}
+.leads-set-row .input{width:100%;min-height:36px;padding:6px 9px}
+.leads-set-row label{min-width:0;display:block}
+.leads-set-cap{display:none;font-size:11.5px;font-weight:700;color:var(--text-3);margin-bottom:3px}
+.leads-set-order{display:inline-flex;gap:2px;align-items:center}
+.leads-set-role{display:flex;gap:6px;align-items:center;min-width:0}
+.leads-set-hot.on{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+.leads-set-move{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.leads-set-move .input{width:auto;min-width:160px}
+.leads-set-foot{margin-top:12px;gap:8px;flex-wrap:wrap}
+.leads-set-foot+p{margin-top:8px}
+.leads-set-h{margin:18px 0 8px;font-size:14px}
+.leads-set-grid{margin-top:14px;align-items:start}
+.leads-turn{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius-s);background:var(--surface-2);font-size:14px}
+.leads-turn.on{border-color:var(--accent-line)}
+.leads-turn-line{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.leads-turn-line b{font-family:var(--font-title);font-size:18px;font-weight:700}
+.leads-pool{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.leads-pool li{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);min-width:0}
+.leads-pool li:first-child{border-top:0}
+.leads-pool li.skipped .t{color:var(--text-2)}
+.leads-pool .t{font-weight:700;display:block}
+.leads-pool-n{flex:none;width:20px;text-align:center;font-size:12px;font-weight:800;color:var(--text-3);font-variant-numeric:tabular-nums}
+.leads-pool-skip{flex:none;font-size:13px;align-items:center}
+.leads-pool-skip input{margin-top:0}
+
+@media (max-width:900px){
+  /* each stage becomes a small card: the two names side by side, then what it counts as and what it means */
+  .leads-set-head{display:none}
+  .leads-set-cap{display:block}
+  .leads-set-row,.leads-set-rows.opts .leads-set-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 10px;padding:12px 0}
+  .leads-set-row .leads-set-order{grid-column:1;grid-row:1;justify-self:start}
+  .leads-set-row>.iconbtn{grid-column:2;grid-row:1;justify-self:end}
+  .leads-set-row>label:nth-child(2){grid-column:1;grid-row:2}
+  .leads-set-row>label:nth-child(3){grid-column:2;grid-row:2}
+  .leads-set-row>label:nth-child(4){grid-column:1;grid-row:3}
+  .leads-set-use{grid-column:2;grid-row:3;display:flex;flex-direction:column;align-items:flex-start;align-self:start}
+  .leads-set-rows.opts .leads-set-use{grid-column:1}
+  .leads-set-role{grid-column:1/-1;grid-row:4;align-items:flex-end}
+  .leads-set-move{grid-row:5}
+  .leads-set-row .input{min-height:40px}
+  .leads-pool li{flex-wrap:wrap}
+  .leads-pool-skip{order:3;margin-left:30px}
+  .leads-pool .leads-set-order{order:4;margin-left:auto}
+}
+@media (max-width:720px){
+  .leads-chip{min-height:38px}
+  .leads-reasons .btn{min-height:40px}
+  .leads-who-actions .btn{min-height:40px}
+}
+
+/* the fuller table: the lead and its next step get the room, the short columns stay on one line */
+/* between a phone and a wide screen there is no room for seven columns: the last contact moves under the next step */
+.leads-c-inline{display:none}
+@media (min-width:721px) and (max-width:1180px){
+  .leads-full .leads-c-contact{display:none}
+  .leads-c-inline{display:block;margin-top:2px}
+  .leads-full th:nth-child(1){width:21%}
+  .leads-full th:nth-child(2){width:15%}
+  /* stage, value and owner take what they need and no more; the next step gets the rest */
+  .leads-full th:nth-child(3),.leads-full th:nth-child(6),.leads-full th:nth-child(7){width:1%}
+  .leads-full th,.leads-full td{padding-left:9px;padding-right:9px}
+  .leads-full td:nth-child(3) .badge{white-space:normal;text-align:center;line-height:1.25;padding-top:3px;padding-bottom:3px}
+  /* the due date may wrap, and the owner is the initials alone (the name is in the tooltip and on the lead page) */
+  .leads-full .leads-nextline .nowrap{white-space:normal}
+  .leads-full .leads-own{display:none}
+}
+@media (min-width:1181px){
+  .leads-full th:nth-child(1){width:21%}
+  .leads-full th:nth-child(2){width:16%}
+  .leads-full th:nth-child(4){width:26%}
+  .leads-full td:nth-child(5),.leads-full td:nth-child(7){white-space:nowrap}
+}
+.leads-who{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.leads-who .leads-hot{margin-left:0}
+@media (min-width:721px){
+  .leads-filters.full .searchbox{flex:1 1 240px;min-width:220px}
+  .leads-filters.full select{max-width:176px}
+}
+@media (max-width:560px){
+  .leads-filters.full select{flex:1 1 calc(50% - 4px);min-width:0;width:calc(50% - 4px)}
+}

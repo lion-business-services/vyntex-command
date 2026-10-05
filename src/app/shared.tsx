@@ -1,29 +1,32 @@
 // Pieces every feature reuses so statuses, badges, notes and history look and behave the same everywhere.
 import { useState, type ReactNode } from 'react';
 import { LuPhone, LuMapPin, LuPin, LuTrash2, LuSparkles, LuFlaskConical, LuLock, LuPlug, LuZap } from 'react-icons/lu';
-import { Badge, Button, Card, Empty, IconButton, Seg, type Tone, cx, confirmDialog } from '@/ui';
+import { Badge, Button, Card, Empty, IconButton, PageHeader, Seg, type Tone, cx, confirmDialog } from '@/ui';
 import { useApp } from './hooks';
 import { A, refPath } from './router';
 import { act } from '@/store/store';
 import { addNote, deleteNote, toggleTask } from '@/domain/actions';
 import { actorName, assigneeName, byId, insuranceState } from '@/domain/selectors';
-import type { Activity, DocStatus, JobStatus, LeadStage, Note, NoteKind, Priority, Ref, Task, TaskStatus, Worker } from '@/domain/types';
+import { stageOf } from '@/domain/config';
+import type { Activity, DocStatus, JobStatus, LeadStage, ModuleId, Note, NoteKind, Priority, Ref, StageDef, Task, TaskStatus, Worker } from '@/domain/types';
 import type { EntitlementId } from '@/domain/entitlements';
+import type { Permission } from '@/domain/permissions';
 import { ADD_ONS, planName } from '@/lib/pricing';
 import { addOnView } from '@/lib/pricing-view';
 import { today } from '@/lib/dates';
 import { money2 } from '@/lib/money';
 
 const JOB_TONE: Record<JobStatus, Tone> = { estimate: 'neutral', contract: 'warn', progress: 'info', hold: 'violet', done: 'ok' };
-const LEAD_TONE: Record<LeadStage, Tone> = { new: 'accent', contacted: 'info', scheduled: 'violet', sent: 'warn', won: 'ok', lost: 'neutral' };
+/** Colour of a pipeline stage, from what the stage means (not from its name, which a company can change). */
+const ROLE_TONE: Record<NonNullable<StageDef['role']>, Tone> = { new: 'accent', contacted: 'info', visit: 'violet', proposal: 'warn', negotiation: 'warn' };
+export const stageTone = (s: StageDef | undefined): Tone => (!s ? 'neutral' : s.kind === 'won' ? 'ok' : s.kind === 'lost' ? 'neutral' : s.role ? ROLE_TONE[s.role] : 'info');
 const TASK_TONE: Record<TaskStatus, Tone> = { todo: 'neutral', doing: 'info', waiting: 'warn', review: 'violet', done: 'ok' };
 const DOC_TONE: Record<DocStatus, Tone> = { draft: 'neutral', sent: 'warn', viewed: 'info', signed: 'ok', paid: 'ok', void: 'neutral' };
 
 export function JobStatusBadge({ status }: { status: JobStatus }) { const { t } = useApp(); return <Badge tone={JOB_TONE[status]}>{t('st_' + status)}</Badge>; }
-export function LeadStageBadge({ stage }: { stage: LeadStage }) { const { t } = useApp(); return <Badge tone={LEAD_TONE[stage]}>{t('ls_' + stage)}</Badge>; }
+export function LeadStageBadge({ stage }: { stage: LeadStage }) { const { t, data, pack } = useApp(); return <Badge tone={stageTone(stageOf(data, pack, stage))}>{t('ls_' + stage)}</Badge>; }
 export function TaskStatusBadge({ status }: { status: TaskStatus }) { const { t } = useApp(); return <Badge tone={TASK_TONE[status]}>{t('ts.' + status)}</Badge>; }
 export function DocStatusBadge({ status }: { status: DocStatus }) { const { t } = useApp(); return <Badge tone={DOC_TONE[status]}>{t('doc.status.' + status)}</Badge>; }
-export const leadTone = (s: LeadStage) => LEAD_TONE[s];
 export const taskTone = (s: TaskStatus) => TASK_TONE[s];
 
 export function PriorityBadge({ pri, always }: { pri: Priority; always?: boolean }) {
@@ -48,6 +51,8 @@ export function InsuranceBadge({ worker }: { worker: Worker }) {
 export function PlanBadge({ feature, detail }: { feature: EntitlementId; detail?: boolean }) {
   const { t, standing, lang, planLabel, pack } = useApp();
   const s = standing(feature);
+  // an edition that is quoted, or a deployment without plans: there is no plan to speak of, so nothing is shown
+  if (s.state === 'none') return null;
   const addOn = ADD_ONS.find((a) => a.id === s.addOnId);
   const view = addOn ? addOnView(addOn, pack.id, lang, t) : null;
   const price = view?.price ? ` · ${view.price}${view.billing ? ' ' + view.billing.split(',')[0] : ''}` : '';
@@ -64,6 +69,30 @@ export function PlanBadge({ feature, detail }: { feature: EntitlementId; detail?
 export function DemoTag({ kind = 'simulation' }: { kind?: 'simulation' | 'connect' | 'preview' }) {
   const { t } = useApp();
   return <Badge tone="accent" outline title={t('demo.simNote')}>{kind === 'connect' ? <LuPlug aria-hidden="true" /> : <LuSparkles aria-hidden="true" />}{t(kind === 'connect' ? 'demo.connect' : kind === 'preview' ? 'demo.preview' : 'demo.simulation')}</Badge>;
+}
+
+/**
+ * Shown where a screen or a part of one is not built yet. It says so in one sentence and shows nothing else.
+ * `module` draws a whole page with the module's name as its title; `part` draws just the notice, inside a page that exists.
+ */
+export function BeingBuilt({ module, part }: { module?: ModuleId; part?: boolean }) {
+  const { t } = useApp();
+  const notice = <Card><Empty title={t(part ? 'app.buildingPart' : 'app.building')} /></Card>;
+  if (part || !module) return notice;
+  // the label of a module is `nav.<id>`, except Payments, whose key is older
+  return <><PageHeader title={t(module === 'payments' ? 'nav.money' : 'nav.' + module)} />{notice}</>;
+}
+
+/**
+ * Shows its children only to someone who may change records. Wrap every control that creates, edits or deletes with it
+ * (or test `can('write')` directly): a read-only person sees the same screen without those controls.
+ * `need` asks for a more specific capability on top, e.g. `need="delete"`.
+ */
+export function CanWrite({ children, need }: { children: ReactNode; need?: Permission }) {
+  const { can, isWorker } = useApp();
+  // a field worker in the portal records their own work; the office capabilities do not apply there
+  if (isWorker) return <>{children}</>;
+  return can('write') && (!need || can(need)) ? <>{children}</> : null;
 }
 
 export function NoAccess() {
@@ -117,8 +146,10 @@ export function ActivityList({ items, limit = 12, linkRecords }: { items: Activi
 /* ---------- notes and conversations ---------- */
 const NOTE_KINDS: NoteKind[] = ['call', 'visit', 'text', 'email', 'note'];
 const NOTE_ICON: Record<NoteKind, string> = { call: '📞', visit: '🏠', text: '💬', email: '✉️', note: '📝' };
-export function NotesPanel({ target, notes, canEdit = true }: { target: Ref; notes: Note[]; canEdit?: boolean }) {
-  const { t, data, dateTime } = useApp();
+export function NotesPanel({ target, notes, canEdit: mayEdit = true }: { target: Ref; notes: Note[]; canEdit?: boolean }) {
+  const { t, data, dateTime, can } = useApp();
+  // a read-only person reads the notes and cannot add or remove one
+  const canEdit = mayEdit && can('write');
   const [kind, setKind] = useState<NoteKind>('call');
   const [text, setText] = useState(''); const [pin, setPin] = useState(false);
   const sorted = [...notes].sort((a, b) => Number(!!b.pin) - Number(!!a.pin) || b.at.localeCompare(a.at));
@@ -155,14 +186,16 @@ export function NotesPanel({ target, notes, canEdit = true }: { target: Ref; not
 
 /* ---------- task row used on the dashboard, job page and portal ---------- */
 export function TaskRow({ task, showJob, onEdit, actions }: { task: Task; showJob?: boolean; onEdit?: () => void; actions?: ReactNode }) {
-  const { t, data } = useApp();
+  const { t, data, can, isWorker } = useApp();
   const job = byId(data.jobs, task.jobId); const lead = byId(data.leads, task.leadId);
   const done = task.status === 'done';
+  // workers tick their own tasks in the portal; in the office it takes `write`
+  const locked = !isWorker && !can('write');
   return (
     <div className={cx('item', done && 'done')}>
-      <label className="tick"><input type="checkbox" checked={done} onChange={() => act(toggleTask, task.id)} aria-label={`${t(done ? 'ts.done' : 'ts.todo')}: ${task.title}`} /></label>
+      <label className="tick"><input type="checkbox" checked={done} disabled={locked} onChange={() => act(toggleTask, task.id)} aria-label={`${t(done ? 'ts.done' : 'ts.todo')}: ${task.title}`} /></label>
       <div className="grow">
-        <div className="t">{onEdit ? <button type="button" className="linkbtn" style={{ color: 'inherit', textDecoration: 'none', textAlign: 'left', fontWeight: 650 }} onClick={onEdit}>{task.title}</button> : task.title} {!done && <PriorityBadge pri={task.pri} />} {!done && task.status !== 'todo' && <TaskStatusBadge status={task.status} />}</div>
+        <div className="t">{onEdit && !locked ? <button type="button" className="linkbtn" style={{ color: 'inherit', textDecoration: 'none', textAlign: 'left', fontWeight: 650 }} onClick={onEdit}>{task.title}</button> : task.title} {!done && <PriorityBadge pri={task.pri} />} {!done && task.status !== 'todo' && <TaskStatusBadge status={task.status} />}</div>
         <div className="small muted">
           {showJob && job && <><A to={`/jobs/${job.id}`}>{byId(data.clients, job.clientId)?.name} · {job.name}</A> · </>}
           {showJob && !job && lead && <><A to={`/leads/${lead.id}`}>{lead.name}</A> · </>}

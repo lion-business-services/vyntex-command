@@ -22,4 +22,36 @@ import { dict as pricingCopy } from '@/lib/pricing-copy';
 import { dict as marketingSections } from '@/features/marketing/sections/i18n';
 import { dict as marketingPages } from '@/features/marketing/pages-i18n';
 
-export const featureDicts: Dict[] = [dashboard, leads, clients, jobs, tasks, calendar, team, documents, payments, reports, automations, assistant, settings, portal, marketing, tour, messages, compliance, pricingCopy, marketingSections, marketingPages];
+import { dict as appointments } from '@/features/appointments/i18n';
+import { dict as catalog } from '@/features/catalog/i18n';
+import { dict as opportunities } from '@/features/opportunities/i18n';
+import { dict as reviews } from '@/features/reviews/i18n';
+import { dict as esign } from '@/features/esign/i18n';
+import { dict as integrations } from '@/features/integrations/i18n';
+import { dict as social } from '@/features/social/i18n';
+import { dict as cash } from '@/features/cash/i18n';
+import { dict as payroll } from '@/features/payroll/i18n';
+import { dict as bookkeeping } from '@/features/bookkeeping/i18n';
+import { dict as licensing } from '@/features/licensing/i18n';
+import { dict as deadlines } from '@/features/deadlines/i18n';
+import { dict as security } from '@/features/security/i18n';
+import { dict as audit } from '@/features/audit/i18n';
+import { dict as auth } from '@/features/auth/i18n';
+import { dict as publicPages } from '@/features/public/i18n';
+import { dict as settingsLbs } from '@/features/settings/i18n-lbs';
+
+// Read straight from the build constant so the bundler leaves the sales wording out of a deployment without sales pages.
+declare const __VX_DEPLOY__: string | undefined;
+
+/** Wording of the sales pages, the guided tour and the plans: only in a deployment that has them. */
+const sales: Dict[] = (typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs') ? [] : [marketing, tour, pricingCopy, marketingSections, marketingPages];
+
+/** Lines that read differently in LBS Command. They come last, so they replace the shared line of the same key. */
+const lbsOnly: Dict[] = (typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs') ? [settingsLbs] : [];
+
+export const featureDicts: Dict[] = [
+  dashboard, leads, clients, jobs, tasks, calendar, team, documents, payments, reports, automations, assistant, settings, portal, messages, compliance,
+  appointments, catalog, opportunities, reviews, esign, integrations, social, cash, payroll, bookkeeping, licensing, deadlines, security, audit, auth, publicPages,
+  ...sales,
+  ...lbsOnly,
+];

@@ -1,8 +1,9 @@
 // VYNTEX CLEAN: industry pack for cleaning.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
+import { fieldPack } from '../blueprint';
 
-export const cleanPack: IndustryPack = {
+export const cleanPack: IndustryPack = /* @__PURE__ */ fieldPack({
   id: "clean",
   product: "VYNTEX CLEAN",
   label: { en: "Cleaning", es: "Limpieza" },
@@ -199,4 +200,4 @@ export const cleanPack: IndustryPack = {
     { en: "Offer regular service", es: "Ofrecer servicio regular", dueIn: 5, for: 'owner', pri: 'low' },
   ],
   compliance: true,
-};
+});

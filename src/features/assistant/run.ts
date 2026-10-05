@@ -1,9 +1,11 @@
 // Carries out a confirmed proposal through the same business actions the rest of the app uses,
 // then reads the data back to make sure the change is really there before reporting it.
 import { act, getSnapshot } from '@/store/store';
-import { addClientPayment, addNote, createLead, createTask, setJobStatus, setTaskStatus, updateLead } from '@/domain/actions';
+import { addClientPayment, addNote, bookAppointment, createLead, createTask, requestReview, setJobStatus, setTaskStatus, updateLead } from '@/domain/actions';
 import { byId, jobMoney } from '@/domain/selectors';
 import { money2 } from '@/lib/money';
+import { effectiveRules, shippedRules } from '@/domain/rules/engine';
+import { runRuleName } from '@/features/automations/format';
 import { check, type Env, type Proposal } from './engine';
 
 export interface Outcome { ok: boolean; text: string; link?: { label: string; to: string }; /** Names of the automation rules that ran because of the change. */ rules?: string[] }
@@ -60,12 +62,30 @@ export function execute(p: Proposal, env: Env): Outcome {
         if (lead && lead.apptDate === p.date) out = { ok: true, text: t('asst.done.visit', { name: lead.name, date: env.day(p.date) + (p.time ? `, ${env.time(p.time)}` : '') }), link: { label: t('asst.open.lead'), to: `/leads/${lead.id}` } };
         break;
       }
+      case 'appointment': {
+        const res = act(bookAppointment, { typeId: p.typeId, staffId: p.staffId, date: p.date, time: p.time, ...(p.clientId ? { clientId: p.clientId } : {}), ...(p.leadId ? { leadId: p.leadId } : {}) });
+        // the calendar has the last word: a time that is taken or already past is refused there, and said here
+        if (!res.ok) { const key = 'asst.appt.' + res.reason; return { ok: false, text: t('asst.state.failed', { why: t(key) === key ? t('asst.appt.invalid') : t(key) }) }; }
+        const a = res.appointment; const d = getSnapshot().data;
+        const who = (a.clientId ? byId(d.clients, a.clientId)?.name : byId(d.leads, a.leadId)?.name) ?? '';
+        if (d.appointments.some((x) => x.id === a.id)) out = { ok: true, text: t(a.status === 'awaiting_payment' ? 'asst.done.apptPay' : 'asst.done.appt', { name: who, date: `${env.day(a.date)}, ${env.time(a.time)}` }), link: { label: t('asst.open.appt'), to: `/appointments/${a.id}` } };
+        break;
+      }
+      case 'review': {
+        const res = act(requestReview, { clientId: p.clientId, ...(p.jobId ? { jobId: p.jobId } : {}), channel: p.channel });
+        if (!res.ok) return { ok: false, text: t('asst.state.failed', { why: t('reviews.problem.' + res.reason) }) };
+        const d = getSnapshot().data;
+        if ((d.reviews ?? []).some((x) => x.id === res.review.id)) out = { ok: true, text: t('asst.done.review', { name: byId(d.clients, p.clientId)?.name ?? '' }), link: { label: t('asst.open.reviews'), to: '/reviews' } };
+        break;
+      }
     }
   } catch {
     return failed;
   }
   if (out.ok) {
-    const ran = getSnapshot().data.automation.runs.filter((r) => !seen.has(r.id)).map((r) => t(`auto.${r.ruleId}.name`));
+    // every automation that ran because of the change, by the name the Automations screen gives it
+    const d = getSnapshot().data;
+    const ran = d.automation.runs.filter((r) => !seen.has(r.id) && r.status !== 'skipped').map((r) => runRuleName(r.ruleId, effectiveRules(d, env.pack), shippedRules(env.pack), t, env.lang));
     if (ran.length) out.rules = [...new Set(ran)];
   }
   return out;

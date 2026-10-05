@@ -7,7 +7,7 @@ import { BackLink } from '@/app/Shell';
 import type { PageProps } from '@/app/routes';
 import { act } from '@/store/store';
 import { Avatar, Badge, Button, Card, Empty, FormModal, IconButton, PageHeader, SearchBox, Seg, Stat, cx, confirmDialog, toast, type FieldDef, type Tone } from '@/ui';
-import { ActivityList, ContactLinks, InsuranceBadge, PlanBadge, W9Badge } from '@/app/shared';
+import { ActivityList, ContactLinks, InsuranceBadge, PlanBadge, W9Badge, CanWrite } from '@/app/shared';
 import { PAY_TYPES, PayWorkerModal } from '@/app/forms';
 import { deleteWorkerPay, saveWorker } from '@/domain/actions';
 import { activityFor, byId, jobsOfWorker, threshold1099, workerMoney } from '@/domain/selectors';
@@ -17,12 +17,16 @@ import { money, money2, sum } from '@/lib/money';
 import { today } from '@/lib/dates';
 import { attentionOf, payTypeLabel, periodText, rateLabel } from './util';
 import { InsuranceModal, W9Modal } from './paperwork';
+import { OfficeTeam, Profile } from './office';
 import '@/features/leads/work.css';
 import './team.css';
 
 const ASSIGN_TONE: Record<AssignStatus, Tone> = { pending: 'neutral', progress: 'info', done: 'ok' };
 
 export default function TeamPage({ id }: PageProps) {
+  const { pack } = useApp();
+  // an edition without field workers has no crews to list: its team page is the office team and each person's profile
+  if (!pack.usesWorkers) return id ? <Profile id={id} /> : <OfficeTeam />;
   return id ? <WorkerDetail id={id} /> : <TeamList />;
 }
 
@@ -54,8 +58,8 @@ function TeamList() {
   return (
     <>
       <PageHeader title={t('nav.team')} sub={t(pack.compliance ? 'team.sub' : 'team.subPlain')} actions={<>
-        {showMoney && <Button icon={<LuBanknote />} onClick={() => setPay('')} data-testid="team-pay">{t('form.pay.worker')}</Button>}
-        <Button variant={data.workers.length ? 'primary' : 'default'} icon={<LuPlus />} onClick={() => setForm(true)} data-testid="team-new">{t('team.new')}</Button>
+        {showMoney && <CanWrite><Button icon={<LuBanknote />} onClick={() => setPay('')} data-testid="team-pay">{t('form.pay.worker')}</Button></CanWrite>}
+        <CanWrite><Button variant={data.workers.length ? 'primary' : 'default'} icon={<LuPlus />} onClick={() => setForm(true)} data-testid="team-new">{t('team.new')}</Button></CanWrite>
       </>} />
 
       {!!data.workers.length && (
@@ -68,7 +72,7 @@ function TeamList() {
       )}
 
       {!data.workers.length ? (
-        <Card className="work-none"><Empty title={t('team.empty')} action={<Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)}>{t('team.new')}</Button>}>{t('team.emptyHint')}</Empty></Card>
+        <Card className="work-none"><Empty title={t('team.empty')} action={<CanWrite><Button variant="primary" icon={<LuPlus />} onClick={() => setForm(true)}>{t('team.new')}</Button></CanWrite>}>{t('team.emptyHint')}</Empty></Card>
       ) : (
         <>
           <div className="filters team-filters">
@@ -104,7 +108,7 @@ function TeamList() {
                           <td data-label={t('team.col.agreed')} className="num">{money(m.agreed)}</td>
                           <td data-label={t('team.col.paid')} className="num">{money(m.paid)}</td>
                           <td data-label={t('team.col.owed')} className={cx('num strong', m.owed < -0.005 && 'neg')}>{money(m.owed)}</td>
-                          <td className="num team-rowact">{w.active !== false && <Button size="sm" onClick={() => setPay(w.id)} data-testid="team-pay-row" aria-label={`${t('team.pay')}: ${w.name}`}>{t('team.pay')}</Button>}</td>
+                          <td className="num team-rowact">{w.active !== false && <CanWrite><Button size="sm" onClick={() => setPay(w.id)} data-testid="team-pay-row" aria-label={`${t('team.pay')}: ${w.name}`}>{t('team.pay')}</Button></CanWrite>}</td>
                         </>}
                       </tr>
                     ))}
@@ -192,8 +196,8 @@ function WorkerDetail({ id }: { id: string }) {
     <>
       <BackLink to="/team">{t('team.back')}</BackLink>
       <PageHeader title={<>{w.name} {w.active === false && <Badge outline>{t('team.inactive')}</Badge>}</>} sub={w.trade || undefined} actions={<>
-        <Button icon={<LuPencil />} onClick={() => setEdit(true)} data-testid="team-edit">{t('common.edit')}</Button>
-        {canPay && <Button variant="primary" icon={<LuBanknote />} onClick={() => setPay(true)} data-testid="team-pay">{t('team.pay')}</Button>}
+        <CanWrite><Button icon={<LuPencil />} onClick={() => setEdit(true)} data-testid="team-edit">{t('common.edit')}</Button></CanWrite>
+        {canPay && <CanWrite><Button variant="primary" icon={<LuBanknote />} onClick={() => setPay(true)} data-testid="team-pay">{t('team.pay')}</Button></CanWrite>}
       </>} />
 
       {showMoney && (
@@ -231,7 +235,7 @@ function WorkerDetail({ id }: { id: string }) {
           </Card>
 
           {showMoney && (
-            <Card flush title={t('team.history')} actions={canPay ? <Button size="sm" icon={<LuBanknote />} onClick={() => setPay(true)}>{t('team.pay')}</Button> : undefined}>
+            <Card flush title={t('team.history')} actions={canPay ? <CanWrite><Button size="sm" icon={<LuBanknote />} onClick={() => setPay(true)}>{t('team.pay')}</Button></CanWrite> : undefined}>
               <div className="team-range">
                 <label className="small muted">{t('common.from')} <input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} data-testid="team-from" /></label>
                 <label className="small muted">{t('common.to')} <input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} data-testid="team-to" /></label>
@@ -254,7 +258,7 @@ function WorkerDetail({ id }: { id: string }) {
                               <td data-label={t('team.col.job')}>{j ? <A to={`/jobs/${j.id}`}>{j.name}</A> : <span className="muted">{t('form.pay.noJob')}</span>}</td>
                               <td data-label={t('common.method')}>{t('m_' + p.method)}{p.ref ? <span className="small dim team-ref" title={t('common.reference')}>{p.ref}</span> : null}</td>
                               <td data-label={t('common.amount')} className="num strong">{money2(p.amount)}</td>
-                              {can('delete') && <td className="num team-rowact"><IconButton size="sm" label={`${t('common.delete')}: ${money2(p.amount)}`} onClick={() => removePay(p.id)} data-testid="team-pay-delete"><LuTrash2 /></IconButton></td>}
+                              {can('delete') && <td className="num team-rowact"><CanWrite><IconButton size="sm" label={`${t('common.delete')}: ${money2(p.amount)}`} onClick={() => removePay(p.id)} data-testid="team-pay-delete"><LuTrash2 /></IconButton></CanWrite></td>}
                             </tr>
                           );
                         })}
@@ -288,7 +292,7 @@ function WorkerDetail({ id }: { id: string }) {
                     <div className="t">{t('team.w9Title')} <W9Badge worker={w} /></div>
                     <div className="small muted">{w.w9 ? (w.w9Date ? t('team.w9On', { date: date(w.w9Date) }) : t('team.w9NoDate')) : t('team.w9Need')}</div>
                   </div>
-                  <Button size="sm" variant={w.w9 || canPay ? 'default' : 'primary'} onClick={() => setW9(true)} data-testid="team-w9">{t(w.w9 ? 'team.w9Change' : 'team.w9Mark')}</Button>
+                  <CanWrite><Button size="sm" variant={w.w9 || canPay ? 'default' : 'primary'} onClick={() => setW9(true)} data-testid="team-w9">{t(w.w9 ? 'team.w9Change' : 'team.w9Mark')}</Button></CanWrite>
                 </div>
                 <div className="item team-doc">
                   <LuShieldCheck aria-hidden="true" className="team-ic" />
@@ -296,7 +300,7 @@ function WorkerDetail({ id }: { id: string }) {
                     <div className="t">{t('team.coiTitle')} <InsuranceBadge worker={w} /></div>
                     <div className="small muted">{w.coiExp ? (w.insurer ? t('team.coiBy', { insurer: w.insurer }) : t('team.coiNoInsurer')) : t('team.coiNone')}</div>
                   </div>
-                  <Button size="sm" onClick={() => setCoi(true)} data-testid="team-coi">{t('team.coiUpdate')}</Button>
+                  <CanWrite><Button size="sm" onClick={() => setCoi(true)} data-testid="team-coi">{t('team.coiUpdate')}</Button></CanWrite>
                 </div>
                 {showMoney && (
                   <div className="item team-doc">

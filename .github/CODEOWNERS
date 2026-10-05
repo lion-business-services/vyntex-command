@@ -1,0 +1,45 @@
+# Who must review a change before it can reach main.
+# GitHub asks these teams for a review automatically, and branch protection ("Require review from Code Owners")
+# makes that review mandatory. The teams are created in docs/security/github-settings.md, step 2.
+#
+#   @lion-business-services/maintainers       the people who work on the code
+#   @lion-business-services/security-owners   the people who answer for security and for commercial terms
+#
+# The LAST matching line wins, so the general rule comes first and the sensitive paths after it.
+# Until the two teams exist, GitHub shows this file as having errors and asks nobody: create the teams first.
+
+*                                       @lion-business-services/maintainers
+
+# The database: every table, every access rule, every function. A mistake here crosses company boundaries.
+/supabase/                              @lion-business-services/security-owners
+
+# Server functions: sign-in, sessions, secrets, integrations, webhooks.
+/api/                                   @lion-business-services/security-owners
+
+# Browser protections and hosting settings.
+/vercel.json                            @lion-business-services/security-owners
+/Dockerfile                             @lion-business-services/security-owners
+/.dockerignore                          @lion-business-services/security-owners
+/deploy/                                @lion-business-services/security-owners
+
+# The checks themselves, so a change cannot weaken a check and pass it in the same pull request unseen.
+/.github/                               @lion-business-services/security-owners
+/.gitleaks.toml                         @lion-business-services/security-owners
+/scripts/security/                      @lion-business-services/security-owners
+/scripts/backup/                        @lion-business-services/security-owners
+/tests/security/                        @lion-business-services/security-owners
+/supabase/tests/                        @lion-business-services/security-owners
+
+# Security documents and the list of settings.
+/SECURITY.md                            @lion-business-services/security-owners
+/docs/security/                         @lion-business-services/security-owners
+/docs/SECURITY.md                       @lion-business-services/security-owners
+/docs/DEPLOYMENT.md                     @lion-business-services/security-owners
+/.env.example                           @lion-business-services/security-owners
+
+# Prices and plan contents: changed only with the owner's approval.
+/config/vyntex-build-pricing.json       @lion-business-services/security-owners
+
+# Libraries: a new or changed dependency is code that runs with the platform's access.
+/package.json                           @lion-business-services/security-owners
+/package-lock.json                      @lion-business-services/security-owners

@@ -1,0 +1,36 @@
+# What never goes into the build context of the container image.
+# Secrets first: no environment file except the example that has no values.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Git history, installed packages and build output are recreated or not needed.
+.git
+.github
+node_modules
+dist
+dist-*
+dist.building
+preview
+.vercel
+
+# Backups and local database folders never belong in an image.
+backups
+*.dump
+*.dump.age
+*.age
+supabase/.temp
+supabase/.branches
+
+# Not needed to build or run.
+docs
+tests
+supabase/tests
+deploy/k8s
+deploy/nova-containment
+*.log
+*.md
+.DS_Store
+Thumbs.db

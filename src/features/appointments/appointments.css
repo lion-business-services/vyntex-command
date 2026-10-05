@@ -1,0 +1,129 @@
+/* Appointments: list, agenda, appointment page, credits and the settings section. Tokens only, so both brands and both
+   themes draw it from their own colours. Every class starts with .appointments- */
+
+/* ---------- shared small pieces ---------- */
+.appointments-kpis{margin-bottom:16px}
+.appointments-tabs{margin-bottom:12px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.appointments-tabs::-webkit-scrollbar{display:none}
+.appointments-tabs .seg{white-space:nowrap}
+.appointments-scope{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-6px 0 14px;font-size:13.5px;color:var(--text-2)}
+.appointments-scope .linkbtn{display:inline-flex;align-items:center;gap:4px}
+.appointments-when,.appointments-name{font-weight:700;text-decoration:none}
+.appointments-when{white-space:nowrap}
+.appointments-when:hover,.appointments-name:hover{text-decoration:underline;text-underline-offset:3px}
+.appointments-when::first-letter,.appointments-cap::first-letter{text-transform:uppercase}
+.appointments-cap{display:inline-block}
+.appointments-type{display:inline-flex;align-items:center;gap:7px}
+.appointments-type svg{width:15px;height:15px;color:var(--text-3);flex:none}
+.appointments-block{display:block}
+.appointments-paid{color:var(--ok);font-weight:650}
+.appointments-figure{font-variant-numeric:tabular-nums;font-weight:700}
+.appointments-balance{font-family:var(--font-title);font-size:26px;letter-spacing:-.01em}
+.appointments-gap{margin-top:10px}
+.appointments-banner{margin-bottom:14px}
+.appointments-inline{display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-weight:650;font-size:13px}
+.appointments-inline svg,.appointments-ico{width:14px;height:14px;vertical-align:-2px}
+.appointments-ico{margin-right:5px}
+.appointments-contact{margin-top:12px;padding-top:12px;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.appointments-credits{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.appointments-item{text-decoration:none;color:inherit;align-items:center}
+.appointments-ledger-filters{padding:14px 18px 0;margin-bottom:6px}
+@media (min-width:721px){.appointments-filters select{max-width:200px;text-overflow:ellipsis}}
+@media (max-width:560px){
+  .appointments-filters .searchbox{flex:1 1 100%;max-width:none}
+  .appointments-filters select{flex:1 1 calc(50% - 4px);min-width:0;width:calc(50% - 4px);min-height:40px}
+}
+
+/* ---------- booking: the next free times ---------- */
+.appointments-slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+.appointments-slot{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:48px;padding:7px 11px;border:1px solid var(--line-strong);border-radius:var(--radius-s);background:var(--surface-2);color:var(--text);text-align:left;font-size:12.5px;transition:border-color var(--motion-fast) var(--ease-vyntex),background var(--motion-fast) var(--ease-vyntex)}
+.appointments-slot span{color:var(--text-2)}
+.appointments-slot span::first-letter{text-transform:uppercase}
+.appointments-slot b{font-size:15px;font-variant-numeric:tabular-nums}
+.appointments-slot:hover{border-color:var(--accent-line)}
+.appointments-slot[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.appointments-who{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.appointments-who select{flex:1 1 220px;min-width:0}
+.appointments-formnotes{margin-top:12px}
+.appointments-formnotes:empty{display:none}
+.appointments-pick{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line-strong);border-radius:var(--radius-s);cursor:pointer}
+.appointments-pick input{margin-top:3px;accent-color:var(--accent);flex:none}
+.appointments-pick.off{cursor:default;border-style:dashed;color:var(--text-2)}
+.appointments-pick:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+
+/* ---------- agenda ---------- */
+.appointments-agbar{display:flex;align-items:center;gap:12px 16px;flex-wrap:wrap;margin-bottom:14px}
+.appointments-agbar select{min-height:38px;padding:7px 10px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--radius-s);max-width:100%}
+.appointments-nav{border-color:var(--line-chrome);background:var(--surface-2);width:32px;height:32px}
+.appointments-agtitle{font-size:19px;letter-spacing:-.012em}
+.appointments-agtitle::first-letter{text-transform:uppercase}
+.appointments-day,.appointments-week{overflow:hidden}
+.appointments-scroll{overflow-x:auto}
+.appointments-grid{display:grid}
+.appointments-corner,.appointments-colh{position:sticky;top:0;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.appointments-colh{display:flex;align-items:center;gap:8px;min-height:46px;padding:7px 10px;border-left:1px solid var(--line);font-size:13px;font-weight:700;min-width:0}
+.appointments-hours{position:relative;font-size:11.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.appointments-hours span{position:absolute;right:8px;transform:translateY(4px);white-space:nowrap}
+/* one line per hour, drawn by the column itself so the blocks and the lines can never drift apart */
+.appointments-col{position:relative;border-left:1px solid var(--line);background-image:linear-gradient(to bottom,var(--line) 1px,transparent 1px);background-repeat:repeat-y}
+.appointments-col.off{background-color:var(--surface-2)}
+.appointments-now{position:absolute;left:0;right:0;height:0;border-top:2px solid var(--bad);z-index:2;pointer-events:none}
+.appointments-now::before{content:"";position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:var(--bad)}
+.appointments-daynone{padding:14px 18px;border-top:1px solid var(--line)}
+
+/* a block takes its colour from where the appointment stands */
+.appointments-block-a{--s:var(--accent);--s-soft:var(--accent-soft);display:flex;flex-direction:column;gap:1px;min-width:0;padding:4px 8px;border:1px solid var(--s);border-left-width:3px;border-radius:6px;background:var(--s-soft);color:var(--text);font-size:12px;line-height:1.3;text-decoration:none;overflow:hidden;transition:box-shadow var(--motion-fast) var(--ease-vyntex),transform var(--motion-fast) var(--ease-vyntex)}
+.appointments-col .appointments-block-a{position:absolute;left:5px;right:5px;z-index:1}
+.appointments-block-a:hover{box-shadow:var(--shadow-1);transform:translateY(-1px)}
+.appointments-block-a b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appointments-b1{display:flex;align-items:baseline;gap:6px;min-width:0}
+.appointments-bt{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text-2);white-space:nowrap;flex:none}
+.appointments-bs{color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appointments-block-a.s-confirmed{--s:var(--ok);--s-soft:var(--ok-soft)}
+.appointments-block-a.s-awaiting_payment{--s:var(--warn);--s-soft:var(--warn-soft);border-style:dashed;border-left-style:solid}
+.appointments-block-a.s-requested{--s:var(--info);--s-soft:transparent;border-style:dashed}
+.appointments-block-a.s-completed{--s:var(--text-3);--s-soft:var(--neutral-soft)}
+.appointments-block-a.s-no_show{--s:var(--bad);--s-soft:var(--bad-soft)}
+/* the minutes kept free after an appointment: a hatched tail, so it reads as "not bookable" without looking like a booking */
+.appointments-buffer{position:absolute;left:5px;right:5px;border-radius:0 0 6px 6px;background:repeating-linear-gradient(135deg,var(--line-strong) 0,var(--line-strong) 1px,transparent 1px,transparent 6px);opacity:.8}
+
+.appointments-rows{display:flex;flex-direction:column;padding:6px 14px 10px}
+.appointments-rows.flat{padding:0}
+.appointments-rows>p{padding:8px 0}
+.appointments-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);color:inherit;text-decoration:none;min-height:48px}
+.appointments-row:last-child{border-bottom:0}
+.appointments-row .appointments-bt{min-width:68px}
+
+.appointments-wk{width:100%;border-collapse:collapse;table-layout:fixed;min-width:760px}
+.appointments-wk th,.appointments-wk td{border-bottom:1px solid var(--line);border-left:1px solid var(--line);padding:8px;vertical-align:top;text-align:left}
+.appointments-wk tr>:first-child{border-left:0;width:168px}
+.appointments-wk tbody tr:last-child>*{border-bottom:0}
+.appointments-wk thead th{background:var(--surface-2);font-size:12px;font-weight:700;color:var(--text-2)}
+.appointments-wk thead th.today{color:var(--accent)}
+.appointments-wk tbody th{font-size:13px;font-weight:700}
+.appointments-wk td{position:relative;height:84px}
+.appointments-wk td.today{background:var(--blue-soft)}
+.appointments-wk td.off{background:var(--surface-2)}
+.appointments-wk td .appointments-block-a{margin-bottom:4px}
+.appointments-add{display:grid;place-items:center;width:100%;min-height:26px;border:1px dashed transparent;border-radius:6px;background:none;color:var(--text-3);opacity:0;transition:opacity var(--motion-fast) var(--ease-vyntex),border-color var(--motion-fast) var(--ease-vyntex)}
+.appointments-add svg{width:14px;height:14px}
+.appointments-wk td:hover .appointments-add,.appointments-add:focus-visible{opacity:1;border-color:var(--line-strong)}
+@media (pointer:coarse){.appointments-add{opacity:1;border-color:var(--line)}}
+
+/* ---------- settings ---------- */
+.appointments-rowacts{justify-content:flex-end}
+.appointments-rules .check.full{grid-column:1/-1}
+.appointments-hoursrow{display:flex;align-items:center;gap:8px}
+.appointments-hoursrow .input{flex:1 1 0;min-width:0;padding-left:8px;padding-right:6px}
+.appointments-days{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.appointments-daybtn{min-width:52px;min-height:36px;padding:6px 10px;border:1px solid var(--line-strong);border-radius:var(--radius-s);background:transparent;color:var(--text-2);font-size:13px;font-weight:650;text-transform:capitalize;transition:background var(--motion-fast) var(--ease-vyntex),border-color var(--motion-fast) var(--ease-vyntex),color var(--motion-fast) var(--ease-vyntex)}
+.appointments-daybtn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--text)}
+.appointments-daybtn:disabled{cursor:default;opacity:.7}
+
+@media (max-width:720px){
+  .appointments-agbar select,.appointments-agbar .btn.sm{min-height:40px}
+  .appointments-nav{width:40px;height:40px}
+  .appointments-agtitle{font-size:16px;flex:1 1 100%;order:-1}
+  .appointments-slot{min-height:52px}
+  .appointments-daybtn{min-height:40px}
+}

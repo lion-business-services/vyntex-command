@@ -1,16 +1,25 @@
-// Translation with industry wording. Lookup order: industry pack > feature dictionaries > app > base (English as last resort).
-import type { Lang } from '@/domain/types';
+// Translation with industry wording. Lookup order: company wording > industry pack > edition blueprint labels (stages,
+// sources, roles) > feature dictionaries > app > base. English is the last resort in every language, so a language that is
+// only partly written (Chinese) shows English for what is missing instead of a key.
+import type { CompanyConfig, L10n, Lang } from '@/domain/types';
 import type { IndustryPack } from '@/packs/types';
 import { baseEN } from './base.en';
 import { baseES } from './base.es';
 import { appDict } from './app';
 import { featureDicts } from './features';
+import { DEPLOY } from '@/config/deployment';
 
-export type Dict = Record<Lang, Record<string, string>>;
+/** A dictionary: English and Spanish are complete, Chinese holds what has been written so far. */
+export type Dict = L10n<Record<string, string>>;
 export type TFn = (key: string, params?: Record<string, string | number>) => string;
 
-const merged: Dict = { en: { ...baseEN, ...appDict.en }, es: { ...baseES, ...appDict.es } };
-for (const d of featureDicts) { Object.assign(merged.en, d.en); Object.assign(merged.es, d.es); }
+/** Reads text an edition or a company wrote in several languages. A missing language reads as English. */
+export function pick<T>(text: L10n<T>, lang: Lang): T { return text[lang] ?? text.en; }
+/** Same as `pick`, for text that may be missing altogether. */
+export const pickOr = <T>(text: L10n<T> | undefined, lang: Lang, fallback: T): T => (text ? pick(text, lang) : fallback);
+
+const merged: Required<Dict> = { en: { ...baseEN, ...appDict.en }, es: { ...baseES, ...appDict.es }, zh: { ...(appDict.zh ?? {}) } };
+for (const d of featureDicts) { Object.assign(merged.en, d.en); Object.assign(merged.es, d.es); if (d.zh) Object.assign(merged.zh, d.zh); }
 
 const cache = new Map<string, TFn>();
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
@@ -25,7 +34,8 @@ type Fix = [RegExp, (m: string, ...rest: string[]) => string];
 function agreement(lang: Lang, pack: IndustryPack, tokens: Record<string, string>): Fix[] {
   const out: Fix[] = [];
   const words = (...keys: string[]) => keys.map((k) => tokens[k]).filter(Boolean);
-  if (lang === 'en') {
+  if (lang !== 'es') {
+    // English, and English shown where another language has no wording of its own yet.
     // by sound, not by letter: "an event", but "a unit", "a user", "a one-time visit"
     const vowel = words('job', 'worker', 'client').filter((w) => /^[aeiou]/i.test(w) && !/^(?:uni|us[ae]|ut[ei]|eu|one|once)/i.test(w));
     if (vowel.length) out.push([new RegExp(`\\b([Aa]) (?=(?:new )?(?:${vowel.map(esc).join('|')})\\b)`, 'gi'), (_m, a) => (a === 'A' ? 'An ' : 'an ')]);
@@ -48,13 +58,47 @@ function agreement(lang: Lang, pack: IndustryPack, tokens: Record<string, string
 }
 const ADJ = /^(cread|asociad|asignad|agregad|borrad|actualizad|guardad|terminad|seleccionad|pagad|completad|activ|abiert|nuev|list|programad|firmad|atrasad|cerrad|facturad|cobrad|pendiente)o$/i;
 
-/** Returns the translate function for a language and industry pack. Cached, so it is cheap to call on every render. */
-export function makeT(lang: Lang, pack: IndustryPack): TFn {
-  const key = lang + ':' + pack.id;
+/**
+ * Labels that come from the edition blueprint and the company's own configuration, as dictionary keys, so every screen keeps
+ * reading them the way it always did: `ls_<stage>`, `src_<source>`, `lr_<lost reason>`, `tt_<task type>`, `ct_<client type>`,
+ * `role.<role>`. The company's list wins over the edition's when it has one.
+ */
+function blueprintLabels(lang: Lang, pack: IndustryPack, config?: CompanyConfig): Record<string, string> {
+  const out: Record<string, string> = {};
+  const put = (prefix: string, list: { id: string; label: L10n }[] | undefined) => { for (const o of list ?? []) out[prefix + o.id] = pick(o.label, lang); };
+  put('ls_', pack.leadStages); put('src_', pack.leadSources); put('lr_', pack.lostReasons); put('tt_', pack.taskTypes); put('ct_', pack.clientTypes);
+  for (const [role, label] of Object.entries(pack.roleLabels)) out['role.' + role] = pick(label, lang);
+  if (config) {
+    put('ls_', config.leadStages); put('src_', config.leadSources); put('lr_', config.lostReasons); put('tt_', config.taskTypes); put('ct_', config.clientTypes);
+    for (const [role, label] of Object.entries(config.roleLabels ?? {})) if (label) out['role.' + role] = pick(label, lang);
+  }
+  return out;
+}
+/** The parts of a company's configuration that change wording. Empty when the company uses the edition as it ships. */
+function wordingKey(config?: CompanyConfig): string {
+  if (!config) return '';
+  const { leadStages, leadSources, lostReasons, taskTypes, clientTypes, roleLabels, terms } = config;
+  if (!leadStages && !leadSources && !lostReasons && !taskTypes && !clientTypes && !roleLabels && !terms) return '';
+  return JSON.stringify([leadStages, leadSources, lostReasons, taskTypes, clientTypes, roleLabels, terms]);
+}
+
+/**
+ * Returns the translate function for a language and industry pack, with the company's own wording on top when `config` has
+ * any. Cached, so it is cheap to call on every render.
+ */
+export function makeT(lang: Lang, pack: IndustryPack, config?: CompanyConfig): TFn {
+  const own = wordingKey(config);
+  const key = lang + ':' + pack.id + (own ? ':' + own : '');
   const hit = cache.get(key); if (hit) return hit;
+  // only one company is on screen at a time: keep the editions' own entries and the latest company wording, drop older ones
+  if (own) for (const k of cache.keys()) if (k.split(':').length > 2) cache.delete(k);
   const types: Record<string, string> = {};
-  for (const s of pack.serviceTypes) types['ty_' + s.id] = s[lang];
-  const dict: Record<string, string> = { ...merged.en, ...merged[lang], ...types, ...pack.terms[lang] };
+  for (const s of pack.serviceTypes) types['ty_' + s.id] = s[lang] ?? s.en;
+  const dict: Record<string, string> = {
+    ...merged.en, ...(lang === 'en' ? {} : merged[lang]), ...types, ...blueprintLabels(lang, pack),
+    ...pack.terms.en, ...(lang === 'en' ? {} : pack.terms[lang] ?? {}),
+    ...(own ? { ...blueprintLabels(lang, pack, config), ...(config?.terms?.en ?? {}), ...(lang === 'en' ? {} : config?.terms?.[lang] ?? {}) } : {}),
+  };
   const term = (k: string) => dict[k] ?? k;
   const tokens: Record<string, string> = {
     Job: term('project'), Jobs: term('projects'), Worker: term('sub'), Client: term('client'), Clients: term('clients'),
@@ -62,12 +106,13 @@ export function makeT(lang: Lang, pack: IndustryPack): TFn {
     Workers: dict.workersPlural ?? term('subs'), Team: term('subs'),
   };
   for (const k of Object.keys(tokens)) tokens[lower(k)] = lower(tokens[k]);
-  tokens.product = pack.product;
+  // a deployment locked to one edition carries its own product name (LBS Command), never the edition's
+  tokens.product = DEPLOY.lockedEdition ? DEPLOY.productName : pack.product;
   const fixes = agreement(lang, pack, tokens);
   // A two-part client word ("Property manager / owner") reads badly inside the plan and add-on lines, which come from the
   // pricing file's plain "client". Those lines use the plain word in such an edition; every other screen keeps the trade's word.
   const plain: Record<string, string> | null = tokens.client.includes('/')
-    ? (lang === 'es' ? { client: 'cliente', clients: 'clientes', Client: 'Cliente', Clients: 'Clientes' } : { client: 'client', clients: 'clients', Client: 'Client', Clients: 'Clients' })
+    ? (lang === 'es' ? { client: 'cliente', clients: 'clientes', Client: 'Cliente', Clients: 'Clientes' } : lang === 'zh' ? { client: '客户', clients: '客户', Client: '客户', Clients: '客户' } : { client: 'client', clients: 'clients', Client: 'Client', Clients: 'Clients' })
     : null;
   const t: TFn = (k, params) => {
     const raw = dict[k]; if (raw === undefined) return k;
@@ -84,4 +129,4 @@ export function makeT(lang: Lang, pack: IndustryPack): TFn {
 export function missingSpanish(): string[] { return Object.keys(merged.en).filter((k) => !(k in merged.es)); }
 
 /** Every key in the shared dictionaries, used by scripts/check-i18n.mjs. */
-export const sharedKeys = () => ({ en: Object.keys(merged.en), es: Object.keys(merged.es) });
+export const sharedKeys = () => ({ en: Object.keys(merged.en), es: Object.keys(merged.es), zh: Object.keys(merged.zh) });

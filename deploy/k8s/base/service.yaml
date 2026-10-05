@@ -1,0 +1,13 @@
+# REFERENCE ONLY. Reachable inside the cluster only; the ingress is the one way in from outside.
+apiVersion: v1
+kind: Service
+metadata:
+  name: command
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: command
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

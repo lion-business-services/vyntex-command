@@ -58,3 +58,50 @@
   .team-list .team-c-phone{display:none}
   .team-list th,.team-list td{padding-left:8px;padding-right:8px}
 }
+
+/* ---------- the office team (an edition without field workers): profile cards and one person's page ---------- */
+.team-people{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.team-person{display:grid;gap:10px;align-content:start;text-decoration:none;color:inherit;transition:border-color var(--motion-fast) var(--ease-vyntex),transform var(--motion-fast) var(--ease-vyntex),box-shadow var(--motion-fast) var(--ease-vyntex)}
+.team-person:hover{border-color:var(--accent-line);transform:translateY(-1px);box-shadow:var(--shadow-2)}
+.team-person-h{display:flex;gap:12px;align-items:flex-start;min-width:0}
+.team-person-h .grow{display:grid;gap:2px;min-width:0}
+.team-person-n{font-family:var(--font-display);font-size:16px;overflow-wrap:anywhere}
+.team-person-b{margin-top:4px}
+.team-person-m{overflow-wrap:anywhere}
+.team-photo{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:var(--surface-3);border:1px solid var(--line-strong);color:var(--text);font-weight:800;font-size:16px}
+.team-photo.lg{width:84px;height:84px;font-size:27px}
+.team-photo img{width:100%;height:100%;object-fit:cover}
+.team-photo svg{width:40%;height:40%;color:var(--text-3)}
+.team-load{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 18px;margin:0;padding-top:10px;border-top:1px solid var(--line)}
+.team-load div{display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0}
+.team-load dt{font-size:12.5px;color:var(--text-2);font-weight:600;min-width:0}
+.team-load dd{margin:0;font-family:var(--font-title);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.team-foot{margin-top:12px}
+.team-profile-h{display:flex;gap:18px;align-items:flex-start;margin-bottom:16px}
+.team-profile-h .grow{min-width:0}
+.team-profile-h .page-h{margin-bottom:8px}
+.team-bio{max-width:70ch;white-space:pre-line}
+.team-plate{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px}
+.team-plate h3{font-size:13px;margin-bottom:6px}
+.team-worklist{list-style:none;margin:0;padding:0;display:grid;gap:5px}
+.team-worklist li{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:14px;min-width:0}
+.team-worklist a{overflow-wrap:anywhere;min-width:0}
+.team-worklist span{flex:none}
+.team-kv-ic{width:14px;height:14px;vertical-align:-2px;margin-right:5px;color:var(--text-3)}
+.team-away-note{display:block;font-weight:500}
+.team-conn{display:contents}
+/* long labels wrap instead of pushing the value off the card */
+.team-kv{grid-template-columns:fit-content(52%) minmax(0,1fr)}
+.team-edit{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px;align-items:start}
+.team-edit-photo{display:grid;gap:8px;justify-items:center;width:130px}
+.team-file-btn{cursor:pointer;position:relative}
+.team-file-btn:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.team-checks{border:0;margin:0;padding:0;min-width:0}
+.team-checks legend{padding:0;margin-bottom:8px}
+@media (max-width:720px){
+  .team-plate{grid-template-columns:minmax(0,1fr)}
+  .team-profile-h{gap:12px}
+  .team-photo.lg{width:60px;height:60px;font-size:20px}
+  .team-edit{grid-template-columns:minmax(0,1fr)}
+  .team-edit-photo{width:auto;grid-auto-flow:column;justify-content:start;align-items:center}
+}

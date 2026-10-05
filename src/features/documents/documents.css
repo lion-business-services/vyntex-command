@@ -86,3 +86,53 @@
 @media (pointer:coarse),(max-width:980px){.docs-none .btn{min-height:40px}}
 /* laptops in Spanish: long column titles wrap so the table fits its card instead of scrolling sideways */
 @media (min-width:721px) and (max-width:1180px){.docs-tbl th{white-space:normal;vertical-align:bottom}.docs-tbl .nowrap.row{flex-wrap:wrap;white-space:normal}}
+
+/* ---------- document center: templates, files, versions ---------- */
+/* on the paper (fixed colours, like the rest of it): a bracketed part still to be written, and a list */
+.docs-paper .docs-ph{background:#FFEFC2;color:inherit;border-radius:2px;padding:0 2px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.docs-paper .docs-list{border-left:2px solid var(--pl);padding-left:12px;line-height:1.75}
+.docs-privnote{display:inline-flex;align-items:center;gap:5px}.docs-privnote svg{width:13px;height:13px;flex:none}
+.docs-clip{width:12px;height:12px;vertical-align:-1px;margin-right:4px}
+.docs-clipname{overflow-wrap:anywhere}
+.docs-stops{margin:10px 0 0;padding-left:18px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+.docs-stops li::marker{color:var(--warn)}
+.docs-private{display:flex;gap:8px;align-items:flex-start;margin-top:12px}.docs-private svg{flex:none;width:15px;height:15px;margin-top:2px;color:var(--text-3)}
+.docs-img{display:block;max-width:100%;height:auto;border-radius:var(--radius-s);border:1px solid var(--line)}
+.docs-versions{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column}
+.docs-versions li{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.docs-versions li:last-child{border-bottom:0}
+.docs-clientf{padding:0 18px;margin-bottom:8px}
+.docs-clientempty{padding:0 18px 12px}
+.docs-clientnote{display:flex;gap:6px;align-items:center;padding:10px 18px;border-top:1px solid var(--line);margin:0}.docs-clientnote svg{flex:none;width:13px;height:13px}
+
+/* settings: templates */
+.docs-tplgroup{margin-top:16px}
+.docs-tplgroup h3{font-size:14px;margin-bottom:4px}
+.docs-tpls{list-style:none;margin:0;padding:0}
+.docs-tpls li{display:flex;gap:10px 14px;align-items:center;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
+.docs-tpls li:last-child{border-bottom:0}
+.docs-tpls li.off .grow{opacity:.6}
+.docs-fieldlist{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:10px}
+.docs-fieldlist h4{font-size:12.5px;color:var(--text-2);margin-bottom:6px}
+.docs-fieldlist ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.docs-fieldlist li{display:flex;flex-direction:column;font-size:13px;min-width:0}
+.docs-fieldlist code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--accent);overflow-wrap:anywhere}
+.docs-tpled{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:18px;align-items:start}
+.docs-blocks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.docs-blocks li{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);border-radius:var(--radius-s);background:var(--surface-2)}
+.docs-blocks li[data-type="h"] textarea{font-weight:700}
+.docs-blocks textarea{min-height:0;resize:vertical;line-height:1.45}
+.docs-btype{width:auto;min-height:32px;padding:4px 8px;font-size:13px}
+.docs-roles{gap:6px 16px}
+.docs-merge{position:sticky;top:0;display:flex;flex-direction:column;gap:10px}
+.docs-merge h4{font-size:13px}
+.docs-mergeg{display:flex;flex-direction:column;gap:5px}
+.docs-chip{border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);border-radius:999px;padding:3px 9px;font-size:12.5px;font-weight:600}
+.docs-chip:hover{border-color:var(--accent);color:var(--accent)}
+@media (max-width:900px){
+  .docs-fieldlist{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .docs-tpled{grid-template-columns:minmax(0,1fr)}
+  .docs-merge{position:static}
+}
+@media (max-width:480px){.docs-fieldlist{grid-template-columns:minmax(0,1fr)}}
+@media (pointer:coarse),(max-width:980px){.docs-chip{min-height:36px}.docs-tpls .btn.sm{min-height:38px}}

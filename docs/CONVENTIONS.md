@@ -14,9 +14,10 @@ If you catch yourself writing `if (pack.id === 'clean')`, stop and add a field t
 | --- | --- |
 | `config/vyntex-build-pricing.json` | The commercial source of truth. Never edited by code. |
 | `src/lib/pricing.ts` | The only reader of the pricing file. Every price, plan name, allowance and rule comes from here. |
-| `src/domain/` | Data model (`types.ts`), business actions (`actions.ts`), calculations (`selectors.ts`), automation rules, role permissions, entitlements. No React. |
+| `src/domain/` | Data model (`types.ts`), business actions (`actions/`), calculations (`selectors.ts`), company configuration (`config.ts`), who sees what (`access.ts`), automation rules, capabilities, entitlements. No React. |
 | `src/packs/` | Industry packs: `pack.ts` (configuration) and `seed.ts` (fictional sample business). |
-| `src/store/store.ts` | Demo-mode state (browser only). `useStore`, `act`, `mutate`, `setPrefs`, `switchPack`, `resetDemo`. |
+| `src/store/store.ts` | Workspace state: sample (browser only) or live (synced through the gateway). `useStore`, `act`, `mutate`, `setPrefs`, `switchPack`, `resetDemo`. |
+| `src/platform/` | Which workspace an address is (`mode.ts`), who is signed in (`session.ts`), the server contract (`gateway.ts`), its sample and live implementations, the change list (`diff.ts`). |
 | `src/app/` | Shell, router, `useApp()` hook, shared record components. |
 | `src/ui/` | Design system: `styles.css` and the React primitives in `index.tsx`. |
 | `src/features/<name>/` | One folder per module: `index.tsx` (page), `i18n.ts` (wording EN + ES), optional `<name>.css` and helper files. |
@@ -109,6 +110,43 @@ Feature-specific styles go in `src/features/<name>/<name>.css`, imported from th
 * Keyboard: everything reachable by Tab, visible focus, Esc closes overlays. Clickable rows are real `<a>` or `<button>` elements.
 * Every list has an empty state that says what to do next. Every filter has a "no matches" state with a way to clear it.
 * Put `data-testid` on the main controls of your page (kebab-case, feature-prefixed: `jobs-new`, `jobs-filter-status`).
+
+## Editions, configuration and roles (master build)
+
+* Nine editions: eight field editions and `practice` (professional services). What differs is in the pack. The field editions take their
+  blueprint from `fieldPack()` in `src/packs/blueprint.ts`; `src/packs/practice/pack.ts` writes its own.
+* **Never compare a lead's stage to a word.** Ask `isOpen / isWon / isLost / stageByRole / stagesOf` in `src/domain/config.ts`. The same file
+  answers sources, lost reasons, task and client types, which screens exist (`moduleOn`), role labels and capabilities, and lead routing.
+  Labels read through `t('ls_<stage>')`, `t('src_<source>')`, `t('lr_<reason>')`, `t('tt_<task type>')`, `t('ct_<client type>')`, `t('role.<role>')`.
+* Text an edition ships in several languages is `L10n` (`{ en, es, zh? }`), read with `pick(text, lang)` from `@/i18n`. Chinese falls back to English.
+* Roles: `owner`, `manager`, `staff`, `readonly`. `can('write')` gates every control that changes records (or wrap it in `<CanWrite>` from
+  `@/app/shared`); `act()` and `mutate()` refuse without it. More specific capabilities are listed in `src/domain/permissions.ts`.
+* Who may see a client: `visibleClients / canSeeClient` in `src/domain/access.ts` (office scoping).
+* Plans and prices exist only when `useApp().priced` is true. `plan` is null and `standing()` answers `none` otherwise; `<PlanBadge>` draws nothing.
+* No field workers in an edition (`!pack.usesWorkers`): no worker screens, sections or wording.
+
+## Adding to shared screens without editing shared files
+
+| What | Registry | Where your code goes |
+| --- | --- | --- |
+| A screen | `src/app/modules.ts` (already lists every screen of this build) | `src/features/<id>/index.tsx`, `i18n.ts`, `<id>.css` |
+| A tab on the client page | `src/features/clients/tabs.ts` | `src/features/<module>/ClientTab.tsx` |
+| A section of Settings | `src/features/settings/panels.ts` | `src/features/<module>/SettingsPanel.tsx` |
+| Records in the command palette | `src/app/search.ts` | `src/features/<module>/search.ts` |
+| A step after a lead is won | `addWonLeadStep()` in `src/domain/workflows.ts` | your actions file |
+
+Business actions are in `src/domain/actions/<area>.ts`, re-exported from `@/domain/actions`.
+
+## Two deployments, sample and live
+
+* `DEPLOY` (`src/config/deployment.ts`) says which product the bundle is. Where the other deployment's code must not be in the bundle, test
+  the build constant itself, written out at the branch (`typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs'`): the bundler only
+  drops a branch when it sees the constant there. `npm run test:split` proves the separation.
+* A line that must read differently in LBS Command (it names VYNTEX, the public demo or a plan) gets a replacement in an `i18n-lbs.ts` next
+  to the feature's `i18n.ts`, registered under `lbsOnly` in `src/i18n/features.ts` and added to the `overrides` list of
+  `scripts/check-i18n.mjs`. `src/features/settings/i18n-lbs.ts` is the example.
+* `useApp().live` is true after sign-in. Protected operations (tax ID vault, members, appointment payments, credits, cash close, exports) go
+  through `gateway().protected` from `src/platform/gateway.ts`: the sample implementation says it is a sample, the live one calls the server.
 
 ## Reference implementation
 

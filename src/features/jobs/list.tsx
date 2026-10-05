@@ -4,7 +4,9 @@ import { LuPlus, LuTable, LuKanban, LuArrowRightLeft, LuChevronDown } from 'reac
 import { useApp } from '@/app/hooks';
 import { A, appPath, go, navigate, useRoute } from '@/app/router';
 import { Button, Card, Empty, MoneyBar, PageHeader, SearchBox, Seg, cx } from '@/ui';
-import { JobStatusBadge } from '@/app/shared';
+import { JobStatusBadge, CanWrite } from '@/app/shared';
+import { visibleClientIds } from '@/domain/access';
+import { serviceName, serviceOf } from '@/domain/actions/catalog';
 import { byId, isActiveJob, jobMoney } from '@/domain/selectors';
 import type { Job, JobStatus } from '@/domain/types';
 import { money, pct, sum } from '@/lib/money';
@@ -12,40 +14,51 @@ import { JobDates, changeStatus } from './parts';
 import { JobForm } from './forms';
 
 export function JobList() {
-  const { t, data, pack, can } = useApp();
+  const { t, data, pack, can, lang, user, perms } = useApp();
   const route = useRoute();
   const view = route.query.get('view') === 'board' ? 'board' : 'table';
   const wantNew = route.query.get('new') === '1';
   const presetClient = route.query.get('client') || undefined;
+  /** Opened from the catalog ("where it is used") or with a service to start from. */
+  const byService = serviceOf(data, route.query.get('service') || undefined);
+  const office = pack.family === 'practice';
+  const [where, setWhere] = useState('');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'' | JobStatus>('');
   const [type, setType] = useState('');
   const [manager, setManager] = useState('');
   const [worker, setWorker] = useState('');
   const [form, setForm] = useState(false);
-  const showMoney = can('money'); const showProfit = can('profit');
+  const showMoney = can('money');
   const here = view === 'board' ? '/jobs?view=board' : '/jobs';
 
   const s = q.trim().toLowerCase();
-  const base = data.jobs.filter((j) =>
-    (!s || [j.name, j.number, j.address, byId(data.clients, j.clientId)?.name, byId(data.clients, j.clientId)?.company].some((x) => x && x.toLowerCase().includes(s)))
-    && (!type || j.type === type) && (!manager || j.managerId === manager) && (!worker || j.assign.some((a) => a.workerId === worker)));
+  // work for a client of another office is left out for someone who may not open that client
+  const mine = visibleClientIds(data, user, perms);
+  const all = data.jobs.filter((j) => mine.has(j.clientId) || !byId(data.clients, j.clientId));
+  const base = all.filter((j) =>
+    (!s || [j.name, j.number, j.address, j.period, byId(data.clients, j.clientId)?.name, byId(data.clients, j.clientId)?.company].some((x) => x && x.toLowerCase().includes(s)))
+    && (!type || j.type === type) && (!manager || j.managerId === manager) && (!worker || j.assign.some((a) => a.workerId === worker))
+    && (!where || (j.officeId ?? '-') === where) && (!byService || j.serviceId === byService.id));
   const rows = view === 'board' ? base : base.filter((j) => !status || j.status === status);
-  const filtered = !!(q || type || manager || worker || (view === 'table' && status));
-  const clear = () => { setQ(''); setStatus(''); setType(''); setManager(''); setWorker(''); };
+  const filtered = !!(q || type || manager || worker || where || byService || (view === 'table' && status));
+  const clear = () => { setQ(''); setStatus(''); setType(''); setManager(''); setWorker(''); setWhere(''); if (byService) go(here); };
   /** Opened from another page with ?new=1: closing the form also drops that from the address. */
   const closeForm = () => { setForm(false); if (wantNew) navigate(appPath(here), { replace: true }); };
 
-  const active = data.jobs.filter(isActiveJob);
+  const active = all.filter(isActiveJob);
   const m = rows.map((j) => ({ j, m: jobMoney(data, j) }));
+  // Office work has no crew to pay, so most engagements have no costs at all: the profit column appears there only once
+  // one of the listed engagements has a cost recorded against it. Field editions always show it, as before.
+  const showProfit = can('profit') && (!office || m.some((x) => x.m.labor + x.m.expenses > 0));
   const tot = { price: sum(m, (x) => x.m.price), profit: sum(m, (x) => x.m.profit), received: sum(m, (x) => x.m.received), owes: sum(m, (x) => Math.max(0, x.m.clientOwes)) };
 
   return (
     <>
-      <PageHeader title={t('nav.jobs')} sub={t('jobs.sub')} actions={<>
+      <PageHeader title={t('nav.jobs')} sub={t(office ? 'jobs.subOffice' : 'jobs.sub')} actions={<>
         <Seg label={t('jobs.view')} value={view} onChange={(x) => go(x === 'board' ? '/jobs?view=board' : '/jobs')} options={[
           { value: 'table', label: <><LuTable aria-hidden="true" />{t('jobs.view.table')}</> }, { value: 'board', label: <><LuKanban aria-hidden="true" />{t('jobs.view.board')}</> }]} />
-        <Button variant={data.jobs.length ? 'primary' : 'default'} icon={<LuPlus aria-hidden="true" />} onClick={() => setForm(true)} data-testid="jobs-new">{t('newProject')}</Button>
+        <CanWrite><Button variant={all.length ? 'primary' : 'default'} icon={<LuPlus aria-hidden="true" />} onClick={() => setForm(true)} data-testid="jobs-new">{t('newProject')}</Button></CanWrite>
       </>} />
 
       <div className="filters jobs-filters">
@@ -66,17 +79,23 @@ export function JobList() {
             <option value="">{t('allSubs')}</option>{data.workers.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
           </select>
         )}
+        {office && (data.offices ?? []).length > 1 && (
+          <select value={where} onChange={(e) => setWhere(e.target.value)} aria-label={t('jobs.f.office')} data-testid="jobs-filter-office">
+            <option value="">{t('jobs.allOffices')}</option>{data.offices.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}<option value="-">{t('jobs.f.noOffice')}</option>
+          </select>
+        )}
         {filtered && <button type="button" className="linkbtn small" onClick={clear} data-testid="jobs-clear">{t('common.clearFilters')}</button>}
       </div>
-      {data.jobs.length > 0 && (
+      {byService && <p className="small jobs-sum" data-testid="jobs-by-service"><span className="badge accent">{t('jobs.onlyService', { service: serviceName(byService, lang) })}</span></p>}
+      {all.length > 0 && (
         <p className="small muted jobs-sum">
-          {t('jobs.sum.count', { n: data.jobs.length })} · {t('jobs.sum.active', { n: active.length })}
+          {t('jobs.sum.count', { n: all.length })} · {t('jobs.sum.active', { n: active.length })}
           {showMoney && <> · {t('jobs.sum.value')}: <b>{money(sum(active, (j) => j.price))}</b></>}
         </p>
       )}
 
-      {!data.jobs.length ? (
-        <Card className="work-none"><Empty title={t('jobs.empty')} action={<Button variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setForm(true)}>{t('newProject')}</Button>}>{t('jobs.emptyHint')}</Empty></Card>
+      {!all.length ? (
+        <Card className="work-none"><Empty title={t('jobs.empty')} action={<CanWrite><Button variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setForm(true)}>{t('newProject')}</Button></CanWrite>}>{t('jobs.emptyHint')}</Empty></Card>
       ) : !rows.length ? (
         <Card className="work-none"><Empty title={t('common.noResults')} action={<Button onClick={clear} data-testid="jobs-clear-empty">{t('common.clearFilters')}</Button>} /></Card>
       ) : view === 'board' ? (
@@ -87,7 +106,7 @@ export function JobList() {
             <table className="tbl stackable jobs-table jobs-stack" data-testid="jobs-table">
               <thead>
                 <tr>
-                  <th>{t('project')}</th><th>{t('type')}</th><th>{t('common.status')}</th><th>{t('jobs.col.dates')}</th>
+                  <th>{t('project')}</th><th>{t('type')}</th>{office && <th>{t('jobs.f.period')}</th>}<th>{t('common.status')}</th><th>{t('jobs.col.dates')}</th>
                   {showMoney && <th className="num">{t('contract')}</th>}
                   {showProfit && <th className="num">{t('profit')}</th>}
                   {showMoney && <><th className="num">{t('jobs.col.received')}</th><th className="num">{t('common.balance')}</th></>}
@@ -101,6 +120,7 @@ export function JobList() {
                     <tr key={j.id} className="click" data-job={j.id} onClick={(e) => { if (!(e.target as HTMLElement).closest('a,button')) go(`/jobs/${j.id}`); }}>
                       <td className="t1"><A to={`/jobs/${j.id}`} className="jobs-name">{j.name}</A><div className="xs dim jobs-under">{[j.number, client?.name].filter(Boolean).join(' · ')}</div></td>
                       <td data-label={t('type')}>{t('ty_' + j.type)}</td>
+                      {office && <td data-label={t('jobs.f.period')} className="nowrap">{j.period || null}</td>}
                       <td data-label={t('common.status')}><JobStatusBadge status={j.status} /></td>
                       <td data-label={t('jobs.col.dates')} className="small"><JobDates job={j} /></td>
                       {showMoney && <td data-label={t('contract')} className="num">{money(c.price)}</td>}
@@ -126,7 +146,7 @@ export function JobList() {
               {showMoney && (
                 <tfoot>
                   <tr>
-                    <td className="t1" colSpan={4}>{t('common.total')} ({rows.length})</td>
+                    <td className="t1" colSpan={office ? 5 : 4}>{t('common.total')} ({rows.length})</td>
                     <td data-label={t('contract')} className="num" data-testid="jobs-total-price">{money(tot.price)}</td>
                     {showProfit && <td data-label={t('profit')} className={cx('num', tot.profit < 0 && 'neg')}>{money(tot.profit)}</td>}
                     <td data-label={t('jobs.col.received')} className="num">{money(tot.received)}</td>
@@ -139,7 +159,7 @@ export function JobList() {
         </Card>
       )}
 
-      {(form || wantNew) && <JobForm clientId={presetClient} onClose={closeForm} />}
+      {(form || wantNew) && <JobForm clientId={presetClient} serviceId={byService?.id} onClose={closeForm} />}
     </>
   );
 }
@@ -168,7 +188,7 @@ function Board({ jobs }: { jobs: Job[] }) {
                   onDragStart={(e) => { e.dataTransfer.setData('text/plain', j.id); e.dataTransfer.effectAllowed = 'move'; setDragging(j.id); }} onDragEnd={() => { setDragging(null); setOver(null); }}>
                   <A to={`/jobs/${j.id}`} className="t jobs-name">{j.name}</A>
                   <div className="small muted">{byId(data.clients, j.clientId)?.name}</div>
-                  <div className="small muted">{t('ty_' + j.type)}{showMoney && j.price ? ` · ${money(j.price)}` : ''}</div>
+                  <div className="small muted">{[t('ty_' + j.type), j.period, showMoney && j.price ? money(j.price) : ''].filter(Boolean).join(' · ')}</div>
                   <div className="xs"><JobDates job={j} /></div>
                   <label className="jobs-move"><span><LuArrowRightLeft aria-hidden="true" />{t('jobs.moveTo')}<LuChevronDown aria-hidden="true" /></span>
                     <select value={j.status} onChange={(e) => move(j, e.target.value as JobStatus)} aria-label={`${t('jobs.moveTo')}: ${j.name}`}>

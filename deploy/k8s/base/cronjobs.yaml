@@ -1,0 +1,106 @@
+# REFERENCE ONLY. Not applied anywhere. See ../README.md.
+# On Vercel, the schedule in vercel.json ("crons") calls /api/cron/tick and /api/cron/daily. A cluster has no such
+# thing, so these two jobs make the same calls, with the same image and the cron secret only. Keep the two schedules
+# equal to the ones in vercel.json.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: command-cron-tick
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 120
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: command-cron
+        spec:
+          restartPolicy: Never
+          serviceAccountName: command
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: call
+              image: REGISTRY/REPOSITORY@sha256:REPLACE_WITH_THE_IMAGE_DIGEST
+              command: ["/nodejs/bin/node", "deploy/container/cron-call.mjs", "tick"]
+              env:
+                # this job gets the one secret it needs, not the application's whole set
+                - name: CRON_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: command-secrets
+                      key: CRON_SECRET
+                - name: CRON_TARGET
+                  value: http://command
+              securityContext:
+                privileged: false
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests: { cpu: 10m, memory: 48Mi }
+                limits: { cpu: 200m, memory: 128Mi }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: command-cron-daily
+spec:
+  schedule: "17 9 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 180
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: command-cron
+        spec:
+          restartPolicy: Never
+          serviceAccountName: command
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: call
+              image: REGISTRY/REPOSITORY@sha256:REPLACE_WITH_THE_IMAGE_DIGEST
+              command: ["/nodejs/bin/node", "deploy/container/cron-call.mjs", "daily"]
+              env:
+                - name: CRON_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: command-secrets
+                      key: CRON_SECRET
+                - name: CRON_TARGET
+                  value: http://command
+              securityContext:
+                privileged: false
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests: { cpu: 10m, memory: 48Mi }
+                limits: { cpu: 200m, memory: 128Mi }

@@ -1,7 +1,10 @@
 import type { Dict } from '@/i18n';
+import { practiceRules } from '@/packs/practice/rules';
+import { more } from './i18n-builder';
 
 // Wording for the automation rules, the tasks and emails they prepare, and the page that shows them.
-export const dict: Dict = {
+// The wording of the rule builder, the run history and the field catalogue is in i18n-builder.ts.
+const base: Dict = {
   en: {
     'auto.title': 'Automations', 'auto.sub': 'The routine work that happens by itself, so nothing waits on someone remembering.',
     'auto.when': 'When', 'auto.then': 'Then', 'auto.on': 'On', 'auto.off': 'Off', 'auto.turnOn': 'Turn on', 'auto.turnOff': 'Turn off', 'auto.alwaysOn': 'Always on',
@@ -85,3 +88,8 @@ export const dict: Dict = {
     'auto.justNow': 'Recién', 'auto.showAll': 'Ver las {n}', 'auto.messages': 'Abrir Mensajes', 'auto.steps': 'Pasos', 'auto.open': 'Abrir {name}',
   },
 };
+
+/** Names of the shipped rules that are plain data, as `auto.<id>.name`, so the dashboard and the history can name any run. */
+const names = (lang: 'en' | 'es') => Object.fromEntries(practiceRules.filter((r) => !(`auto.${r.id}.name` in base.en)).map((r) => [`auto.${r.id}.name`, r.name[lang]]));
+
+export const dict: Dict = { en: { ...base.en, ...more.en, ...names('en') }, es: { ...base.es, ...more.es, ...names('es') } };

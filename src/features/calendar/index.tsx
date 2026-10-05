@@ -1,23 +1,30 @@
 // Calendar: a month grid and an agenda over the same events (visits, follow-ups, job dates, repeat visits, task deadlines).
+// Where the edition has the appointments screen, booked appointments stand here too, with their own look.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { LuChevronLeft, LuChevronRight, LuCalendarDays, LuCalendarCheck2, LuList, LuPlus, LuCalendarPlus, LuCalendarClock, LuRefreshCw, LuSend } from 'react-icons/lu';
+import { LuChevronLeft, LuChevronRight, LuCalendarDays, LuCalendarCheck2, LuList, LuPlus, LuCalendarPlus, LuCalendarClock, LuMapPin, LuRefreshCw, LuSend, LuVideo } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
-import { A, appPath, navigate, refPath, useRoute } from '@/app/router';
+import { A, appPath, go, navigate, refPath, useRoute } from '@/app/router';
 import type { PageProps } from '@/app/routes';
 import { act } from '@/store/store';
 import { Badge, Button, Card, FormModal, IconButton, PageHeader, Seg, cx, toast } from '@/ui';
-import { DemoTag, PlanBadge, PriorityBadge } from '@/app/shared';
+import { DemoTag, PlanBadge, PriorityBadge, CanWrite } from '@/app/shared';
 import { TaskFormModal } from '@/app/forms';
 import { updateLead } from '@/domain/actions';
-import { byId, calendarEvents, isOpenLead, type CalEvent, type EventKind } from '@/domain/selectors';
-import type { Priority } from '@/domain/types';
+import { byId, isOpenLead } from '@/domain/selectors';
+import { moduleOn } from '@/domain/config';
+import { visibleAppointments } from '@/domain/actions/appointments';
+import { gateway } from '@/platform/gateway';
+import type { ConnState, Priority } from '@/domain/types';
 import { planName } from '@/lib/pricing';
 import { addDays, daysBetween, fmtDate, monthLabel, today } from '@/lib/dates';
-import { gcalUrl, googleItem, kindLabel } from './gcal';
+import { gcalUrl, googleItem, kindLabel, type CalItem, type CalKind } from './gcal';
+import { calendarItems } from './items';
 import '@/features/leads/work.css';
 import './calendar.css';
 
-const KINDS: EventKind[] = ['appt', 'follow', 'start', 'visit', 'end', 'task'];
+const KINDS: CalKind[] = ['meet', 'appt', 'follow', 'start', 'visit', 'end', 'task'];
+/** A plain maps search for an address: a link, no key and nobody's location. */
+const mapsUrl = (address: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 const PRIORITIES: Priority[] = ['high', 'medium', 'low'];
 type View = 'month' | 'agenda';
 type Range = 'month' | 'next30' | 'week' | 'today' | 'overdue' | 'custom';
@@ -36,7 +43,7 @@ function shiftMonth(ym: string, n: number) { const d = new Date(Number(ym.slice(
 const monthEnd = (ym: string) => `${ym}-${pad(new Date(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)), 0).getDate())}`;
 
 export default function CalendarPage(_: PageProps) {
-  const { t, data, lang, pack, can, standing } = useApp();
+  const { t, data, lang, pack, can, standing, user, perms } = useApp();
   const route = useRoute();
   const phone = useMedia('(max-width: 720px)');
   const td = today();
@@ -47,7 +54,7 @@ export default function CalendarPage(_: PageProps) {
   const month = mParam && /^\d{4}-(0[1-9]|1[0-2])$/.test(mParam) ? mParam : thisMonth;
 
   const [day, setDay] = useState(td);
-  const [off, setOff] = useState<EventKind[]>([]);
+  const [off, setOff] = useState<CalKind[]>([]);
   const [pri, setPri] = useState<'' | Priority>('');
   const [range, setRange] = useState<Range>('month');
   const [from, setFrom] = useState(td);
@@ -64,24 +71,26 @@ export default function CalendarPage(_: PageProps) {
   const first = `${month}-01`; const last = monthEnd(month);
   // repeat visits are generated up to a horizon, so looking further ahead asks for more of them
   const horizon = Math.max(70, daysBetween(td, last) + 1, range === 'custom' && to ? daysBetween(td, to) + 1 : 0);
-  const all = useMemo(() => calendarEvents(data, horizon), [data, horizon]);
+  // booked appointments join the calendar only where the edition has that screen and the viewer may open it
+  const withAppts = moduleOn(data, pack, 'appointments') && can('appointments');
+  const all = useMemo(() => calendarItems(data, horizon, withAppts ? visibleAppointments(data, user, perms) : null, lang), [data, horizon, withAppts, user, perms, lang]);
   const shown = useMemo(() => all.filter((e) => !off.includes(e.kind) && (!pri || (e.pri ?? 'medium') === pri)), [all, off, pri]);
-  const kinds = KINDS.filter((k) => k !== 'visit' || pack.recurring || all.some((e) => e.kind === 'visit'));
+  const kinds = KINDS.filter((k) => (k === 'meet' ? withAppts : k === 'appt' ? !withAppts : k !== 'visit' || pack.recurring || all.some((e) => e.kind === 'visit')));
   const filtered = off.length > 0 || !!pri;
   const clear = () => { setOff([]); setPri(''); };
-  const toggle = (k: EventKind) => setOff((o) => (o.includes(k) ? o.filter((x) => x !== k) : [...o, k]));
+  const toggle = (k: CalKind) => setOff((o) => (o.includes(k) ? o.filter((x) => x !== k) : [...o, k]));
 
   const coming = shown.filter((e) => !e.done && e.date >= td && e.date <= addDays(7));
-  const openLeads = can('leads') ? data.leads.filter(isOpenLead) : [];
+  const openLeads = can('leads') ? data.leads.filter((l) => isOpenLead(l, data)) : [];
   const sync = standing('calendarSync'); const send = standing('calendarSend');
   const title = view === 'month' || range === 'month' ? monthLabel(month, lang) : t('calendar.rg.' + range);
 
   return (
     <>
-      <PageHeader title={t('nav.calendar')} sub={t('calendar.sub')} actions={<>
+      <PageHeader title={t('nav.calendar')} sub={t(withAppts ? 'calendar.subAppts' : 'calendar.sub')} actions={<>
         <Seg label={t('calendar.view')} value={view} onChange={show} options={[
           { value: 'month', label: <><LuCalendarDays aria-hidden="true" />{t('calendar.view.month')}</> }, { value: 'agenda', label: <><LuList aria-hidden="true" />{t('calendar.view.agenda')}</> }]} />
-        <Button variant="primary" icon={<LuPlus />} onClick={() => setTaskDue(view === 'month' ? day : td)} data-testid="calendar-new-task">{t('calendar.newTask')}</Button>
+        <CanWrite><Button variant="primary" icon={<LuPlus />} onClick={() => setTaskDue(view === 'month' ? day : td)} data-testid="calendar-new-task">{t('calendar.newTask')}</Button></CanWrite>
       </>} />
 
       <div className="cal-bar">
@@ -130,8 +139,10 @@ export default function CalendarPage(_: PageProps) {
                 <div data-testid="calendar-day">
                   <EventList events={shown.filter((e) => e.date === day)} empty={t('calendar.none')} compact />
                   <div className="row cal-dayacts">
-                    <Button size="sm" icon={<LuPlus />} onClick={() => setTaskDue(day)} data-testid="calendar-day-task">{t('calendar.newTaskDay')}</Button>
-                    {openLeads.length > 0 && <Button size="sm" variant="ghost" icon={<LuCalendarClock />} onClick={() => setVisitDay(day)} data-testid="calendar-day-visit">{t('calendar.newVisit')}</Button>}
+                    <CanWrite><Button size="sm" icon={<LuPlus />} onClick={() => setTaskDue(day)} data-testid="calendar-day-task">{t('calendar.newTaskDay')}</Button></CanWrite>
+                    {withAppts
+                      ? day >= td && <CanWrite need="appointments"><Button size="sm" variant="ghost" icon={<LuCalendarClock />} onClick={() => go(`/appointments?new=1&date=${day}`)} data-testid="calendar-day-book">{t('calendar.bookDay')}</Button></CanWrite>
+                      : openLeads.length > 0 && <CanWrite><Button size="sm" variant="ghost" icon={<LuCalendarClock />} onClick={() => setVisitDay(day)} data-testid="calendar-day-visit">{t('calendar.newVisit')}</Button></CanWrite>}
                   </div>
                 </div>
               </Card>
@@ -150,11 +161,13 @@ export default function CalendarPage(_: PageProps) {
             {send.state === 'upgrade' && send.plan && <p className="xs dim cal-gap">{t('ent.upgradeHint', { plan: planName(send.plan, lang) })}</p>}
           </Card>
 
-          <Card title={<><LuRefreshCw aria-hidden="true" className="cal-ico" />{t('calendar.g.sync')}</>} className="cal-sync">
-            <div className="row tight" data-testid="calendar-sync"><PlanBadge feature="calendarSync" detail /><DemoTag kind="connect" /></div>
-            <p className="small muted cal-gap">{t('calendar.g.syncBody')}</p>
-            {sync.state === 'upgrade' && sync.plan && <p className="xs dim cal-gap">{t('ent.upgradeHint', { plan: planName(sync.plan, lang) })}</p>}
-          </Card>
+          {moduleOn(data, pack, 'integrations') ? <Connections /> : (
+            <Card title={<><LuRefreshCw aria-hidden="true" className="cal-ico" />{t('calendar.g.sync')}</>} className="cal-sync">
+              <div className="row tight" data-testid="calendar-sync"><PlanBadge feature="calendarSync" detail /><DemoTag kind="connect" /></div>
+              <p className="small muted cal-gap">{t('calendar.g.syncBody')}</p>
+              {sync.state === 'upgrade' && sync.plan && <p className="xs dim cal-gap">{t('ent.upgradeHint', { plan: planName(sync.plan, lang) })}</p>}
+            </Card>
+          )}
         </aside>
       </div>
 
@@ -172,17 +185,47 @@ export default function CalendarPage(_: PageProps) {
   );
 }
 
+/** An appointment that is not firm yet: a date on the lead that nobody booked, a request, or one still waiting for payment. */
+const unsettled = (e: CalItem) => !e.appt || e.appt.status === 'requested' || e.appt.status === 'awaiting_payment';
+
+/* ---------- Google Calendar and Meet: what is connected, as the server reports it ---------- */
+function Connections() {
+  const { t, can } = useApp();
+  const [states, setStates] = useState<Partial<Record<'gcal' | 'gmeet', ConnState>>>({});
+  useEffect(() => {
+    let on = true;
+    // in a sample workspace nothing is ever connected, and this says so
+    gateway().integrations.list().then((list) => { if (on) setStates(Object.fromEntries(list.filter((c) => c.id === 'gcal' || c.id === 'gmeet').map((c) => [c.id, c.state]))); }, () => undefined);
+    return () => { on = false; };
+  }, []);
+  const line = (id: 'gcal' | 'gmeet', name: string) => {
+    const state = states[id] ?? 'not_connected';
+    return <div className="row between nowrap cal-conn" data-testid={`calendar-conn-${id}`} data-state={state}><span className="small">{name}</span><Badge tone={state === 'connected' ? 'ok' : state === 'not_connected' ? 'neutral' : 'warn'} outline={state === 'not_connected'}>{t('calendar.conn.' + state)}</Badge></div>;
+  };
+  return (
+    <Card title={<><LuRefreshCw aria-hidden="true" className="cal-ico" />{t('calendar.g.sync')}</>} className="cal-sync">
+      <div data-testid="calendar-sync">
+        {line('gcal', 'Google Calendar')}
+        {line('gmeet', 'Google Meet')}
+        <p className="small muted cal-gap">{t(states.gcal === 'connected' ? 'calendar.conn.onBody' : 'calendar.conn.offBody')}</p>
+        <p className="xs dim cal-gap">{t('calendar.conn.meetBody')}</p>
+        {can('integrations') && <p className="cal-gap"><A to="/integrations" className="linkbtn small">{t('calendar.conn.open')}</A></p>}
+      </div>
+    </Card>
+  );
+}
+
 /* ---------- month grid ---------- */
-function MonthGrid({ month, events, day, onPick }: { month: string; events: CalEvent[]; day: string; onPick: (d: string) => void }) {
+function MonthGrid({ month, events, day, onPick }: { month: string; events: CalItem[]; day: string; onPick: (d: string) => void }) {
   const { t, data, lang, time, date } = useApp();
   const y = Number(month.slice(0, 4)); const m = Number(month.slice(5, 7));
   const startDow = new Date(y, m - 1, 1).getDay(); const days = new Date(y, m, 0).getDate();
   const td = today();
-  const byDay = new Map<string, CalEvent[]>();
+  const byDay = new Map<string, CalItem[]>();
   for (const e of events) { const l = byDay.get(e.date); if (l) l.push(e); else byDay.set(e.date, [e]); }
   const dows = [...Array(7)].map((_, i) => new Date(2023, 0, 1 + i).toLocaleDateString(lang === 'es' ? 'es-US' : 'en-US', { weekday: 'short' }));
   const trailing = (7 - ((startDow + days) % 7)) % 7;
-  const path = (e: CalEvent) => refPath(e.ref, e.ref.type === 'task' ? byId(data.tasks, e.ref.id)?.jobId : undefined);
+  const path = (e: CalItem) => refPath(e.ref, e.ref.type === 'task' ? byId(data.tasks, e.ref.id)?.jobId : undefined);
   return (
     <Card flush className="cal-card">
       <div className="cal-grid" data-testid="calendar-grid">
@@ -196,7 +239,7 @@ function MonthGrid({ month, events, day, onPick }: { month: string; events: CalE
               <button type="button" className="cal-dn" aria-pressed={ds === day} aria-label={t(list.length ? 'calendar.dayItems' : 'calendar.dayEmpty', { date: date(ds), n: list.length })} onClick={() => onPick(ds)}>{i + 1}</button>
               <div className="cal-chips">
                 {list.slice(0, 3).map((e) => (
-                  <A key={e.id} to={path(e)} className={cx('cal-chip', 'k-' + e.kind, e.done && 'done', e.pri === 'high' && !e.done && 'hot')} title={`${kindLabel(t, e.kind)}: ${e.title}`}>
+                  <A key={e.id} to={path(e)} className={cx('cal-chip', 'k-' + e.kind, e.done && 'done', e.pri === 'high' && !e.done && 'hot', e.kind === 'meet' && unsettled(e) && 'loose')} title={`${kindLabel(t, e.kind)}: ${e.title}`}>
                     {e.time && <span className="cal-time">{time(e.time)} </span>}{e.title}
                   </A>
                 ))}
@@ -213,22 +256,27 @@ function MonthGrid({ month, events, day, onPick }: { month: string; events: CalE
 }
 
 /* ---------- one item, used by the agenda, the day panel and "coming up" ---------- */
-function EventList({ events, empty, showDate, compact }: { events: CalEvent[]; empty: string; showDate?: boolean; compact?: boolean }) {
-  const { t, data, time, day } = useApp();
+function EventList({ events, empty, showDate, compact }: { events: CalItem[]; empty: string; showDate?: boolean; compact?: boolean }) {
+  const { t, data, time, day, lang } = useApp();
   if (!events.length) return <p className="muted small">{empty}</p>;
   return (
     <div className="list">
       {events.map((e) => {
         const task = e.ref.type === 'task' ? byId(data.tasks, e.ref.id) : undefined;
-        const meta = [showDate ? day(e.date) : '', e.time ? time(e.time) : '', kindLabel(t, e.kind), e.sub].filter(Boolean).join(' · ');
+        // an appointment says where it stands when that is not simply "on": waiting for payment, only asked for, or a date nobody booked yet
+        const state = e.kind !== 'meet' ? '' : !e.appt ? t('calendar.meet.loose') : e.appt.status === 'awaiting_payment' || e.appt.status === 'requested' || e.appt.status === 'no_show' ? t('appointments.st.' + e.appt.status) : '';
+        const meta = [showDate ? day(e.date) : '', e.time ? time(e.time) : '', kindLabel(t, e.kind), e.sub, state].filter(Boolean).join(' · ');
         return (
-          <div key={e.id} className={cx('item cal-ev', 'k-' + e.kind, e.done && (e.kind === 'task' ? 'done' : 'cal-past'))} data-kind={e.kind}>
+          <div key={e.id} className={cx('item cal-ev', 'k-' + e.kind, e.done && (e.kind === 'task' ? 'done' : 'cal-past'), e.kind === 'meet' && unsettled(e) && 'loose')} data-kind={e.kind}>
             <i className="cal-k" aria-hidden="true" />
             <div className="grow">
               <div className="t"><A to={refPath(e.ref, task?.jobId)} className="cal-link">{e.title}</A>{!e.done && e.pri && <> <PriorityBadge pri={e.pri} /></>}</div>
               <div className="small muted cal-meta">{meta}</div>
             </div>
-            <a className={cx(compact ? 'iconbtn sm' : 'btn sm ghost', 'cal-g')} href={gcalUrl(googleItem(data, t, e))} target="_blank" rel="noopener noreferrer" data-testid="calendar-add-google"
+            {/* a video link exists only when a meeting provider made one; the office address opens a plain maps search */}
+            {e.appt?.meetUrl && <a className="iconbtn sm cal-g" href={e.appt.meetUrl} target="_blank" rel="noopener noreferrer" aria-label={t('calendar.meet.join', { title: e.title })} title={t('calendar.meet.join', { title: e.title })} data-testid="calendar-meet"><LuVideo aria-hidden="true" /></a>}
+            {e.appt?.mode === 'office' && e.appt.location && <a className="iconbtn sm cal-g" href={mapsUrl(e.appt.location)} target="_blank" rel="noopener noreferrer" aria-label={t('calendar.meet.map', { title: e.title })} title={t('calendar.meet.map', { title: e.title })} data-testid="calendar-map"><LuMapPin aria-hidden="true" /></a>}
+            <a className={cx(compact ? 'iconbtn sm' : 'btn sm ghost', 'cal-g')} href={gcalUrl(googleItem(data, t, e, lang))} target="_blank" rel="noopener noreferrer" data-testid="calendar-add-google"
               aria-label={t('calendar.addGoogleFor', { title: e.title })} title={t('calendar.addGoogleFor', { title: e.title })}>
               <LuCalendarPlus aria-hidden="true" />{!compact && <span className="cal-gl">{t('calendar.addGoogle')}</span>}
             </a>
@@ -240,15 +288,15 @@ function EventList({ events, empty, showDate, compact }: { events: CalEvent[]; e
 }
 
 /* ---------- agenda ---------- */
-function Agenda({ events, range, month, from, to, filtered, onClear, onNewTask }: { events: CalEvent[]; range: Range; month: string; from: string; to: string; filtered: boolean; onClear: () => void; onNewTask: () => void }) {
+function Agenda({ events, range, month, from, to, filtered, onClear, onNewTask }: { events: CalItem[]; range: Range; month: string; from: string; to: string; filtered: boolean; onClear: () => void; onNewTask: () => void }) {
   const { t, lang } = useApp();
   const td = today();
   const dow = new Date().getDay();
   const [a, b] = range === 'month' ? [`${month}-01`, monthEnd(month)] : range === 'next30' ? [td, addDays(30)] : range === 'week' ? [addDays(-dow), addDays(6 - dow)]
     : range === 'today' ? [td, td] : range === 'overdue' ? ['0000-01-01', addDays(-1)] : [from || td, to || from || td];
   // past due means something still waiting on someone: a visit, a follow-up or a task, not a job that simply started earlier
-  const list = events.filter((e) => e.date >= a && e.date <= b && (range !== 'overdue' || (!e.done && (e.kind === 'appt' || e.kind === 'follow' || e.kind === 'task'))));
-  const groups = new Map<string, CalEvent[]>();
+  const list = events.filter((e) => e.date >= a && e.date <= b && (range !== 'overdue' || (!e.done && (e.kind === 'appt' || e.kind === 'meet' || e.kind === 'follow' || e.kind === 'task'))));
+  const groups = new Map<string, CalItem[]>();
   for (const e of list) { const l = groups.get(e.date); if (l) l.push(e); else groups.set(e.date, [e]); }
   const dates = [...groups.keys()].sort();
   // in the current month, what already happened folds away so the list opens on today
@@ -268,7 +316,7 @@ function Agenda({ events, range, month, from, to, filtered, onClear, onNewTask }
           <div className="empty">
             <LuCalendarCheck2 aria-hidden="true" />
             <b>{t(filtered ? 'calendar.noneFiltered' : 'calendar.noneRange')}</b>
-            <div style={{ marginTop: 10 }}>{filtered ? <Button onClick={onClear}>{t('calendar.showAll')}</Button> : <Button icon={<LuPlus />} onClick={onNewTask}>{t('calendar.newTask')}</Button>}</div>
+            <div style={{ marginTop: 10 }}>{filtered ? <Button onClick={onClear}>{t('calendar.showAll')}</Button> : <CanWrite><Button icon={<LuPlus />} onClick={onNewTask}>{t('calendar.newTask')}</Button></CanWrite>}</div>
           </div>
         ) : (
           <>

@@ -95,3 +95,31 @@ export function downloadFile(name: string, text: string, type = 'application/jso
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
+
+/* ---------- time zones ---------- */
+/** The zones most offices in the United States are in, listed first. */
+const COMMON_ZONES = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Phoenix', 'America/Los_Angeles', 'America/Anchorage', 'Pacific/Honolulu', 'America/Puerto_Rico'];
+/** Time zones to choose from: the common ones, then every zone the browser knows. `current` is kept even when the browser does not list it. */
+export function timeZones(current?: string): string[] {
+  let all: string[] = [];
+  try { all = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.('timeZone') ?? []; } catch { /* an older browser: the common ones are enough */ }
+  const out = [...COMMON_ZONES, ...all.filter((z) => !COMMON_ZONES.includes(z))];
+  return current && !out.includes(current) ? [current, ...out] : out;
+}
+const zoneNames = new Map<string, string>();
+/**
+ * How a zone is shown: the common ones with their everyday name in the viewer's language in front ("Eastern Time
+ * (America/New_York)"), every other one by its standard name alone.
+ */
+export function zoneLabel(zone: string, lang: Lang = 'en'): string {
+  if (!COMMON_ZONES.includes(zone)) return zone;
+  const key = lang + ':' + zone;
+  const hit = zoneNames.get(key); if (hit) return hit;
+  let name = '';
+  try {
+    name = new Intl.DateTimeFormat(lang === 'zh' ? 'zh-CN' : lang === 'es' ? 'es-US' : 'en-US', { timeZone: zone, timeZoneName: 'longGeneric' }).formatToParts(new Date()).find((p) => p.type === 'timeZoneName')?.value ?? '';
+  } catch { /* a browser without zone names: the standard name alone */ }
+  const out = name && !/^(GMT|UTC)/.test(name) ? `${name.charAt(0).toUpperCase()}${name.slice(1)} (${zone})` : zone;
+  zoneNames.set(key, out);
+  return out;
+}

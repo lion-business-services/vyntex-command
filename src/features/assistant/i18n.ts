@@ -1,8 +1,10 @@
 import type { Dict } from '@/i18n';
+import { DEPLOY } from '@/config/deployment';
+import { more, plainName } from './i18n-more';
 
 // Wording for the assistant. The suggestion and example sentences (asst.chip.*, asst.ex.*) are also requests the built-in
 // assistant has to understand, so changing them means checking that engine.ts still reads them (see the engine check in the report).
-export const dict: Dict = {
+const base: Dict = {
   en: {
     'asst.title': 'VYNTEX AI',
     'asst.sub': 'Intelligence across your entire operation. Ask in plain words, in English or Spanish, or tell it what to record. It answers from your records and asks before it changes anything.',
@@ -144,3 +146,7 @@ export const dict: Dict = {
     'asst.sum.lastNote': 'Última nota: {text}', 'asst.sum.open': 'Abrir {name}', 'asst.sum.which': 'Hay más de un registro que coincide. ¿Cuál?',
   },
 };
+
+// LBS Command calls it "Assistant": those lines replace the shared ones of the same key there.
+const own = DEPLOY.id === 'lbs' ? plainName : { en: {}, es: {}, zh: {} };
+export const dict: Dict = { en: { ...base.en, ...more.en, ...own.en }, es: { ...base.es, ...more.es, ...own.es }, zh: { ...(base.zh ?? {}), ...(own.zh ?? {}) } };

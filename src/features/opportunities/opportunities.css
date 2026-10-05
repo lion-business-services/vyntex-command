@@ -1,0 +1,71 @@
+/* Opportunities and the cross-sell rules. Only tokens from the design system, so both brands and both themes work. */
+.opportunities-bar{display:flex;gap:10px 14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.opportunities-top{flex:none}
+.opportunities-lead{max-width:76ch;flex:1 1 420px;margin:0;padding-top:4px}
+.opportunities-sum{margin:-4px 0 12px}
+.opportunities-sum b{font-family:var(--font-display);font-weight:650;font-variant-numeric:tabular-nums;color:var(--text)}
+@media (min-width:721px){.opportunities-filters select{max-width:212px;text-overflow:ellipsis}}
+@media (max-width:560px){
+  .opportunities-filters .searchbox{flex:1 1 100%;max-width:none}
+  .opportunities-filters select{flex:1 1 calc(50% - 4px);min-width:0;width:calc(50% - 4px)}
+  .opportunities-top{width:100%}.opportunities-top .btn{flex:1}
+}
+
+/* The row menu opens below its button. A wrapper that scrolls would cut the menu of the last row, and this table never
+   needs to scroll sideways: the long column wraps and narrow screens stack the rows. */
+.opportunities-wrap.table-wrap{overflow:visible}
+.opportunities-table td{vertical-align:top}
+.opportunities-name{font-weight:700;text-decoration:none}.opportunities-name:hover{text-decoration:underline;text-underline-offset:3px}
+.opportunities-under{display:block;font-weight:500}
+.opportunities-who{display:flex;align-items:center;gap:6px;margin-top:5px}
+.opportunities-who .avatar{width:20px;height:20px;font-size:9.5px}
+.opportunities-c-service{max-width:46ch}
+.opportunities-gap{margin-left:6px}
+.opportunities-note{margin:5px 0 0;color:var(--text-2);overflow-wrap:anywhere}
+.opportunities-state{display:grid;gap:4px;justify-items:start}
+.opportunities-c-acts{width:1%;white-space:nowrap}
+.opportunities-acts{justify-content:flex-end}
+/* the row a search result or a history line opened */
+.opportunities-focus{background:var(--accent-soft)}
+@media (max-width:720px){
+  table.tbl.stackable.opportunities-table td.opportunities-c-service{display:block}
+  table.tbl.stackable.opportunities-table td.opportunities-c-service::before{display:block;margin-bottom:2px}
+  .opportunities-c-service{max-width:none}
+  .opportunities-c-acts{width:auto}
+  table.tbl.stackable.opportunities-table td.opportunities-c-acts{justify-content:flex-start;padding-top:8px}
+  /* On a narrow screen the buttons sit at the left, so a menu hung from the right edge of its own button would run off
+     the screen. It hangs from the left edge of the row of buttons instead. The shared menu sets its own anchor inline,
+     which is why this one rule has to insist. */
+  .opportunities-table .opportunities-acts{position:relative}
+  .opportunities-table .opportunities-more>div{position:static!important}
+  .opportunities-table .opportunities-more .menu{left:0;right:auto;max-width:calc(100vw - 48px)}
+}
+
+/* a client's opportunities */
+.opportunities-has{margin:-4px 0 6px}
+.opportunities-item{align-items:flex-start}
+.opportunities-side{display:grid;gap:6px;justify-items:end;flex:none}
+.opportunities-val{font-weight:500}
+@media (max-width:560px){
+  .opportunities-item{flex-wrap:wrap}.opportunities-side{justify-items:start;width:100%}
+  /* same reason as in the table: the buttons are at the left here */
+  .opportunities-side .opportunities-acts{position:relative}
+  .opportunities-side .opportunities-more>div{position:static!important}
+  .opportunities-side .opportunities-more .menu{left:0;right:auto;max-width:calc(100vw - 48px)}
+}
+
+/* rules: each one reads as a sentence */
+.opportunities-rules{gap:12px}
+.opportunities-rule.off{opacity:.72}
+.opportunities-rule-h{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px}
+.opportunities-sentence{margin:0;font-size:15px;line-height:1.5;max-width:86ch}
+.opportunities-match{margin:8px 0 0}
+.opportunities-broken{display:flex;gap:7px;align-items:flex-start;margin:10px 0 0;color:var(--warn)}
+.opportunities-broken svg{width:15px;height:15px;flex:none;margin-top:2px}
+.opportunities-switch{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:650;color:var(--text-2);cursor:pointer;margin-right:4px}
+.opportunities-switch input{width:17px;height:17px;accent-color:var(--accent)}
+.opportunities-chips{margin-bottom:6px}
+.opportunities-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 10px;border:1px solid var(--line-strong);border-radius:999px;font-size:13px;background:var(--surface-2);max-width:100%}
+.opportunities-chip button{display:grid;place-items:center;width:22px;height:22px;border:0;border-radius:50%;background:none;color:var(--text-3)}
+.opportunities-chip button:hover{background:var(--neutral-soft);color:var(--text)}
+.opportunities-chip svg{width:13px;height:13px}

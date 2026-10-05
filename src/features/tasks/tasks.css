@@ -42,3 +42,61 @@
   .tasks-group .list .item>span.nowrap{margin-left:29px;flex:1 1 auto}
   .tasks-rowmove{margin-left:auto;max-width:150px;min-height:40px}
 }
+
+/* ---- editions with task types: tools above the board, marks on a card, boards by person and type ---- */
+.tasks-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:8px 16px;flex-wrap:wrap;margin-bottom:12px}
+.tasks-bar .tasks-sum{margin:0}
+.tasks-tools{flex-wrap:wrap}
+.tasks-by{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--text-2)}
+.tasks-by select{min-height:32px;padding:3px 8px;font-size:13px;font-weight:650;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--radius-s);color:var(--text)}
+.tasks-marks{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tasks-cn{display:inline-flex;align-items:center;gap:3px}.tasks-cn svg{width:12px;height:12px}
+.tasks-board.by{grid-auto-columns:minmax(232px,1fr)}
+.tasks-board.by .kcol-h .clip{min-width:0}
+.tasks-bynote{margin-top:8px}
+.tasks-gsub{font-weight:500}
+/* handing several tasks over */
+.tasks-bulkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:12px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.tasks-bulkto{width:auto;min-width:180px}
+.tasks-pick{cursor:pointer;align-items:center}
+.tasks-pick input{width:17px;height:17px;flex:none;accent-color:var(--accent)}
+.tasks-pick.on{background:var(--blue-soft)}
+.tasks-pickwho{display:block}
+/* client requests */
+.tasks-reqbar{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap}
+.tasks-reqsum{margin:0}.tasks-reqsum b{color:var(--text)}
+.tasks-reqtitle{display:inline-flex;align-items:flex-start;gap:7px;color:inherit;text-decoration:none;text-align:left;font-weight:700;overflow-wrap:anywhere}
+.tasks-reqtitle svg{width:15px;height:15px;flex:none;margin-top:3px;color:var(--accent)}
+.tasks-reqtitle:hover{text-decoration:underline;text-underline-offset:3px}
+.tasks-reqc{margin-left:6px;white-space:nowrap}
+.tasks-reqdone .tasks-reqtitle{color:var(--text-2);font-weight:600}
+.tasks-reqdone .tasks-reqtitle svg{color:var(--text-3)}
+.tasks-tabh{margin-bottom:10px}.tasks-tabh h2{font-size:17px}
+/* the task dialog and its conversation */
+.tasks-dialog.two{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px;align-items:start}
+.tasks-fields{border:0;margin:0;padding:0;min-width:0}
+.tasks-dnote{margin-top:10px}
+.tasks-dfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px}
+.tasks-comments{min-width:0;border-left:1px solid var(--line);padding-left:22px}
+.tasks-comments h3{display:flex;align-items:center;gap:8px;font-size:14.5px;margin-bottom:10px}
+.tasks-thread{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:12px;max-height:340px;overflow-y:auto}
+.tasks-thread li{display:flex;gap:10px;align-items:flex-start}
+.tasks-cwho{color:var(--text)}
+.tasks-ctext{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.45}
+.tasks-mention{color:var(--accent);font-weight:700}
+.tasks-cact{flex:none}
+.tasks-cform{display:grid;gap:8px}
+.tasks-cform textarea{min-height:64px;resize:vertical}
+.tasks-offers{display:flex;flex-wrap:wrap;gap:6px}
+.tasks-offers button{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border:1px solid var(--line-strong);border-radius:99px;background:var(--surface-2);font-size:13px;font-weight:650;color:var(--text);transition:border-color var(--motion-fast) var(--ease-vyntex)}
+.tasks-offers button:hover{border-color:var(--accent-line)}
+.tasks-at{display:inline-flex;align-items:center;gap:4px}.tasks-at svg{width:14px;height:14px}
+@media (max-width:860px){
+  .tasks-dialog.two{grid-template-columns:minmax(0,1fr)}
+  .tasks-comments{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:16px}
+}
+@media (pointer:coarse),(max-width:980px){.tasks-by select,.tasks-tools .btn.sm,.tasks-bulkbar .btn{min-height:40px}}
+/* three views in the header: the selector never pushes the page sideways on a phone */
+[data-testid="tasks-view"]{max-width:100%;min-width:0}
+[data-testid="tasks-view"] .seg{max-width:100%;overflow-x:auto}
+@media (max-width:420px){[data-testid="tasks-view"] .seg button{padding-left:9px;padding-right:9px}}

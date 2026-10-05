@@ -8,6 +8,13 @@
 :is(.leads-board,.jobs-board,.tasks-board) .kcol-h>.small{padding-left:15px;font-family:var(--font-display);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-2)}
 /* a small square per stage, in the same colour as that stage's badge */
 :is(.leads-board,.jobs-board) .kcol-h>span:first-child::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--text-3);flex:none}
+/* the lead board colours a stage by what it means (data-tone, from the stage's part in the pipeline), so a stage a company
+   renamed or added gets the right colour too; the rules by stage id below it stay for the six stages the field editions ship */
+.leads-board [data-tone="accent"] .kcol-h>span:first-child::before{background:var(--accent)}
+.leads-board [data-tone="info"] .kcol-h>span:first-child::before{background:var(--info)}
+.leads-board [data-tone="violet"] .kcol-h>span:first-child::before{background:var(--violet)}
+.leads-board [data-tone="warn"] .kcol-h>span:first-child::before{background:var(--warn)}
+.leads-board [data-tone="ok"] .kcol-h>span:first-child::before{background:var(--ok)}
 .leads-board [data-stage="new"] .kcol-h>span:first-child::before{background:var(--accent)}
 .leads-board [data-stage="contacted"] .kcol-h>span:first-child::before,.jobs-board [data-status="progress"] .kcol-h>span:first-child::before{background:var(--info)}
 .leads-board [data-stage="scheduled"] .kcol-h>span:first-child::before,.jobs-board [data-status="hold"] .kcol-h>span:first-child::before{background:var(--violet)}

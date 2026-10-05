@@ -1,18 +1,40 @@
 // Small pieces shared by the jobs list, the job page and the job forms.
 import { LuArrowRight, LuRepeat } from 'react-icons/lu';
 import { useApp } from '@/app/hooks';
+import type { App } from '@/app/hooks';
 import { act, getSnapshot } from '@/store/store';
 import { toast } from '@/ui';
 import { setJobStatus } from '@/domain/actions';
-import type { Assignment, AutomationRun, Job, JobStatus, Lang, PayType, Repeat } from '@/domain/types';
+import { playbookTasks } from '@/domain/actions/catalog';
+import { repeats } from '@/domain/actions/jobs';
+import { moduleOn } from '@/domain/config';
+import type { Assignment, AutomationRun, CatalogTier, Job, JobStatus, Lang, PayType, Repeat } from '@/domain/types';
 import type { TFn } from '@/i18n';
 import { fmtDate } from '@/lib/dates';
-import { money2 } from '@/lib/money';
+import { money, money2 } from '@/lib/money';
 
-export const TABS = ['overview', 'team', 'money', 'tasks', 'documents', 'log', 'activity'] as const;
+export const TABS = ['overview', 'team', 'money', 'tasks', 'documents', 'appointments', 'messages', 'log', 'activity'] as const;
 export type JobTab = (typeof TABS)[number];
+/** The tabs of a field job, in the order they have always had. */
+const FIELD_TABS: JobTab[] = ['overview', 'team', 'money', 'tasks', 'documents', 'log', 'activity'];
+/** An engagement has no crew; it has appointments and a conversation with the client, and its money is what was billed and received. */
+const PRACTICE_TABS: JobTab[] = ['overview', 'tasks', 'documents', 'appointments', 'messages', 'log', 'money', 'activity'];
+/** The tabs of one job for this edition and this viewer. */
+export function tabsFor({ pack, can, data }: Pick<App, 'pack' | 'can' | 'data'>): JobTab[] {
+  const list = pack.family === 'practice' ? PRACTICE_TABS : FIELD_TABS;
+  return list.filter((x) => (x !== 'money' || can('money')) && (x !== 'team' || pack.usesWorkers)
+    && (x !== 'appointments' || (can('appointments') && moduleOn(data, pack, 'appointments'))) && (x !== 'messages' || (can('comms') && moduleOn(data, pack, 'messages'))));
+}
+/** In an office the money tab is the billing of the engagement. */
+export const tabLabel = (t: TFn, pack: { family: 'field' | 'practice' }, x: JobTab): string => t(x === 'money' && pack.family === 'practice' ? 'jobs.tab.billing' : 'jobs.tab.' + x);
 export const REPEATS: Repeat[] = ['once', 'weekly', 'biweekly', 'monthly'];
-export const repeats = (j: Job) => !!j.repeat && j.repeat !== 'once';
+/** How often work can repeat in an edition. Office work (a practice) also repeats by quarter and by year. */
+export const repeatsOf = (pack: { family: 'field' | 'practice' }): Repeat[] => (pack.family === 'practice' ? [...REPEATS, 'quarterly', 'yearly'] : REPEATS);
+export { repeats };
+/** "$220.00 per month": an agreed price with the unit it was quoted in. A price without a unit, or one price for the whole work, is just the amount. */
+export function priceLine(t: TFn, price: number, unit?: CatalogTier['unit']): string {
+  return unit && unit !== 'flat' ? t('jobs.price.per', { price: Number.isInteger(price) ? money(price) : money2(price), unit: t('jobs.unit.' + unit) }) : Number.isInteger(price) ? money(price) : money2(price);
+}
 
 /** Pack labels were written for forms ("Scope of work (for the contract)"); headings use them without the aside. */
 export const plain = (label: string) => label.replace(/\s*\([^)]*\)\s*$/, '');
@@ -48,7 +70,7 @@ export function payLine(t: TFn, a: Pick<Assignment, 'payType' | 'rate' | 'qty' |
 }
 
 /* ---------- automations, told in plain words ---------- */
-export interface AutoLine { kind: 'invoice' | 'tasks' | 'email' | 'workers' | 'other'; text: string }
+export interface AutoLine { kind: 'invoice' | 'tasks' | 'email' | 'workers' | 'next' | 'other'; text: string; /** Where the result lives, for a line that leads to another record. */ to?: string }
 
 /** Runs a change and returns the automation runs it started. */
 export function withRuns<R>(fn: () => R): { out: R; runs: AutomationRun[] } {
@@ -71,12 +93,18 @@ export function autoLines(t: TFn, runs: AutomationRun[], jobId: string): AutoLin
   }
   return out;
 }
-/** Changes the status, then says what the automations did because of it. */
+/** Changes the status, then says what happened because of it: the automations, a playbook that started, the next period of repeating work. */
 export function changeStatus(t: TFn, job: Job, to: JobStatus): AutoLine[] {
   if (job.status === to) return [];
   const id = job.id;
+  const before = getSnapshot().data; const hadTasks = playbookTasks(before, id).length; const known = new Set(before.jobs.map((j) => j.id));
   const { runs } = withRuns(() => act(setJobStatus, id, to));
   const lines = autoLines(t, runs, id);
+  const after = getSnapshot().data;
+  const started = playbookTasks(after, id).length - hadTasks;
+  if (started > 0) lines.push({ kind: 'tasks', text: t('jobs.auto.playbook', { n: started }) });
+  const next = after.jobs.find((j) => j.parentId === id && !known.has(j.id));
+  if (next) lines.push({ kind: 'next', text: t('jobs.auto.next', { period: next.period || shortDate(next.start || '', getSnapshot().prefs.lang) }), to: `/jobs/${next.id}` });
   toast([t('jobs.statusNow', { status: t('st_' + to) }), ...lines.map((l) => l.text)].join(' '));
   return lines;
 }

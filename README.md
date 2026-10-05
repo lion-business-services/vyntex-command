@@ -1,5 +1,20 @@
 # VYNTEX Command
 
+## Master build (October 2026): start here
+
+This repository now builds two separate products from one codebase:
+
+* `npm run build` builds **VYNTEX Command** into `dist/` (sales pages, public demo, nine editions, a live workspace per company).
+* `npm run build:lbs` builds **LBS Command** into `dist-lbs/` (standalone Lion Business Services deployment, professional-services edition only).
+
+Read in this order: `docs/MASTER-BUILD-REPORT.md` (what was built, what is proved, what is still needed), `docs/MASTER-BUILD-SPEC.md`
+(the engineering contract), `docs/DEPLOYMENT.md` (two deployments, step by step), `docs/DATABASE.md`, `docs/SERVER.md`,
+`docs/integrations/`, `docs/security/`, `docs/migration/nova-to-lbs.md`.
+
+Tests: `npm run check`, `npm run test:unit`, `npm run test:integrations`, `npm run test:security`, `npm run test:server`,
+`npm run test:db`, `npm run test:e2e`, `npm run test:migrate`, and the browser suites under `tests/qa_*.py`.
+Nothing here is deployed by running a build: production deployment waits for the owner's explicit go-ahead.
+
 The platform's name is VYNTEX Command, "the AI-Powered Business Operating Platform" (one setting: `src/config/brand.ts`).
 
 One business operations platform for small service companies: leads, clients, jobs, tasks, crews, calendar, documents, payments, reports and 1099 compliance. It is sold as eight industry editions (VYNTEX BUILD, CLEAN, LANDSCAPE, WASH, HAUL, SNOW, TURNOVER, EVENTS). All eight run on one codebase; an edition is a configuration folder, not a copy of the app.

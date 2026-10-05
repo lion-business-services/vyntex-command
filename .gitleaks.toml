@@ -1,0 +1,49 @@
+# Settings for gitleaks, the scanner that reads the Git history for keys (.github/workflows/secret-scan.yml).
+# It keeps every built-in rule and adds the key formats of the services this platform uses that the built-in set may
+# not cover. The repository's own scan (scripts/security/scan-secrets.mjs) checks the same formats in the working tree.
+#
+# Not verified here: no gitleaks program was available where this file was written. The first run in GitHub Actions
+# is the test of this file.
+title = "VYNTEX Command"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-secret-key"
+description = "Supabase secret key (bypasses row level security)"
+regex = '''\bsb_secret_[A-Za-z0-9_-]{16,}'''
+keywords = ["sb_secret_"]
+
+[[rules]]
+id = "supabase-access-token"
+description = "Supabase account access token"
+regex = '''\bsbp_[a-f0-9]{40}\b'''
+keywords = ["sbp_"]
+
+[[rules]]
+id = "resend-api-key"
+description = "Resend API key"
+regex = '''\bre_[A-Za-z0-9]{6,12}_[A-Za-z0-9]{16,}\b'''
+keywords = ["re_"]
+
+[[rules]]
+id = "google-oauth-client-secret"
+description = "Google OAuth client secret"
+regex = '''\bGOCSPX-[A-Za-z0-9_-]{24,}'''
+keywords = ["GOCSPX-"]
+
+[[rules]]
+id = "postgres-url-with-password"
+description = "Database address with a password in it"
+regex = '''\bpostgres(?:ql)?://[^\s:/@'"`]+:[^\s@/'"`<>\[\]${}]{6,}@'''
+keywords = ["postgres://", "postgresql://"]
+
+# Folders that are never committed (see .gitignore) and the lock file, whose integrity hashes look like keys.
+[allowlist]
+description = "Installed packages, build output and the lock file"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)dist(-[a-z]+)?/''',
+  '''(^|/)package-lock\.json$''',
+]

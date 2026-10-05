@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Stand-in for psql, used only by .github/scripts/db-tests.sh.
+# supabase/tests/run_local.sh connects to the server it started itself, with "-h <its socket folder>". In CI the
+# server is the postgres:16 service of the job. This wrapper drops that one argument and points every connection at
+# the service (SERVICE_PGHOST, SERVICE_PGPORT), so run_local.sh runs unchanged against it.
+args=()
+skip=0
+for a in "$@"; do
+  if [ "$skip" = 1 ]; then skip=0; continue; fi
+  case "$a" in
+    -h|--host) skip=1; continue ;;
+    --host=*) continue ;;
+  esac
+  args+=("$a")
+done
+export PGHOST="${SERVICE_PGHOST:?SERVICE_PGHOST is not set}" PGPORT="${SERVICE_PGPORT:-5432}"
+exec "${REAL_PSQL:-psql}" --no-password "${args[@]}"

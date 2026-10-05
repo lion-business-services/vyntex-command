@@ -1,4 +1,6 @@
-# QA matrix: every industry x language x screen size, every page.
+# QA matrix: every edition (the eight field editions and the professional-services one) x language x screen size, every page
+# the edition has. Which pages an edition has comes from tests/.pack-facts.json (its modules, whether it is priced, whether it
+# has field workers).
 # Checks per page: no console errors, no sideways scroll, no untranslated keys or unfilled {tokens}, product and sample
 # company shown, no BUILD-only words in other editions, no English leftovers in Spanish, no long dashes in sentences.
 # Usage: python3 tests/qa_matrix.py [industry ...]   (PORT env selects the preview server; results in tests/.qa-matrix-<industries>.json)
@@ -11,7 +13,9 @@ BASE = 'http://localhost:' + os.environ.get('PORT', '4173')
 CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
 ONLY = sys.argv[1:]
 SIZES = [('desktop', 1440, 900), ('phone', 390, 844)]
-KEY_RE = re.compile(r'(?<![\w@./-])(nav|common|demo|role|ts|ent|act|notif|search|form|doc|pr|auto|dash|leads|clients|jobs|tasks|calendar|team|docs|messages|payments|reports|compliance|asst|settings|portal|mk|tour|price|empty|toast|app)\.[a-zA-Z][a-zA-Z0-9_.-]*[a-zA-Z0-9]')
+# screens added with the edition blueprint; an edition is checked on the ones its module list names
+STUB_MODULES = ['appointments', 'catalog', 'opportunities', 'reviews', 'esign', 'integrations', 'social', 'cash', 'payroll', 'bookkeeping', 'licensing', 'deadlines', 'security', 'audit']
+KEY_RE = re.compile(r'(?<![\w@./-])(nav|common|demo|role|ts|ent|act|notif|search|form|doc|pr|auto|dash|leads|clients|jobs|tasks|calendar|team|docs|messages|payments|reports|compliance|asst|settings|portal|mk|tour|price|empty|toast|app|auth|public|sync|lang|appointments|catalog|opportunities|reviews|esign|integrations|social|cash|payroll|bookkeeping|licensing|deadlines|security|audit)\.[a-zA-Z][a-zA-Z0-9_.-]*[a-zA-Z0-9]')
 TOKEN_RE = re.compile(r'\{[A-Za-z_]+\}')
 DASH_RE = re.compile(r'[A-Za-zÀ-ÿ0-9,.;:)] ?[—–] ?[A-Za-zÀ-ÿ(]')
 BANNED = {'en': ['project', 'subcontractor', 'contract'], 'es': ['proyecto', 'subcontratista', 'contrato']}
@@ -41,12 +45,39 @@ async def run(pack, lang, size_name, w, h, browser, results):
     await pg.evaluate("() => { const p = JSON.parse(localStorage.getItem('vyntex.prefs') || '{}'); p.tourSeen = true; p.planTier = 2; localStorage.setItem('vyntex.prefs', JSON.stringify(p)); }")
     await pg.wait_for_timeout(300)
 
+    workers = pack.get('usesWorkers', True); priced = pack.get('priced', True); practice = pack.get('family') == 'practice'
     pages = ['/demo', '/demo/leads', '/demo/leads?view=board', '/demo/clients', '/demo/jobs', '/demo/jobs?view=board', '/demo/calendar', '/demo/calendar?view=agenda',
              '/demo/tasks', '/demo/tasks?view=list', '/demo/team', '/demo/documents', '/demo/messages', '/demo/payments', '/demo/reports', '/demo/reports/sales',
-             '/demo/reports/money', '/demo/reports/work', '/demo/reports/team', '/demo/compliance', '/demo/automations', '/demo/assistant', '/demo/settings',
-             '/demo/settings/team', '/demo/settings/plan', '/demo/settings/connections', '/', '/pricing', '/request-demo']
+             '/demo/reports/money', '/demo/reports/work', '/demo/automations', '/demo/assistant', '/demo/settings', '/demo/settings/team']
+    if workers: pages += ['/demo/reports/team']
+    if pack.get('compliance', True): pages += ['/demo/compliance']
+    if priced: pages += ['/demo/settings/plan', '/demo/settings/connections']
+    # the screens added with the edition blueprint, where the edition has them
+    pages += ['/demo/' + m for m in STUB_MODULES if m in pack.get('modules', [])]
+    # ---- communications center (begin): its settings section, and one conversation opened in the inbox
+    if practice: pages += ['/demo/settings/communications', '/demo/messages?c=c_pc1']
+    # ---- communications center (end)
+    # --- appointments module (appended): its other views, where the edition has the screen. pa7 is a fixed id of the sample firm.
+    if 'appointments' in pack.get('modules', []):
+        pages += ['/demo/appointments?tab=past', '/demo/appointments?view=agenda', '/demo/appointments/credits', '/demo/appointments/pa7', '/demo/settings/appointments']
+    # --- end appointments module
+    pages += ['/', '/pricing', '/request-demo']
+    # ---- documents and signatures (appended by the documents and e-signature module): the sample records of the practice edition ----
+    if practice: pages += ['/demo/settings/documents', '/demo/documents/pd-con-pc1', '/demo/documents/pd-up-pc7', '/demo/esign/pv1', '/demo/esign/pv2', '/demo/esign/pv1/sign/pv1-s2', '/demo/esign?doc=pd-sa-pe3']
+    # ---- end documents and signatures ----
+    # ---- leads and clients (appended by the leads and clients module): the pipeline settings, a won lead (what it created),
+    # a lost lead, a lead that needs attention, and a client page with owners, contacts and opt-outs. Fixed ids of the sample firm.
+    if practice: pages += ['/demo/settings/pipeline', '/demo/leads/pl8', '/demo/leads/pl10', '/demo/leads/pl12', '/demo/leads/pl6', '/demo/clients/pc6', '/demo/clients/pc8', '/demo/clients/pc13']
+    # ---- end leads and clients ----
+    # ---- automations, reviews and the assistant (appended by the automation module): the rule builder empty and with a coded
+    # rule open in it, and the full run history, in every edition; in the practice edition also a rule that is plain data, and
+    # the page a client answers a review request on (rv3 is a fixed id of the sample firm).
+    pages += ['/demo/automations/history', '/demo/automations/new', '/demo/automations/rule/lead-intake']
+    if practice: pages += ['/demo/automations/rule/p-appt-noshow', '/review/sample-rv3']
+    # ---- end automations, reviews and the assistant ----
     # detail pages: follow the first record of each list
-    details = [('/demo/leads', '/demo/leads/'), ('/demo/clients', '/demo/clients/'), ('/demo/jobs', '/demo/jobs/'), ('/demo/team', '/demo/team/'), ('/demo/documents', '/demo/documents/')]
+    details = [('/demo/leads', '/demo/leads/'), ('/demo/clients', '/demo/clients/'), ('/demo/jobs', '/demo/jobs/'), ('/demo/documents', '/demo/documents/')]
+    if workers: details.append(('/demo/team', '/demo/team/'))
     checked = 0
     async def check(path):
         nonlocal checked
@@ -100,11 +131,21 @@ async def run(pack, lang, size_name, w, h, browser, results):
             results.append({'pack': pack['id'], 'lang': lang, 'size': size_name, 'path': lst, 'issue': 'no record link found for ' + prefix}); continue
         await check(href)
         if prefix == '/demo/jobs/':
-            for tab in ['team', 'money', 'tasks', 'documents', 'log', 'activity']:
+            for tab in (['team'] if workers else []) + ['money', 'tasks', 'documents', 'log', 'activity']:
                 await check(href + '/' + tab)
+        # the client page of the professional-services edition has tabs
+        if prefix == '/demo/clients/' and practice:
+            for tab in ['engagements', 'appointments', 'tasks', 'documents', 'billing', 'communications', 'notes', 'opportunities', 'activity', 'secure']:
+                await check(href + '/' + tab)
+    # the read-only role: every screen opens and nothing breaks
+    if practice:
+        await pg.evaluate("() => { const p = JSON.parse(localStorage.getItem('vyntex.prefs')); p.viewAs = 'readonly'; localStorage.setItem('vyntex.prefs', JSON.stringify(p)); }")
+        for p in ['/demo', '/demo/leads', '/demo/clients', '/demo/jobs', '/demo/tasks', '/demo/payments']:
+            await check(p)
+        await pg.evaluate("() => { const p = JSON.parse(localStorage.getItem('vyntex.prefs')); p.viewAs = 'owner'; localStorage.setItem('vyntex.prefs', JSON.stringify(p)); }")
     # worker portal
     await pg.goto(BASE + '/demo'); await pg.wait_for_timeout(300)
-    wid = await pg.evaluate("() => { const d = JSON.parse(localStorage.getItem('vyntex.demo.' + JSON.parse(localStorage.getItem('vyntex.prefs')).pack) || 'null'); return d && d.workers[0] ? d.workers[0].id : null; }")
+    wid = None if not workers else await pg.evaluate("() => { const d = JSON.parse(localStorage.getItem('vyntex.demo.' + JSON.parse(localStorage.getItem('vyntex.prefs')).pack) || 'null'); return d && d.workers[0] ? d.workers[0].id : null; }")
     if wid:
         await pg.evaluate("(id) => { const p = JSON.parse(localStorage.getItem('vyntex.prefs')); p.viewAs = 'worker:' + id; localStorage.setItem('vyntex.prefs', JSON.stringify(p)); }", wid)
         await check('/demo')

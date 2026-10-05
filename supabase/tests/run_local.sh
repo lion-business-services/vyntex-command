@@ -6,16 +6,25 @@
 # What it does:
 #   1. starts a throwaway PostgreSQL server (its own data folder, a local socket only, no network port)
 #   2. creates a fresh database and the Supabase stand-ins (setup_local.sql)
-#   3. applies every file in supabase/migrations in order, then supabase/seed.sql, as the non-superuser role "postgres"
-#   4. runs rls_isolation.sql (every assertion raises on failure) and parity.mjs (app code and database agree)
-#   5. stops the server
+#   3. applies every file in supabase/migrations in order, then supabase/seed.sql, as the non-superuser role "postgres",
+#      then the seed again and app.lockdown_check() again, to prove both are repeatable
+#   4. runs the database tests, every assertion of which raises on failure:
+#        rls_isolation.sql        isolation between companies, the role matrix, audit, encryption, consent
+#        gateway.sql              capabilities and overrides, configuration, stages, the tax ID secret, ws_load, ws_apply,
+#                                 lead rotation, duplicates, office scope
+#        modules/*.test.sql       tests brought by later migrations (their sample rows: modules/*.seed.sql)
+#        concurrency.sh           two database sessions asking for the next lead at the same moment
+#   5. runs parity.mjs (app code and database agree) and tests/gateway_roundtrip.mjs (every edition's sample business
+#      goes through ws_apply and comes back from ws_load unchanged)
+#   6. stops the server
 #
 # Settings (environment variables):
-#   PGBIN        folder with initdb, pg_ctl, psql        default /usr/lib/postgresql/16/bin, else whatever is on PATH
-#   PGTEST_DIR   throwaway data folder                   default /tmp/vyntex-pgtest
-#   PGTEST_USER  OS user that runs the server when this script is started as root (Postgres refuses to run as root)
-#                                                        default postgres
-#   KEEP=1       leave the server running afterwards (connect with the psql line printed at the end)
+#   PGBIN           folder with initdb, pg_ctl, psql        default /usr/lib/postgresql/16/bin, else whatever is on PATH
+#   PGTEST_DIR      throwaway data folder                   default /tmp/vyntex-pgtest
+#   PGTEST_USER     OS user that runs the server when this script is started as root (Postgres refuses to run as root)
+#                                                           default postgres
+#   MIGRATIONS_MAX  apply migrations up to this number only, for example 0019 (default: all of them)
+#   KEEP=1          leave the server running afterwards (connect with the psql line printed at the end)
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -76,23 +85,47 @@ psql_as "$admin" -d "$db" -f "$here/setup_local.sql"
 
 echo "== migrations, applied as the non-superuser role postgres"
 for f in "$root"/supabase/migrations/*.sql; do
+  if [ -n "${MIGRATIONS_MAX:-}" ] && [ "$(basename "$f" | cut -c1-4)" \> "$MIGRATIONS_MAX" ]; then continue; fi
   echo "   $(basename "$f")"
-  psql_as postgres -d "$db" -f "$f"
+  psql_as postgres -d "$db" -f "$f" >/dev/null
 done
 echo "   seed.sql"
 psql_as postgres -d "$db" -f "$root/supabase/seed.sql"
 echo "   (again, to prove the seed and the lockdown check are repeatable)"
 psql_as postgres -d "$db" -f "$root/supabase/seed.sql"
-last="$(ls "$root"/supabase/migrations/*.sql | sort | tail -n 1)"
-psql_as postgres -d "$db" -f "$last"
+psql_as postgres -d "$db" -c "select app.lockdown_check()" >/dev/null
+
+# Sample rows and tests that later migrations bring with them (docs/DATABASE.md, "Tests for a new table").
+seeds="$dir/module_seeds.sql"
+: > "$seeds"
+for f in "$here"/modules/*.seed.sql; do
+  [ -e "$f" ] || continue
+  echo "\\i '$f'" >> "$seeds"
+done
 
 echo "== database tests (rls_isolation.sql)"
-psql_as "$admin" -d "$db" -f "$here/rls_isolation.sql"
+psql_as "$admin" -d "$db" -v module_seeds="$seeds" -f "$here/rls_isolation.sql"
+
+echo "== gateway tests (gateway.sql)"
+psql_as "$admin" -d "$db" -f "$here/gateway.sql"
+
+for f in "$here"/modules/*.test.sql; do
+  [ -e "$f" ] || continue
+  echo "== module tests ($(basename "$f"))"
+  psql_as "$admin" -d "$db" -f "$f"
+done
+
+echo "== lead rotation under concurrency (concurrency.sh)"
+PSQL="$PGBIN/psql" PGHOST="$sock" PGUSER="$admin" PGDATABASE="$db" bash "$here/concurrency.sh"
 
 echo "== parity between the app code and the database (parity.mjs)"
 PSQL="$PGBIN/psql" PGHOST="$sock" PGUSER="$admin" PGDATABASE="$db" node "$here/parity.mjs"
 
+echo "== gateway round trip of every edition's sample business (tests/gateway_roundtrip.mjs)"
+PSQL="$PGBIN/psql" PGHOST="$sock" PGUSER="$admin" PGDATABASE="$db" node "$root/tests/gateway_roundtrip.mjs"
+
 echo
+psql_as "$admin" -d "$db" -At -c "select 'database assertions passed: ' || count(*) from test.results"
 echo "ALL DATABASE CHECKS PASSED"
 if [ "${KEEP:-0}" = "1" ]; then
   echo "Server left running. Connect with: $PGBIN/psql -h $sock -U $admin -d $db"

@@ -1,0 +1,32 @@
+# How Git stores and checks out files, the same on Windows, macOS and Linux.
+# Text files are stored with LF line endings. Without this, a checkout on Windows turns the shell scripts into files
+# that fail on Linux (in GitHub Actions and in a container) with a confusing "bad interpreter" error.
+* text=auto eol=lf
+
+*.sh    text eol=lf
+*.sql   text eol=lf
+*.mjs   text eol=lf
+*.js    text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.md    text eol=lf
+*.toml  text eol=lf
+Dockerfile text eol=lf
+
+# Never treated as text: no line-ending changes, no text diff.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.ico   binary
+*.gif   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
+*.age   binary
+
+# Generated: collapsed in pull request views so reviewers look at what people wrote.
+package-lock.json linguist-generated=true

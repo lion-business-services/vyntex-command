@@ -5,6 +5,14 @@
 .k-visit{--k:var(--accent);--k-soft:var(--accent-soft)}
 .k-end{--k:var(--ok);--k-soft:var(--ok-soft)}
 .k-task{--k:var(--text-3);--k-soft:var(--neutral-soft)}
+/* a booked appointment has its own look: a round marker and an outlined pill, so it is never read as a job date or a task.
+   One that is not firm yet (only asked for, waiting for payment, or a date nobody booked) is drawn dashed and hollow. */
+.k-meet{--k:var(--violet);--k-soft:var(--violet-soft)}
+.cal-k.k-meet,.k-meet>.cal-k,.k-meet .cal-k{border-radius:50%}
+.cal-chip.k-meet{border:1px solid var(--k);border-radius:999px;padding:1px 8px}
+.cal-chip.k-meet.loose{border-style:dashed;background:transparent}
+.cal-ev.k-meet.loose>.cal-k{background:transparent;box-shadow:inset 0 0 0 1.5px var(--k)}
+.cal-conn{padding:3px 0}
 .cal-k{display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--k,var(--text-3));flex:none}
 
 .cal-bar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}

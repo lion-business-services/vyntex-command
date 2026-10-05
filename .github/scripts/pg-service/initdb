@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Stand-in for initdb, used only by .github/scripts/db-tests.sh. The server already exists (the CI service), so
+# there is nothing to create. It only makes sure the test database of an earlier run is gone.
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "${1:-}" = "--version" ]; then echo "initdb (stand-in for the CI database service)"; exit 0; fi
+"$here/psql" -X -q -v ON_ERROR_STOP=1 -U "${SERVICE_PGADMIN:-supabase_admin}" -d postgres -c "drop database if exists vyntex_test" >/dev/null

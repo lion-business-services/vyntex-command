@@ -24,3 +24,33 @@
 @media (pointer:coarse),(max-width:980px){.payments-list .btn{min-height:40px}}
 /* laptops: long column titles wrap so the table fits its card instead of scrolling sideways by a few pixels */
 @media (min-width:721px) and (max-width:1180px){.payments-tbl th{white-space:normal;vertical-align:bottom}}
+
+/* ---- professional services: balances by age, the notes under the tables, the printable receipt ---- */
+.payments-p .payments-kpis .kpi .v{font-size:25px}
+.payments-sub2{white-space:nowrap}
+.payments-aging{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.payments-age{display:flex;flex-direction:column;gap:2px;min-width:0;padding:11px 14px;text-align:left;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);transition:border-color var(--motion-fast) var(--ease-vyntex),background var(--motion-fast) var(--ease-vyntex)}
+.payments-age:hover{border-color:var(--accent-line)}
+.payments-age.on{border-color:var(--accent);background:var(--accent-soft)}
+.payments-age .k{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:650;color:var(--text-2)}
+.payments-age .v{font-family:var(--font-title);font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.3}
+.payments-age.zero .v{color:var(--text-3)}
+.payments-age .h{font-size:12px;color:var(--text-3)}
+@media (max-width:699px){.payments-aging{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.payments-foot{max-width:92ch}
+.payments-notes{display:grid;gap:6px;margin-top:18px;max-width:96ch}
+.payments-square{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.payments-square svg{width:15px;height:15px;flex:none;margin-top:3px;color:var(--text-3)}
+.payments-square>span{flex:1 1 260px;min-width:0}
+.payments-rc-bar{margin-bottom:14px}
+.payments-receipt .paper{max-width:720px;margin:0 auto}
+/* the receipt is paper: it takes the ink of .paper and only lightens it, so both brands print the same way */
+.payments-rc-h{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:18px;border-bottom:1px solid color-mix(in srgb,currentColor 22%,transparent)}
+.payments-rc-h p{opacity:.72;font-size:13px}
+.payments-rc-t{text-align:right}
+.payments-rc-kv{display:grid;grid-template-columns:minmax(120px,auto) minmax(0,1fr);gap:10px 18px;margin:0}
+.payments-rc-kv dt{opacity:.72;font-size:13px}.payments-rc-kv dd{margin:0;font-weight:600}
+.payments-rc-kv dd.payments-rc-amt{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.payments-rc-foot{margin-top:26px;padding-top:14px;border-top:1px solid color-mix(in srgb,currentColor 22%,transparent);opacity:.8;font-size:13px}
+@media (max-width:560px){.payments-rc-kv{grid-template-columns:minmax(0,1fr)}.payments-rc-kv dt{margin-bottom:-6px}.payments-rc-t{text-align:left}}
+.payments-rc-co{font-size:18px;font-family:inherit;letter-spacing:0;color:inherit}

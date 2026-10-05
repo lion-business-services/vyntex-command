@@ -15,7 +15,22 @@ import './plans.css';
 const INCLUDED_EXAMPLES: EntitlementId[] = ['core', 'workerPortal', 'profitReports'];
 interface Row { id: string; text: string; note: string; notBuilt?: boolean }
 
+/** Plans at a glance. An edition that is not in the pricing file says it is quoted and shows no plan and no price. */
 export function PlansOverview() {
+  const { t, pack } = useApp();
+  if (pack.priced) return <PlansLadder />;
+  return (
+    <section className="mks mks-pl" aria-labelledby="mks-pl-h">
+      <Head id="mks-pl-h" title={<>{t('mk.s.pl.quoted.h')} <EditionName pack={pack} /></>} sub={t('mk.s.pl.quoted.p', { product: pack.product })} />
+      <div className="mks-pl-foot" data-testid="mk-pl-quoted">
+        <p className="mks-fine">{t('mk.s.pl.quoted.note')}</p>
+        <Link to="/request-demo" className="btn primary" data-testid="mk-cat-pricing">{t('mk.s.pl.quoted.cta')}<Arrow /></Link>
+      </div>
+    </section>
+  );
+}
+
+function PlansLadder() {
   const { t, pack, lang } = useApp();
   const plans = plansFor(pack.id);
 

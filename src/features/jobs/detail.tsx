@@ -1,4 +1,6 @@
 // One job: header with the status control, then tabs for the team, the money, tasks, documents, the work log and history.
+// In the professional-services edition the job is an engagement: no crew and no work log; instead its service and period,
+// its appointments and messages, and billing (agreed price, received, balance). The parts for that are in ./engagement.tsx.
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import {
   LuPencil, LuTrash2, LuPlus, LuMapPin, LuZap, LuX, LuBanknote, LuFileText, LuFilePlus2, LuChevronRight, LuMail, LuCalendarDays,
@@ -8,16 +10,20 @@ import { A, go } from '@/app/router';
 import { BackLink } from '@/app/Shell';
 import { act } from '@/store/store';
 import { Avatar, Badge, Button, Card, Empty, IconButton, MoneyBar, PageHeader, confirmDialog, cx, toast, type Tone } from '@/ui';
-import { ActivityList, ContactLinks, DemoTag, DocStatusBadge, JobStatusBadge, NotesPanel, PlanBadge, TaskRow } from '@/app/shared';
+import { ActivityList, ContactLinks, DemoTag, DocStatusBadge, JobStatusBadge, NoAccess, NotesPanel, PlanBadge, TaskRow, CanWrite } from '@/app/shared';
 import { ClientPaymentModal, PayWorkerModal, TaskFormModal } from '@/app/forms';
-import { createDoc, deleteJob, deleteWorkerPay, removeFromJob } from '@/domain/actions';
+import { createDoc, createDocFromTemplate, deleteJob, deleteWorkerPay, removeFromJob } from '@/domain/actions';
+import { serviceOf } from '@/domain/actions/catalog';
+import type { Engagement } from '@/domain/actions/jobs';
+import { canSeeClient } from '@/domain/access';
 import { activityFor, actorName, byId, calendarEvents, docsOfJob, insuranceState, isOpenTask, jobMoney, tasksOfJob, workerPaysForJob, type JobMoney } from '@/domain/selectors';
 import type { Assignment, AssignStatus, DocKind, Job, JobStatus, WorkerPayment } from '@/domain/types';
 import { planName } from '@/lib/pricing';
 import { today } from '@/lib/dates';
 import { money, money2, pct, sum } from '@/lib/money';
-import { TABS, changeStatus, payLine, plain, repeats, shortDate, type AutoLine, type JobTab } from './parts';
+import { changeStatus, payLine, plain, repeats, shortDate, tabLabel, tabsFor, type AutoLine, type JobTab } from './parts';
 import { AssignmentForm, ExpenseForm, JobForm, LogForm } from './forms';
+import { Appointments, BillingSummary, EngagementFacts, EngagementLine, Messages, PlaybookCard } from './engagement';
 
 const DOC_KINDS: DocKind[] = ['estimate', 'contract', 'invoice'];
 const ASSIGN_TONE: Record<AssignStatus, Tone> = { pending: 'neutral', progress: 'info', done: 'ok' };
@@ -25,8 +31,8 @@ const ASSIGN_TONE: Record<AssignStatus, Tone> = { pending: 'neutral', progress: 
 const MONEY_ACTIVITY = ['payment.received', 'worker.paid', 'expense.added', 'invoice.paid'];
 
 export function JobDetail({ id, sub }: { id: string; sub?: string }) {
-  const { t, data, pack, can } = useApp();
-  const job = byId(data.jobs, id);
+  const { t, data, pack, can, user, perms } = useApp();
+  const job = byId(data.jobs, id) as Engagement | undefined;
   const [edit, setEdit] = useState(false);
   const [auto, setAuto] = useState<AutoLine[] | null>(null);
   /** Set once the status is changed on this page, so the badge settles when it changes and not when the page opens. */
@@ -34,9 +40,13 @@ export function JobDetail({ id, sub }: { id: string; sub?: string }) {
   if (!job) return <Card className="work-none"><Empty title={t('jobs.notFound')} action={<A to="/jobs" className="btn" data-testid="jobs-back">{t('back')}</A>} /></Card>;
 
   const showMoney = can('money');
-  const tabs = TABS.filter((x) => x !== 'money' || showMoney);
+  const office = pack.family === 'practice';
+  // an edition without field workers has no team tab on a job: nobody is assigned and paid per job there
+  const tabs = tabsFor({ pack, can, data });
   const tab: JobTab = tabs.includes(sub as JobTab) ? (sub as JobTab) : 'overview';
   const client = byId(data.clients, job.clientId);
+  // work for a client of another office is not shown to someone who may not open that client
+  if (client && !canSeeClient(data, user, perms, client)) return <><BackLink to="/jobs">{t('back')}</BackLink><NoAccess /></>;
   const openTasks = tasksOfJob(data, job.id).filter(isOpenTask).length;
   const openTab = (x: JobTab) => go(x === 'overview' ? `/jobs/${job.id}` : `/jobs/${job.id}/${x}`);
   const setStatus = (to: JobStatus) => { setTouched(true); const lines = changeStatus(t, job, to); setAuto(lines.length ? lines : null); };
@@ -49,27 +59,30 @@ export function JobDetail({ id, sub }: { id: string; sub?: string }) {
       <BackLink to="/jobs">{t('back')}</BackLink>
       <PageHeader
         title={<>{job.name} <span key={job.status} className={cx('jobs-status', touched && 'jobs-settle')}><JobStatusBadge status={job.status} /></span></>}
-        sub={<>{[job.number, t('ty_' + job.type)].filter(Boolean).join(' · ')}{client && <> · <A to={`/clients/${client.id}`} className="jobs-client" data-testid="jobs-client-link">{client.name}</A></>}</>}
+        sub={<>{[job.number, t('ty_' + job.type), office ? job.period : ''].filter(Boolean).join(' · ')}{client && <> · <A to={`/clients/${client.id}`} className="jobs-client" data-testid="jobs-client-link">{client.name}</A></>}</>}
         actions={<>
-          <label className="jobs-statusctl"><span className="xs muted">{t('common.status')}</span>
+          {/* someone who can only look sees the status as the badge beside the name, not as a control that would refuse */}
+          <CanWrite><label className="jobs-statusctl"><span className="xs muted">{t('common.status')}</span>
             <select value={job.status} onChange={(e) => setStatus(e.target.value as JobStatus)} data-testid="jobs-status">
               {pack.jobStatuses.map((s) => <option key={s} value={s}>{t('st_' + s)}</option>)}
             </select>
-          </label>
-          <Button icon={<LuPencil aria-hidden="true" />} onClick={() => setEdit(true)} data-testid="jobs-edit">{t('common.edit')}</Button>
-          {can('delete') && <IconButton label={t('deleteProject')} onClick={remove} data-testid="jobs-delete"><LuTrash2 /></IconButton>}
+          </label></CanWrite>
+          <CanWrite><Button icon={<LuPencil aria-hidden="true" />} onClick={() => setEdit(true)} data-testid="jobs-edit">{t('common.edit')}</Button></CanWrite>
+          {can('delete') && <CanWrite><IconButton label={t('deleteProject')} onClick={remove} data-testid="jobs-delete"><LuTrash2 /></IconButton></CanWrite>}
         </>} />
-      <div className="jobs-where">
-        <span className="jobs-addr"><LuMapPin aria-hidden="true" />{job.address || <span className="dim">{t('jobs.noAddress')}</span>}</span>
-        <ContactLinks phone={client?.phone} address={job.address} />
-      </div>
+      {office ? <EngagementLine job={job} phone={client?.phone} /> : (
+        <div className="jobs-where">
+          <span className="jobs-addr"><LuMapPin aria-hidden="true" />{job.address || <span className="dim">{t('jobs.noAddress')}</span>}</span>
+          <ContactLinks phone={client?.phone} address={job.address} />
+        </div>
+      )}
 
       {auto && <AutoNote lines={auto} jobId={job.id} onClose={() => setAuto(null)} />}
 
       <JobTabs label={t('jobs.tabs')} current={tab}>
         {tabs.map((x) => (
           <button key={x} type="button" role="tab" aria-selected={x === tab} onClick={() => openTab(x)} data-testid={`jobs-tab-${x}`}>
-            {t('jobs.tab.' + x)}{x === 'tasks' && openTasks > 0 && <span className="count">{openTasks}</span>}
+            {tabLabel(t, pack, x)}{x === 'tasks' && openTasks > 0 && <span className="count">{openTasks}</span>}
           </button>
         ))}
       </JobTabs>
@@ -80,6 +93,8 @@ export function JobDetail({ id, sub }: { id: string; sub?: string }) {
       {tab === 'money' && <Money job={job} />}
       {tab === 'tasks' && <Tasks job={job} />}
       {tab === 'documents' && <Documents job={job} />}
+      {tab === 'appointments' && <Appointments job={job} />}
+      {tab === 'messages' && <Messages job={job} />}
       {tab === 'log' && <LogAndNotes job={job} />}
       {tab === 'activity' && (
         <Card title={t('common.activity')}>
@@ -149,6 +164,7 @@ function AutoNote({ lines, jobId, onClose }: { lines: AutoLine[]; jobId: string;
             <span>{l.text}</span>
             {l.kind === 'invoice' && <A to={`/jobs/${jobId}/documents`} className="linkbtn small">{t('jobs.auto.seeDocs')}</A>}
             {l.kind === 'tasks' && <A to={`/jobs/${jobId}/tasks`} className="linkbtn small">{t('jobs.auto.seeTasks')}</A>}
+            {l.kind === 'next' && l.to && <A to={l.to} className="linkbtn small" data-testid="jobs-auto-next">{t('jobs.auto.seeNext')}</A>}
             {l.kind === 'email' && <><A to="/messages" className="linkbtn small">{t('jobs.auto.seeMessages')}</A><DemoTag /><PlanBadge feature="clientEmails" detail /></>}
             {l.kind === 'workers' && <PlanBadge feature="workerPortal" detail />}
             {l.kind === 'email' && <div className="xs muted jobs-auto-sub">{t('jobs.auto.emailNote')}{upgrade(emails)}</div>}
@@ -171,10 +187,11 @@ function Line({ label, value, swatch }: { label: ReactNode; value: ReactNode; sw
 
 /** Price, profit, received and balance first; what they are made of underneath. */
 function MoneySummary({ m }: { m: JobMoney }) {
-  const { t, can } = useApp();
+  const { t, can, pack } = useApp();
   const showProfit = can('profit');
+  const crew = pack.usesWorkers;
   const parts = [
-    { value: m.labor, cls: 's1' as const, label: t('subLabor') }, { value: m.expenses, cls: 's2' as const, label: t('materials') },
+    ...(crew ? [{ value: m.labor, cls: 's1' as const, label: t('subLabor') }] : []), { value: m.expenses, cls: 's2' as const, label: t('materials') },
     ...(showProfit ? [{ value: m.profit, cls: 's3' as const, label: t('profit') }] : []),
   ];
   const collected = m.price > 0 ? Math.min(1, Math.max(0, m.received / m.price)) : 0;
@@ -188,7 +205,7 @@ function MoneySummary({ m }: { m: JobMoney }) {
           </div>
           <MoneyBar total={m.price} parts={parts} label={`${t('jobs.ov.split')}: ${parts.map((p) => `${p.label} ${money(p.value)}`).join(', ')}`} />
           <dl className="jobs-lines">
-            <Line swatch="s1" label={t('subLabor')} value={money(m.labor)} />
+            {crew && <Line swatch="s1" label={t('subLabor')} value={money(m.labor)} />}
             <Line swatch="s2" label={t('materials')} value={money(m.expenses)} />
           </dl>
         </div>
@@ -198,24 +215,26 @@ function MoneySummary({ m }: { m: JobMoney }) {
             <Fig label={t('jobs.m.clientOwes')} value={money(Math.max(0, m.clientOwes))} tone={m.clientOwes > 0.005 ? 'warn' : undefined} hint={m.price > 0 && m.clientOwes <= 0.005 ? t('jobs.paid') : undefined} />
           </div>
           <MoneyBar total={m.price} parts={[{ value: m.received, cls: 's4', label: t('jobs.m.received') }]} label={`${t('jobs.m.received')}: ${money(m.received)} / ${money(m.price)}`} />
-          <dl className="jobs-lines">
+          {crew && <dl className="jobs-lines">
             <Line label={t('paidSubs')} value={money(m.paidWorkers)} />
             <Line label={t('jobs.m.oweWorkers')} value={money(Math.max(0, m.oweWorkers))} />
-          </dl>
+          </dl>}
         </div>
       </div>
     </Card>
   );
 }
 
-function Overview({ job, onTab }: { job: Job; onTab: (x: JobTab) => void }) {
-  const { t, data, can, date, day } = useApp();
+function Overview({ job, onTab }: { job: Engagement; onTab: (x: JobTab) => void }) {
+  const { t, data, can, date, day, pack } = useApp();
   const showMoney = can('money');
+  const office = pack.family === 'practice';
   const client = byId(data.clients, job.clientId);
   const manager = byId(data.users, job.managerId);
   const lead = byId(data.leads, job.leadId);
   const open = tasksOfJob(data, job.id).filter(isOpenTask).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
-  const visits = repeats(job) ? calendarEvents(data, 70).filter((e) => e.kind === 'visit' && e.ref.type === 'job' && e.ref.id === job.id && e.date >= today()).slice(0, 4) : [];
+  // an engagement is one period; its next period is its own record, linked in the details, so there are no visit dates to list
+  const visits = repeats(job) && !office ? calendarEvents(data, 70).filter((e) => e.kind === 'visit' && e.ref.type === 'job' && e.ref.id === job.id && e.date >= today()).slice(0, 4) : [];
   const unset = <span className="dim">{t('jobs.notSet')}</span>;
   const tasksCard = (
     <Card title={t('jobs.ov.openTasks')} className={showMoney ? undefined : 'raised'} actions={<button type="button" className="linkbtn small" onClick={() => onTab('tasks')}>{t('jobs.ov.allTasks')}</button>}>
@@ -226,13 +245,14 @@ function Overview({ job, onTab }: { job: Job; onTab: (x: JobTab) => void }) {
     <div className="split">
       <div className="stack">
         {showMoney && <MoneySummary m={jobMoney(data, job)} />}
-        <Card title={plain(t('scope'))}>{job.scope ? <p className="jobs-prose">{job.scope}</p> : <p className="muted small">{t('jobs.ov.noScope')}</p>}</Card>
+        <Card title={plain(t('scope'))}>{job.scope ? <p className="jobs-prose">{job.scope}</p> : <p className="muted small">{t(office ? 'jobs.ov.noScopeOffice' : 'jobs.ov.noScope')}</p>}</Card>
         {showMoney && <Card title={plain(t('payTerms'))}>{job.payTerms ? <p className="jobs-prose">{job.payTerms}</p> : <p className="muted small">{t('jobs.ov.noTerms')}</p>}</Card>}
         {!showMoney && tasksCard}
       </div>
       <div className="stack">
         <Card title={t('common.details')}>
           <dl className="kv">
+            {(office || job.serviceId) && <EngagementFacts job={job} />}
             <dt>{t('type')}</dt><dd>{t('ty_' + job.type)}</dd>
             <dt>{plain(t('start'))}</dt><dd>{job.start ? date(job.start) : unset}</dd>
             <dt>{plain(t('end'))}</dt><dd>{job.end ? date(job.end) : unset}</dd>
@@ -258,6 +278,7 @@ function Overview({ job, onTab }: { job: Job; onTab: (x: JobTab) => void }) {
             </dl>
           </Card>
         )}
+        {job.serviceId && <PlaybookCard job={job} onTab={onTab} />}
         {showMoney && tasksCard}
       </div>
     </div>
@@ -284,7 +305,7 @@ function Team({ job }: { job: Job }) {
   const remove = async (a: Assignment, name: string) => {
     if (await confirmDialog(t('jobs.team.removeConfirm', { name }), t('jobs.team.remove'), t('common.cancel'))) { act(removeFromJob, job.id, 'assign', a.id); toast(t('jobs.team.removed')); }
   };
-  const add = showMoney ? <Button size="sm" variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setForm('new')} data-testid="jobs-add-assignment">{t('addAssign')}</Button> : null;
+  const add = showMoney ? <CanWrite><Button size="sm" variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setForm('new')} data-testid="jobs-add-assignment">{t('addAssign')}</Button></CanWrite> : null;
 
   return (
     <>
@@ -326,9 +347,9 @@ function Team({ job }: { job: Job }) {
                       {showMoney && (
                         <td className="jobs-acts">
                           <span className="row tight nowrap">
-                            {w && <Button size="sm" icon={<LuBanknote aria-hidden="true" />} onClick={() => setPay(w.id)} aria-label={t('jobs.team.payName', { name })} data-testid="jobs-pay-worker">{t('pay')}</Button>}
-                            <IconButton size="sm" label={`${t('jobs.team.edit')}: ${name}`} onClick={() => setForm(a)} data-testid="jobs-edit-assignment"><LuPencil /></IconButton>
-                            <IconButton size="sm" label={`${t('jobs.team.remove')}: ${name}`} onClick={() => remove(a, name)} data-testid="jobs-remove-assignment"><LuTrash2 /></IconButton>
+                            {w && <CanWrite><Button size="sm" icon={<LuBanknote aria-hidden="true" />} onClick={() => setPay(w.id)} aria-label={t('jobs.team.payName', { name })} data-testid="jobs-pay-worker">{t('pay')}</Button></CanWrite>}
+                            <CanWrite><IconButton size="sm" label={`${t('jobs.team.edit')}: ${name}`} onClick={() => setForm(a)} data-testid="jobs-edit-assignment"><LuPencil /></IconButton></CanWrite>
+                            <CanWrite><IconButton size="sm" label={`${t('jobs.team.remove')}: ${name}`} onClick={() => remove(a, name)} data-testid="jobs-remove-assignment"><LuTrash2 /></IconButton></CanWrite>
                           </span>
                         </td>
                       )}
@@ -359,8 +380,8 @@ function Team({ job }: { job: Job }) {
 }
 
 /* ---------- money: what came in, what was spent, what went to the team ---------- */
-function Money({ job }: { job: Job }) {
-  const { t, data, lang, date } = useApp();
+function Money({ job }: { job: Engagement }) {
+  const { t, data, lang, date , pack } = useApp();
   const [recv, setRecv] = useState(false);
   const [exp, setExp] = useState(false);
   const [pay, setPay] = useState(false);
@@ -374,13 +395,14 @@ function Money({ job }: { job: Job }) {
     if (!p.from) return type;
     return p.to && p.to !== p.from ? t('jobs.money.period', { type, from: shortDate(p.from, lang), to: shortDate(p.to, lang) }) : `${type}, ${shortDate(p.from, lang)}`;
   };
-  const x = (label: string, onClick: () => void, testId: string) => <IconButton size="sm" label={label} onClick={onClick} data-testid={testId}><LuTrash2 /></IconButton>;
+  const x = (label: string, onClick: () => void, testId: string) => <CanWrite><IconButton size="sm" label={label} onClick={onClick} data-testid={testId}><LuTrash2 /></IconButton></CanWrite>;
 
   return (
     <div className="stack">
+      {pack.family === 'practice' && <BillingSummary job={job} m={m} />}
       <div className="grid2 jobs-pair">
         <Card flush title={t('secRecv')} className={m.clientOwes > 0.005 ? 'raised' : undefined} actions={m.clientOwes > 0.005
-          ? <Button size="sm" variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setRecv(true)} data-testid="jobs-record-payment">{t('form.pay.record')}</Button>
+          ? <CanWrite><Button size="sm" variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setRecv(true)} data-testid="jobs-record-payment">{t('form.pay.record')}</Button></CanWrite>
           : m.price > 0 ? <Badge tone="ok">{t('jobs.paid')}</Badge> : null}>
           {job.received.length ? (
             <div className="table-wrap">
@@ -403,7 +425,7 @@ function Money({ job }: { job: Job }) {
           <div className="jobs-sumrow"><span className="muted">{t('jobs.m.clientOwes')}</span><b className={cx(m.clientOwes > 0.005 && 'jobs-warn')} data-testid="jobs-balance">{money2(Math.max(0, m.clientOwes))}</b></div>
         </Card>
 
-        <Card flush title={t('secPurch')} actions={<Button size="sm" icon={<LuPlus aria-hidden="true" />} onClick={() => setExp(true)} data-testid="jobs-add-expense">{t('addPurch')}</Button>}>
+        <Card flush title={t('secPurch')} actions={<CanWrite><Button size="sm" icon={<LuPlus aria-hidden="true" />} onClick={() => setExp(true)} data-testid="jobs-add-expense">{t('addPurch')}</Button></CanWrite>}>
           {job.expenses.length ? (
             <div className="table-wrap">
               <table className="tbl stackable" data-testid="jobs-expenses">
@@ -425,7 +447,7 @@ function Money({ job }: { job: Job }) {
         </Card>
       </div>
 
-      <Card flush title={t('secSubPay')} actions={<Button size="sm" icon={<LuBanknote aria-hidden="true" />} onClick={() => setPay(true)} data-testid="jobs-pay-any">{t('paySub')}</Button>}>
+      {pack.usesWorkers && <Card flush title={t('secSubPay')} actions={<CanWrite><Button size="sm" icon={<LuBanknote aria-hidden="true" />} onClick={() => setPay(true)} data-testid="jobs-pay-any">{t('paySub')}</Button></CanWrite>}>
         {pays.length ? (
           <div className="table-wrap">
             <table className="tbl stackable" data-testid="jobs-worker-pays">
@@ -449,7 +471,7 @@ function Money({ job }: { job: Job }) {
         ) : <p className="muted small jobs-none">{t('jobs.money.noPays')}</p>}
         <div className="jobs-sumrow"><span className="muted">{t('paidSubs')}</span><b>{money2(m.paidWorkers)}</b></div>
         <div className="jobs-sumrow"><span className="muted">{t('jobs.m.oweWorkers')}</span><b>{money2(Math.max(0, m.oweWorkers))}</b></div>
-      </Card>
+      </Card>}
 
       {recv && <ClientPaymentModal jobId={job.id} onClose={() => setRecv(false)} />}
       {exp && <ExpenseForm job={job} onClose={() => setExp(false)} />}
@@ -466,10 +488,11 @@ function Tasks({ job }: { job: Job }) {
   const all = tasksOfJob(data, job.id);
   const open = all.filter(isOpenTask).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
   const done = all.filter((x) => !isOpenTask(x)).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || ''));
-  const addBtn = <Button size="sm" variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setAdd(true)} data-testid="jobs-add-task">{t('jobs.tasks.add')}</Button>;
+  const addBtn = <CanWrite><Button size="sm" variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setAdd(true)} data-testid="jobs-add-task">{t('jobs.tasks.add')}</Button></CanWrite>;
   const current = byId(data.tasks, editing ?? undefined);
   return (
     <div className="stack">
+      {job.serviceId && <PlaybookCard job={job} bar />}
       <Card className="work-none" title={<>{t('jobs.tasks.open')} <span className="count">{open.length}</span></>} actions={addBtn}>
         {open.length ? <div className="list" data-testid="jobs-tasks-open">{open.map((x) => <TaskRow key={x.id} task={x} onEdit={() => setEditing(x.id)} />)}</div>
           : all.length ? <p className="muted small">{t('jobs.tasks.noneOpen')}</p>
@@ -491,7 +514,16 @@ function Documents({ job }: { job: Job }) {
   const { t, data, date } = useApp();
   const docs = docsOfJob(data, job.id);
   const live = (k: DocKind) => docs.find((d) => d.kind === k && d.status !== 'void');
-  const make = (k: DocKind) => { const d = act(createDoc, job.id, k); if (d) go(`/documents/${d.id}`); };
+  // the documents the service lists are written from the company's templates; the three every job has are written from the job
+  const listed = (serviceOf(data, job.serviceId)?.docKinds ?? []).filter((k) => !DOC_KINDS.includes(k));
+  // the agreement written from the job and the engagement letter written from a template are the same paper under two
+  // names: whichever the job already has is the one offered, and a job with neither gets the one its service lists
+  const letter = listed.includes('engagement_letter') && !live('contract');
+  const kinds: DocKind[] = [...DOC_KINDS.filter((k) => k !== 'contract' || !letter), ...listed.filter((k) => k !== 'engagement_letter' || letter)];
+  const make = (k: DocKind) => {
+    const made = live(k) ?? (listed.includes(k) ? act(createDocFromTemplate, { kind: k, clientId: job.clientId, jobId: job.id, leadId: job.leadId }) : act(createDoc, job.id, k));
+    if (made) go(`/documents/${made.id}`); else toast(t('jobs.docs.noTemplate', { doc: t('doc.kind.' + k).toLowerCase() }), true);
+  };
   return (
     <div className="split">
       <Card flush className="work-none" title={t('jobs.tab.documents')}>
@@ -510,10 +542,10 @@ function Documents({ job }: { job: Job }) {
       </Card>
       <Card title={t('jobs.docs.make')}>
         <div className="stack tight">
-          {DOC_KINDS.map((k) => (
-            <Button key={k} block icon={live(k) ? <LuFileText aria-hidden="true" /> : <LuFilePlus2 aria-hidden="true" />} onClick={() => make(k)} data-testid={`jobs-create-${k}`}>
+          {kinds.map((k) => (
+            <CanWrite key={k}><Button block icon={live(k) ? <LuFileText aria-hidden="true" /> : <LuFilePlus2 aria-hidden="true" />} onClick={() => make(k)} data-testid={`jobs-create-${k}`}>
               {t(live(k) ? 'jobs.docs.open' : 'jobs.docs.create', { doc: t('doc.kind.' + k).toLowerCase() })}
-            </Button>
+            </Button></CanWrite>
           ))}
         </div>
         <p className="xs muted" style={{ marginTop: 12 }}>{t('jobs.docs.hint')}</p>
@@ -524,14 +556,16 @@ function Documents({ job }: { job: Job }) {
 
 /* ---------- work log and notes ---------- */
 function LogAndNotes({ job }: { job: Job }) {
-  const { t, data, lang, can, standing } = useApp();
+  const { t, data, lang, can, standing, pack } = useApp();
   const [add, setAdd] = useState(false);
   const log = [...job.log].sort((a, b) => b.date.localeCompare(a.date));
   const portal = standing('workerPortal');
   const remove = async (logId: string) => { if (await confirmDialog(t('common.confirmDelete'), t('common.delete'), t('common.cancel'))) act(removeFromJob, job.id, 'log', logId); };
+  // the work log is what field workers write from their portal; without field workers this tab is the notes
+  if (!pack.usesWorkers) return <NotesPanel target={{ type: 'job', id: job.id }} notes={job.notes} />;
   return (
     <div className="grid2">
-      <Card title={t('secLog')} actions={<Button size="sm" variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setAdd(true)} data-testid="jobs-add-log">{t('jobs.log.add')}</Button>}>
+      <Card title={t('secLog')} actions={<CanWrite><Button size="sm" variant="primary" icon={<LuPlus aria-hidden="true" />} onClick={() => setAdd(true)} data-testid="jobs-add-log">{t('jobs.log.add')}</Button></CanWrite>}>
         {log.length ? (
           <div className="list" data-testid="jobs-log">
             {log.map((l) => {
@@ -540,7 +574,7 @@ function LogAndNotes({ job }: { job: Job }) {
                 <div className="item jobs-logrow" key={l.id}>
                   <Avatar name={name} size="sm" />
                   <div className="grow"><div className="jobs-prose">{l.text}</div><div className="xs dim">{name} · {shortDate(l.date, lang)}</div></div>
-                  {can('delete') && <IconButton size="sm" label={t('common.delete')} onClick={() => remove(l.id)} data-testid="jobs-remove-log"><LuTrash2 /></IconButton>}
+                  {can('delete') && <CanWrite><IconButton size="sm" label={t('common.delete')} onClick={() => remove(l.id)} data-testid="jobs-remove-log"><LuTrash2 /></IconButton></CanWrite>}
                 </div>
               );
             })}

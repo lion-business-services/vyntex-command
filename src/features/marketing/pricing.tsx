@@ -11,6 +11,7 @@ import { PRICING_VERSION, planName, plansFor, yearlySavings, type Plan, type Pla
 import { addOnViews, planFeatures, planSupport, planUsers, publicRules, type AddOnView } from '@/lib/pricing-view';
 import { money } from '@/lib/money';
 import type { TFn } from '@/i18n';
+import { pick } from '@/i18n';
 import { Arrow, CircuitTrace, Reveal } from '@/brand';
 import { Badge, cx, type Tone } from '@/ui';
 import { MkPage, editionWord, usePageTitle } from './parts';
@@ -72,7 +73,59 @@ function useHeaderOffset(): number {
   return top;
 }
 
+/** The pricing page. An edition that is not in the pricing file has no plan and no price to show: it is quoted. */
 export function Pricing() {
+  const { pack } = useApp();
+  return pack.priced ? <PlanPricing /> : <QuotedPricing />;
+}
+
+/** Pricing of an edition that is quoted for each business: the edition picker, one honest paragraph and how to ask. */
+function QuotedPricing() {
+  const { t, pack, lang } = useApp();
+  usePageTitle(t('mk.title.pricing'));
+  return (
+    <MkPage current="pricing">
+      <div className="mkp">
+        <section className="mkp-head">
+          <div className="mkp-wrap">
+            <Link to="/demo" className="mkp-back" data-testid="pr-back-demo"><LuArrowLeft aria-hidden="true" />{t('mk.pr.back')}</Link>
+            <header>
+              <h1>{t('mk.pr.h')} <EditionName pack={pack} /></h1>
+              <p className="mkp-lede">{t('mk.p2.pr.quoted.lede')}</p>
+            </header>
+          </div>
+        </section>
+        <section className="mkp-plans-sec" aria-label={t('mk.p2.pr.plans')}>
+          <div className="mkp-bar">
+            <div className="mkp-wrap mkp-bar-in">
+              <label className="mkp-select"><span>{t('mk.pr.edition')}</span>
+                <select value={pack.id} onChange={(e) => switchPack(e.target.value as IndustryId)} data-testid="pr-industry">
+                  {PACK_LIST.map((p) => <option key={p.id} value={p.id}>{p.product}: {pick(p.label, lang)}</option>)}
+                </select>
+              </label>
+            </div>
+          </div>
+        </section>
+        <section className="mkp-close" aria-labelledby="pr-quoted-h">
+          <div className="mkp-wrap">
+            <div className="mkp-close-in" data-testid="pr-quoted">
+              <div className="mkp-close-t">
+                <h2 id="pr-quoted-h">{t('mk.p2.pr.quoted.h')}</h2>
+                <p>{t('mk.p2.pr.quoted.p', { product: pack.product })}</p>
+              </div>
+              <div className="mkp-close-act">
+                <Link to="/request-demo" className="btn primary lg" data-testid="pr-request-end">{t('mk.p2.pr.quoted.cta')}<Arrow /></Link>
+                <Link to="/demo" className="mkp-quiet" data-testid="pr-back-demo-end"><LuArrowLeft aria-hidden="true" />{t('mk.pr.back')}</Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </MkPage>
+  );
+}
+
+function PlanPricing() {
   const { t, pack, lang } = useApp();
   usePageTitle(t('mk.title.pricing'));
   const plans = plansFor(pack.id);
@@ -116,7 +169,7 @@ export function Pricing() {
             <div className="mkp-wrap mkp-bar-in">
               <label className="mkp-select"><span>{t('mk.pr.edition')}</span>
                 <select value={pack.id} onChange={(e) => switchPack(e.target.value as IndustryId)} data-testid="pr-industry">
-                  {PACK_LIST.map((p) => <option key={p.id} value={p.id}>{p.product}: {p.label[lang]}</option>)}
+                  {PACK_LIST.map((p) => <option key={p.id} value={p.id}>{p.product}: {pick(p.label, lang)}</option>)}
                 </select>
               </label>
               <div className="mkp-switch" role="group" aria-label={t('mk.pr.billing')} data-billing={billing}>

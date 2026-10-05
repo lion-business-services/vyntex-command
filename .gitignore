@@ -6,6 +6,7 @@
 # Installed packages and build output (both are recreated by commands in README.md).
 node_modules/
 dist/
+dist-lbs/
 
 # Local tool folders and leftovers.
 .vercel/
@@ -18,3 +19,14 @@ tests/.qa-*.json
 tests/.pack-facts.json
 preview/
 dist.building/
+
+# Backups never go into Git.
+backups/
+*.dump
+*.dump.age
+
+# NOVA to LBS migration: reports and answers hold client data
+migration-reports/
+**/40-needs-review.csv
+**/answers.csv
+*.dump.age.sha256

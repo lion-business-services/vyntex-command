@@ -1,0 +1,46 @@
+# Dependabot opens pull requests when a library, a GitHub Action or a container base image has a newer version.
+# Each pull request runs the full CI before anyone merges it. Security updates are opened as soon as an advisory
+# is published, whatever the schedule below says (switch on "Dependabot security updates" in the repository settings,
+# docs/security/github-settings.md).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    labels: ["dependencies"]
+    commit-message:
+      prefix: deps
+    groups:
+      # routine updates arrive together; a major version always gets its own pull request and its own review
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "ci"]
+    commit-message:
+      prefix: ci
+
+  # The base images of the container image (Dockerfile). Dependabot updates the digest once a real one is filled in.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 2
+    labels: ["dependencies"]
+    commit-message:
+      prefix: deps

@@ -1,11 +1,13 @@
 // The built-in assistant. It understands a fixed set of requests in English and Spanish by matching words and patterns,
 // answers only from the records in the workspace, and turns an instruction into a proposal that a person has to confirm.
 // No AI model is involved here: when it does not recognise a request it says so.
-import type { Client, DemoState, ISODate, Job, JobStatus, Lang, Lead, PayMethod, Ref, Task } from '@/domain/types';
+import type { Client, DemoState, ISODate, Job, JobStatus, Lang, Lead, MessageChannel, PayMethod, Ref, Task } from '@/domain/types';
 import type { IndustryPack } from '@/packs/types';
 import { makeT, type TFn } from '@/i18n';
 import type { Permission } from '@/domain/permissions';
 import { assigneeName, byId, calendarEvents, clientMoney, insuranceState, isDueToday, isOpenLead, isOverdue, jobMoney, jobsOfClient, kpiValues, workerMoney } from '@/domain/selectors';
+import { moduleOn, openStages, stageByRole, stageRole } from '@/domain/config';
+import { asksForTaxId, parseAppointment, parseReview, reviewProblem, routeQuestion } from './records';
 import { addDays, monthLabel, today } from '@/lib/dates';
 import { money, money2, sum } from '@/lib/money';
 import { NAME_LEAD, NAME_TRAIL, TITLE_LEAD, TITLE_TRAIL, Work, best, capFirst, fold, properName, rank, takeAmount, takeDate, takePhone, takeTime, tidy, words, type Candidate } from './text';
@@ -26,7 +28,9 @@ export type Proposal =
   | { kind: 'taskDone'; taskId: string }
   | { kind: 'jobStatus'; jobId: string; status: JobStatus }
   | { kind: 'payment'; jobId: string; amount: number; method: PayMethod; date: ISODate }
-  | { kind: 'visit'; leadId: string; date: ISODate; time?: string };
+  | { kind: 'visit'; leadId: string; date: ISODate; time?: string }
+  | { kind: 'appointment'; clientId?: string; leadId?: string; typeId: string; date: ISODate; time: string; staffId: string }
+  | { kind: 'review'; clientId: string; jobId?: string; channel: MessageChannel };
 
 export interface Item { title: string; sub?: string; right?: string; tone?: 'bad' | 'warn' | 'ok'; to?: string }
 export type Block =
@@ -38,9 +42,9 @@ export type Block =
 export interface Choice { label: string; sub?: string; proposal: Proposal }
 export interface Reply { blocks: Block[]; proposal?: Proposal; choices?: Choice[]; /** True when the request was not recognised. */ unknown?: boolean }
 
-const LIST_MAX = 8;
-const text = (s: string, soft = false): Block => ({ type: 'text', text: s, soft });
-const say = (...blocks: Block[]): Reply => ({ blocks });
+export const LIST_MAX = 8;
+export const text = (s: string, soft = false): Block => ({ type: 'text', text: s, soft });
+export const say = (...blocks: Block[]): Reply => ({ blocks });
 const taskPath = (id: string) => `/tasks?task=${id}`;
 const refPathOf = (ref: Ref) => (ref.type === 'lead' ? `/leads/${ref.id}` : ref.type === 'client' ? `/clients/${ref.id}` : `/jobs/${ref.id}`);
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -48,13 +52,13 @@ const clientName = (d: DemoState, j: Job | undefined) => (j ? byId(d.clients, j.
 const jobLabel = (d: DemoState, j: Job) => { const c = clientName(d, j); return c ? `${j.name} · ${c}` : j.name; };
 /** How to name a job in a suggested request: its name, plus the client when two jobs share the name. */
 const jobSay = (d: DemoState, j: Job) => (d.jobs.filter((x) => fold(x.name) === fold(j.name)).length > 1 && clientName(d, j) ? `${j.name} (${clientName(d, j)})` : j.name);
-function capped<T>(list: T[], make: (x: T) => Item, more: { label: string; to: string }): Block {
+export function capped<T>(list: T[], make: (x: T) => Item, more: { label: string; to: string }): Block {
   return { type: 'list', items: list.slice(0, LIST_MAX).map(make), more: list.length > LIST_MAX ? more : undefined };
 }
 
 /* ---------- wording of the selected industry, so "the kitchen project" and "el trabajo de cocina" both find the record ---------- */
 const stopCache = new Map<string, Set<string>>();
-function industryWords(env: Env): Set<string> {
+export function industryWords(env: Env): Set<string> {
   const hit = stopCache.get(env.pack.id); if (hit) return hit;
   const out = new Set<string>();
   for (const lang of ['en', 'es'] as Lang[]) { const t = makeT(lang, env.pack); for (const k of ['project', 'projects', 'sub', 'subs', 'client', 'clients']) for (const w of fold(t(k)).split(/[^a-z0-9]+/)) if (w) out.add(w); }
@@ -127,7 +131,7 @@ function takeAssignee(w: Work, env: Env): Person[] | null {
 
 /* ---------- what a proposal will change, in words ---------- */
 export interface Card { title: string; rows: [string, string][]; note?: string }
-export const PERM: Record<Proposal['kind'], Permission> = { task: 'tasks', lead: 'leads', note: 'clients', taskDone: 'tasks', jobStatus: 'jobs', payment: 'money', visit: 'leads' };
+export const PERM: Record<Proposal['kind'], Permission> = { task: 'tasks', lead: 'leads', note: 'clients', taskDone: 'tasks', jobStatus: 'jobs', payment: 'money', visit: 'leads', appointment: 'appointments', review: 'reviews' };
 
 export function describe(p: Proposal, env: Env): Card {
   const { data, t, date, time } = env;
@@ -164,8 +168,23 @@ export function describe(p: Proposal, env: Env): Card {
     }
     case 'visit': {
       const lead = byId(data.leads, p.leadId);
-      const moves = lead && (lead.status === 'new' || lead.status === 'contacted');
-      return { title: t('asst.card.visit'), rows: [[t('asst.kind.lead'), lead?.name ?? t('asst.gone')], [t('common.date'), env.day(p.date)], [t('asst.row.time'), p.time ? time(p.time) : t('asst.noTime')]], note: moves ? t('asst.card.visitNote', { stage: t('ls_scheduled') }) : undefined };
+      // setting a visit moves a lead that had not got that far to the company's visit stage
+      const part = lead ? stageRole(data, env.pack, lead.status) : undefined; const visit = stageByRole(data, env.pack, 'visit');
+      const moves = !!visit && (part === 'new' || part === 'contacted');
+      return { title: t('asst.card.visit'), rows: [[t('asst.kind.lead'), lead?.name ?? t('asst.gone')], [t('common.date'), env.day(p.date)], [t('asst.row.time'), p.time ? time(p.time) : t('asst.noTime')]], note: moves && visit ? t('asst.card.visitNote', { stage: t('ls_' + visit.id) }) : undefined };
+    }
+    case 'appointment': {
+      const who = p.clientId ? byId(data.clients, p.clientId)?.name : byId(data.leads, p.leadId)?.name;
+      const type = (data.apptTypes ?? []).find((x) => x.id === p.typeId);
+      return {
+        title: t('asst.card.appt'),
+        rows: [[t('asst.row.with'), who ?? t('asst.gone')], [t('asst.row.apptType'), type ? type.name[env.lang] ?? type.name.en : t('asst.gone')], [t('common.date'), `${env.day(p.date)}, ${time(p.time)}`], [t('asst.row.staff'), byId(data.users, p.staffId)?.name ?? t('asst.gone')]],
+        note: type?.prepay && type.fee > 0 ? t('asst.card.apptPrepay') : t('asst.card.apptNote'),
+      };
+    }
+    case 'review': {
+      const job = byId(data.jobs, p.jobId);
+      return { title: t('asst.card.review'), rows: [[t('asst.kind.client'), byId(data.clients, p.clientId)?.name ?? t('asst.gone')], [t('asst.row.about'), job ? job.name : t('reviews.noJob')], [t('asst.row.channel'), t('auto.ch.' + p.channel)]], note: t('asst.card.reviewNote') };
     }
   }
 }
@@ -193,7 +212,13 @@ export function check(p: Proposal, env: Env): string | null {
       const owes = jobMoney(data, job).clientOwes;
       return p.amount > owes + 0.005 ? t('form.pay.tooMuch', { amount: money2(Math.max(0, owes)) }) : null;
     }
-    case 'visit': { const lead = byId(data.leads, p.leadId); return !lead ? t('asst.goneRecord') : !isOpenLead(lead) ? t('asst.visit.closed', { name: lead.name }) : null; }
+    case 'visit': { const lead = byId(data.leads, p.leadId); return !lead ? t('asst.goneRecord') : !isOpenLead(lead, data) ? t('asst.visit.closed', { name: lead.name }) : null; }
+    case 'appointment': {
+      const who = p.clientId ? byId(data.clients, p.clientId) : byId(data.leads, p.leadId);
+      const type = (data.apptTypes ?? []).find((x) => x.id === p.typeId && x.active);
+      return !who || !byId(data.users, p.staffId) ? t('asst.goneRecord') : !type ? t('asst.appt.unknown_type') : p.date < today() ? t('asst.appt.past') : null;
+    }
+    case 'review': return !byId(data.clients, p.clientId) ? t('asst.goneRecord') : reviewProblem(p, env);
   }
 }
 
@@ -201,8 +226,9 @@ export function check(p: Proposal, env: Env): string | null {
 export function suggestions(env: Env): string[] {
   const { data, t, can, pack } = env;
   const out: string[] = [t('asst.chip.due')];
-  if (can('money')) out.push(t('asst.chip.owed'), t('asst.chip.oweWorkers'));
+  if (can('money')) out.push(t('asst.chip.owed'), ...(pack.usesWorkers ? [t('asst.chip.oweWorkers')] : []));
   out.push(t('asst.chip.pipeline'), t('asst.chip.calendar'));
+  out.push(...extraQuestions(env).slice(0, 2));
   const active = data.jobs.find((j) => j.status === 'progress') ?? data.jobs[0];
   const client = byId(data.clients, active?.clientId) ?? data.clients[0];
   if (client) out.push(t('asst.chip.summary', { name: client.name }));
@@ -210,21 +236,33 @@ export function suggestions(env: Env): string[] {
   if (active && pack.jobStatuses.includes('hold') && active.status !== 'hold') out.push(t('asst.chip.move', { name: jobSay(data, active), status: t('st_hold') }));
   return out;
 }
+/** Questions about the screens an edition has on top of the first ones, for a role that may open them. */
+function extraQuestions(env: Env): string[] {
+  const { data, pack, t, can } = env; const on = (m: Parameters<typeof moduleOn>[2]) => moduleOn(data, pack, m);
+  return [
+    ...(on('appointments') && can('appointments') ? [t('asst.chip.appts')] : []), ...(on('deadlines') && can('deadlines') ? [t('asst.chip.deadlines')] : []),
+    ...(on('esign') && can('esign') ? [t('asst.chip.sign')] : []), ...(on('opportunities') && can('opportunities') ? [t('asst.chip.opps')] : []),
+    ...(on('catalog') && can('catalog') ? [t('asst.chip.services'), t('asst.chip.byService')] : []), ...(on('reviews') && can('reviews') ? [t('asst.chip.reviews')] : []),
+  ];
+}
 /** Longer list shown under "What it can do" and when a request is not understood. */
 export function examples(env: Env): { questions: string[]; actions: string[] } {
   const { data, t, can, pack } = env;
   const job = data.jobs.find((j) => j.status === 'progress') ?? data.jobs[0];
   const owing = data.jobs.find((j) => j.status !== 'estimate' && jobMoney(data, j).clientOwes >= 1);
-  const lead = data.leads.find(isOpenLead);
+  const lead = data.leads.find((l) => isOpenLead(l, data));
   const task = data.tasks.find((x) => x.status !== 'done');
   const client = byId(data.clients, job?.clientId) ?? data.clients[0];
   const questions = [t('asst.chip.due')];
-  if (can('money')) questions.push(t('asst.chip.owed'), t('asst.chip.oweWorkers'), t('asst.chip.collected'));
+  if (can('money')) questions.push(t('asst.chip.owed'), ...(pack.usesWorkers ? [t('asst.chip.oweWorkers')] : []), t('asst.chip.collected'));
   questions.push(t('asst.chip.pipeline'), t('asst.chip.calendar'));
   if (pack.compliance && can('compliance')) questions.push(t('asst.chip.compliance'));
+  questions.push(...extraQuestions(env));
   if (client) questions.push(t('asst.chip.summary', { name: client.name }));
   const actions = [t('asst.chip.task'), t('asst.ex.lead', { service: t('ty_' + (pack.serviceTypes[0]?.id ?? '')).toLowerCase() })];
-  if (lead) actions.push(t('asst.ex.note', { name: lead.name }), t('asst.ex.visit', { name: lead.name }));
+  const books = moduleOn(data, pack, 'appointments') && can('appointments') && (data.apptTypes ?? []).some((a) => a.active);
+  if (lead) actions.push(t('asst.ex.note', { name: lead.name }), books ? t('asst.ex.appt', { name: lead.name }) : t('asst.ex.visit', { name: lead.name }));
+  if (moduleOn(data, pack, 'reviews') && can('reviews')) { const c = data.clients.find((x) => !reviewProblem({ clientId: x.id }, env)); if (c) actions.push(t('asst.ex.review', { name: c.name })); }
   if (task) actions.push(t('asst.ex.taskDone', { name: task.title }));
   if (job && pack.jobStatuses.includes('hold') && job.status !== 'hold') actions.push(t('asst.chip.move', { name: jobSay(data, job), status: t('st_hold') }));
   if (owing && can('money')) actions.push(t('asst.ex.payment', { amount: money(Math.min(500, Math.floor(jobMoney(data, owing).clientOwes))), name: jobSay(data, owing) }));
@@ -236,8 +274,8 @@ function answerDue(env: Env): Reply {
   const { data, t, date } = env; const td = today();
   const late = data.tasks.filter(isOverdue).sort((a, b) => (a.due ?? '').localeCompare(b.due ?? ''));
   const now = data.tasks.filter(isDueToday);
-  const visits = data.leads.filter((l) => isOpenLead(l) && l.apptDate === td);
-  const follow = data.leads.filter((l) => isOpenLead(l) && !!l.followUp && l.followUp <= td);
+  const visits = data.leads.filter((l) => isOpenLead(l, data) && l.apptDate === td);
+  const follow = data.leads.filter((l) => isOpenLead(l, data) && !!l.followUp && l.followUp <= td);
   if (!late.length && !now.length && !visits.length && !follow.length) return say(text(t('asst.due.none')));
   const item = (x: Task, tone: 'bad' | 'warn'): Item => ({ title: x.title, sub: [assigneeName(data, x.assignee) || t('common.unassigned'), byId(data.jobs, x.jobId)?.name ?? byId(data.leads, x.leadId)?.name].filter(Boolean).join(' · '), right: tone === 'bad' ? `${t('common.overdue')} · ${date(x.due)}` : t('asst.today'), tone, to: taskPath(x.id) });
   const blocks: Block[] = [text(t('asst.due.head', { late: late.length, today: now.length }))];
@@ -276,9 +314,9 @@ function answerOweWorkers(env: Env): Reply {
 
 function answerPipeline(env: Env): Reply {
   const { data, t } = env;
-  const open = data.leads.filter(isOpenLead);
+  const open = data.leads.filter((l) => isOpenLead(l, data));
   if (!open.length) return say(text(t('asst.pipe.none')), { type: 'link', label: t('nav.leads'), to: '/leads' });
-  const stages = (['new', 'contacted', 'scheduled', 'sent'] as const).map((s) => ({ s, list: open.filter((l) => l.status === s) })).filter((x) => x.list.length);
+  const stages = openStages(data, env.pack).map(({ id: s }) => ({ s, list: open.filter((l) => l.status === s) })).filter((x) => x.list.length);
   return say(
     text(t('asst.pipe.head', { n: open.length, total: money(sum(open, (l) => l.value)) })),
     { type: 'list', items: stages.map((x) => ({ title: `${t('ls_' + x.s)} · ${x.list.length}`, sub: x.list.slice(0, 4).map((l) => l.name).join(', ') + (x.list.length > 4 ? '…' : ''), right: money(sum(x.list, (l) => l.value)), to: '/leads?view=board' })) },
@@ -382,9 +420,9 @@ function answerSummary(query: string, env: Env, strict: boolean): Reply | null {
 }
 
 /* ---------- instructions: read the request, find the records, build the proposal ---------- */
-const POLITE = /^\s*(?:(?:please|por favor|can you|could you|would you|puedes|puede|podrias|podria|quiero|quisiera|necesito|i want to|i need to|i would like to|hay que|ok|okay)[\s,]+)+/;
-const offer = (p: Proposal, env: Env): Reply => { const bad = check(p, env); return bad ? say(text(bad)) : { blocks: [text(env.t('asst.confirmAsk'))], proposal: p }; };
-const which = (env: Env, key: string, choices: Choice[]): Reply => ({ blocks: [text(env.t(key))], choices });
+export const POLITE = /^\s*(?:(?:please|por favor|can you|could you|would you|puedes|puede|podrias|podria|quiero|quisiera|necesito|i want to|i need to|i would like to|hay que|ok|okay)[\s,]+)+/;
+export const offer = (p: Proposal, env: Env): Reply => { const bad = check(p, env); return bad ? say(text(bad)) : { blocks: [text(env.t('asst.confirmAsk'))], proposal: p }; };
+export const which = (env: Env, key: string, choices: Choice[]): Reply => ({ blocks: [text(env.t(key))], choices });
 
 function parseTask(input: string, env: Env): Reply {
   const { t } = env; const w = new Work(input);
@@ -436,7 +474,7 @@ function parseNote(input: string, env: Env): Reply {
   const { t, data } = env; const w = new Work(input);
   w.take(POLITE);
   w.take(/^\s*(?:(?:add|leave|write|create|make|agrega|agregar|agregue|pon|poner|ponga|deja|dejar|deje|escribe|escribir|escriba|anota|anotar|anote|anade|anadir|crea|crear)\s+)?(?:(?:a|an|una|un|the|la|esta)\s+)?(?:(?:new|nueva)\s+)?(?:note|nota)\b/);
-  const example: Block = { type: 'examples', items: [t('asst.ex.note', { name: data.leads.find(isOpenLead)?.name ?? data.clients[0]?.name ?? t('asst.kind.client') })] };
+  const example: Block = { type: 'examples', items: [t('asst.ex.note', { name: data.leads.find((l) => isOpenLead(l, data))?.name ?? data.clients[0]?.name ?? t('asst.kind.client') })] };
   let who = ''; let body = '';
   const colon = w.norm.search(/:(?!\d)/);
   const quoted = /"([^"]{2,})"/.exec(w.norm);
@@ -444,7 +482,7 @@ function parseNote(input: string, env: Env): Reply {
   if (colon >= 0) { who = w.slice(0, colon); body = w.slice(colon + 1); }
   else if (quoted) { body = w.slice(quoted.index + 1, quoted.index + quoted[0].length - 1); who = w.slice(0, quoted.index) + ' ' + w.slice(quoted.index + quoted[0].length); }
   else if (sep) { who = w.slice(0, sep.index); body = w.slice(sep.index + sep[0].length); }
-  const leads = data.leads.filter(isOpenLead);
+  const leads = data.leads.filter((l) => isOpenLead(l, data));
   let pick = best(findRecord(who || w.raw, env, { leads }));
   if (!who && pick.one) {
     // no separator: the note is whatever follows the record's name
@@ -545,13 +583,13 @@ function parseVisit(input: string, env: Env): Reply {
   const date = takeDate(w); const time = takeTime(w);
   w.take(/\b(?:schedule|book|set up|set|reschedule|programa|programar|programe|agenda|agendar|agende|reserva|reservar|reserve|reprograma|reprogramar)\b/);
   w.take(/\b(?:(?:a|an|the|una|la|un)\s+)?(?:estimate\s+)?(?:visit|visita|appointment|cita|walkthrough|meeting|reunion)(?:\s+de\s+(?:estimado|presupuesto))?\b/);
-  const open = data.leads.filter(isOpenLead);
+  const open = data.leads.filter((l) => isOpenLead(l, data));
   const example: Block[] = open[0] ? [{ type: 'examples', items: [t('asst.ex.visit', { name: open[0].name })] }] : [];
   const query = w.rest(NAME_LEAD, NAME_TRAIL);
   if (!words(query).length) return say(text(t('asst.need.visitLead')), ...example);
   const pick = best(rank(query, leadCands(open), industryWords(env)));
   if (!pick.one && !pick.many) {
-    const closed = best(rank(query, leadCands(data.leads.filter((l) => !isOpenLead(l)))));
+    const closed = best(rank(query, leadCands(data.leads.filter((l) => !isOpenLead(l, data)))));
     return say(text(closed.one ? t('asst.visit.closed', { name: closed.one.name }) : t('asst.notFound.lead', { q: tidy(query) })));
   }
   if (!date) return say(text(t('asst.need.visitDate')), ...example);
@@ -586,6 +624,9 @@ export function interpret(input: string, env: Env): Reply {
   if (/^(?:thanks|thank you|thx|gracias|muchas gracias|perfecto|great|genial)\b[\s!.,]*$/.test(n)) return say(text(t('asst.welcome')));
   if (/^(?:help|ayuda)\b|what can (?:you|i) (?:do|ask)|what do you do|how does this work|que (?:puede|puedes|sabe|sabes) hacer|como funciona|que (?:le|te) puedo (?:pedir|preguntar)|\b(?:options|opciones)\b/.test(n)) return help(env);
 
+  // a tax ID is never read out, whoever asks and however the question is put
+  if (asksForTaxId(n)) return say(text(t('asst.taxId')));
+
   const asking = QUESTION_START.test(n);
   if (!asking) {
     if (/^(?:(?:please|por favor)\s+)?(?:remind me|recuerdame|recuerdeme|recordarme)\b/.test(n)) return parseTask(input, env);
@@ -599,7 +640,12 @@ export function interpret(input: string, env: Env): Reply {
       if (firstObject.kind === 'payment') return parsePayment(input, env);
     }
     if (/\b(?:received|got paid|recibi|recibimos|me pago|me pagaron|nos pago|nos pagaron|paid me|paid us|cobre|cobramos)\b/.test(n) && /\d/.test(n)) return parsePayment(input, env);
-    if (/\b(?:schedule|book|set up|set|reschedule|program\w*|agend\w*|reserv\w*|reprogram\w*)\b.*\b(?:visit|visita|appointment|cita|walkthrough|meeting|reunion)\b/.test(n)) return parseVisit(input, env);
+    if (/\b(?:ask|request|pide|pidele|pedir|pida|pidale|solicit\w*)\b.*\b(?:review|resena|opinion)\b/.test(n) && moduleOn(env.data, env.pack, 'reviews')) return can('reviews') ? parseReview(input, env) : say(text(t('asst.noAccess')));
+    if (/\b(?:schedule|book|set up|set|reschedule|program\w*|agend\w*|reserv\w*|reprogram\w*)\b.*\b(?:visit|visita|appointment|cita|walkthrough|meeting|reunion|consultation|consulta)\b/.test(n)) {
+      // an edition with an appointment book books a real appointment; the others set the visit date on the lead, as before
+      if (moduleOn(env.data, env.pack, 'appointments') && (env.data.apptTypes ?? []).some((a) => a.active)) return can('appointments') ? parseAppointment(input, env) : say(text(t('asst.noAccess')));
+      return parseVisit(input, env);
+    }
     if (VERBS.test(n)) {
       if (/\b(?:task|tarea|to-?do|pendiente)\b/.test(n)) return parseTaskDone(input, env);
       const moved = parseStatus(input, env); if (moved) return moved;
@@ -608,6 +654,8 @@ export function interpret(input: string, env: Env): Reply {
 
   // questions
   const wantsMoney = (r: () => Reply) => (can('money') ? r() : say(text(t('asst.noMoney'))));
+  // the newer records first: signatures, deadlines, credits, reviews, opportunities, the catalog, appointments
+  const newer = routeQuestion(n, env); if (newer) return newer;
   if (/who owes|owes? (?:me|us)|owed to (?:me|us)|outstanding|unpaid|receivable|\bbalances\b|open balance|quien(?:es)? (?:me|nos) debe|(?:me|nos) deben?\b|por cobrar|\bsaldos\b|saldo pendiente|adeud/.test(n)) return wantsMoney(() => answerOwed(env));
   if ((/\b(?:collect\w*|cobr\w*|recib\w*|ingres\w*|received|income|revenue|brought in|came in|entro)\b/.test(n) && /how much|cuanto|cuanta|\btotal\b|\bmonth\b|\bmes\b/.test(n)) || /\b(?:payments|pagos)\b.*\b(?:month|mes)\b/.test(n)) return wantsMoney(() => answerCollected(env));
   if (/\b(?:i|we) owe\b|owe (?:the|my|to)\b|\b(?:debo|debemos)\b|por pagar|payable/.test(n)) return wantsMoney(() => answerOweWorkers(env));

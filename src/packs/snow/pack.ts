@@ -1,8 +1,9 @@
 // VYNTEX SNOW: industry pack for snow removal.
 // Everything industry-specific lives here. The app core never checks the industry id.
 import type { IndustryPack } from '../types';
+import { fieldPack } from '../blueprint';
 
-export const snowPack: IndustryPack = {
+export const snowPack: IndustryPack = /* @__PURE__ */ fieldPack({
   id: "snow",
   product: "VYNTEX SNOW",
   label: { en: "Snow removal", es: "Remoción de nieve" },
@@ -183,4 +184,4 @@ export const snowPack: IndustryPack = {
     { en: "Offer the renewal for next season", es: "Ofrecer la renovación para la próxima temporada", dueIn: 10, for: 'owner', pri: 'low' },
   ],
   compliance: true,
-};
+});

@@ -1,5 +1,11 @@
 -- Database rule tests. Run by run_local.sh as the cluster superuser, after setup_local.sql, the migrations and seed.sql.
 -- Every check goes through test.ok(), which RAISES on failure, so the run stops at the first broken rule.
+-- This file covers the rules of migrations 0001 to 0009 as they stand after 0010 to 0019 (the tables and links added
+-- there are part of the sample data, so the catalog-driven sections cover them too). gateway.sql, run next in the
+-- same database, covers what 0010 to 0019 add: capabilities, configuration, the gateway, routing, duplicates.
+--
+-- Tables added by later migrations are picked up from the catalog. They need sample rows for both companies, or the
+-- run stops and says which table has none: put the rows in supabase/tests/modules/<name>.seed.sql (docs/DATABASE.md).
 --
 -- How a "signed-in person" is imitated: the same two things the Supabase Data API does for each request,
 --   set request.jwt.claims = '{"sub": "<user id>", "role": "authenticated"}'   and   set role authenticated
@@ -159,6 +165,8 @@ begin
   insert into public.tenant_members (tenant_id, user_id, role, worker_id, name) values (t, test.new_user(p || '_w1'), 'worker', w1, 'Worker One ' || p);
   insert into public.tenant_members (tenant_id, user_id, role, worker_id, name) values (t, test.new_user(p || '_w2'), 'worker', w2, 'Worker Two ' || p);
   insert into public.tenant_members (tenant_id, user_id, role, status, name) values (t, test.new_user(p || '_disabled'), 'manager', 'disabled', 'Disabled ' || p);
+  insert into public.tenant_members (tenant_id, user_id, role, name, email) values (t, test.new_user(p || '_readonly'), 'readonly', 'Read only ' || p, p || '_readonly@example.com') returning id into x;
+  perform test.remember(p || '.m_readonly', x);
   perform test.remember(p || '.m_owner', m_owner);
   perform test.remember(p || '.m_manager', m_manager);
   perform test.remember(p || '.m_staff', m_staff);
@@ -216,8 +224,8 @@ begin
     values (t, 'contract', upper(p) || '-C-1001', 'Job One', j1, c1) returning id into d1;
   perform test.remember(p || '.d1', d1);
 
-  insert into public.messages (tenant_id, channel, recipient, subject, body, ref_type, ref_id)
-    values (t, 'email', p || '-client@example.com', 'Welcome', 'Thank you', 'job', j1);
+  insert into public.messages (tenant_id, channel, recipient, subject, body, ref_type, ref_id, client_id, by_member_id)
+    values (t, 'email', p || '-client@example.com', 'Welcome', 'Thank you', 'job', j1, c1, m_staff);
   insert into public.activity (tenant_id, kind, ref_type, ref_id, by_kind, by_id) values (t, 'job.created', 'job', j1, 'member', m_owner);
   insert into public.activity (tenant_id, kind, params, ref_type, ref_id, by_kind, by_id)
     values (t, 'payment.received', '{"amount":"$5,000.00"}', 'job', j1, 'member', m_owner);
@@ -232,6 +240,26 @@ begin
     values (t, 'text_messages', 'worker', w1, 'Worker One ' || p, 'I agree to receive work text messages.');
   insert into public.consent_records (tenant_id, kind, subject_kind, subject_member_id, subject_name, consent_text)
     values (t, 'terms_of_service', 'member', m_owner, 'Owner ' || p, 'I accept the terms of service of this workspace.');
+
+  -- The tables and links added in 0012: one row in each table, and a value in every new link, for both companies.
+  update public.clients set assigned_to = m_staff where id = c1;
+  update public.leads set original_owner_id = m_staff where id = l1;
+  update public.jobs set parent_id = j1 where id = j2;
+  update public.documents set lead_id = l1 where id = d1;
+  insert into public.client_people (tenant_id, client_id, role, name, email, pct, is_primary)
+    values (t, c1, 'owner', 'Owner Person ' || p, p || '-person@example.com', 60, true);
+  insert into public.client_people (tenant_id, client_id, role, name) values (t, c1, 'contact', 'Contact Person ' || p);
+  -- a fictional tax ID, stored the only way it can be: encrypted (the vault functions of the module range do this in production)
+  insert into public.client_secrets (tenant_id, client_id, tax_id_enc, tax_id_type, last4)
+    values (t, c1, app.encrypt_pii('900700001'), 'ssn', '0001');
+  insert into public.lead_handoffs (tenant_id, lead_id, from_member_id, to_member_id, by_kind, by_member_id, how)
+    values (t, l1, m_owner, m_staff, 'member', m_owner, 'manual');
+  insert into public.lead_routing (tenant_id, mode, pool, fallback_id, last_member_id)
+    values (t, 'round_robin', array[m_staff, m_manager], m_owner, m_staff);
+  insert into public.task_comments (tenant_id, task_id, by_member_id, text) values (t, test.id(p || '.t_office'), m_staff, 'On it');
+  insert into public.member_state (tenant_id, member_id, read_notifications) values (t, m_owner, array['n1']);
+  insert into public.ws_requests (tenant_id, user_id, key, request_hash, result)
+    values (t, test.id(p || '_owner'), 'sample-key-' || p, 'sample-hash', '{"ok": true}');
 end $$;
 
 select test.seed_company('a', 'acme-builders', 'build', 'builder') \g /dev/null
@@ -241,6 +269,12 @@ select test.seed_company('b', 'bright-clean', 'clean', 'pro') \g /dev/null
 select test.new_user('nobody') \g /dev/null
 select test.seed_company('c', 'third-company', 'haul', 'essential') \g /dev/null
 insert into public.tenant_members (tenant_id, user_id, role, name) values (test.id('a'), test.id('c_owner'), 'staff', 'Dual role');
+
+-- Sample rows for tables added by later migrations (the module range and after). run_local.sh collects every
+-- supabase/tests/modules/*.seed.sql into one file and passes its path in the psql variable "module_seeds".
+\if :{?module_seeds}
+\i :module_seeds
+\endif
 
 -- A file per worker in the stand-in storage.
 insert into storage.objects (bucket_id, name) values
@@ -259,8 +293,22 @@ select test.ok(
     where n.nspname = 'public' and c.relkind in ('r', 'p') and not (c.relrowsecurity and c.relforcerowsecurity)),
   'every table in public has row level security enabled and forced') \g /dev/null
 
-select test.is((select count(*)::text from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind in ('r', 'p')),
-  '22', 'public has exactly the 22 expected tables') \g /dev/null
+-- The tables of migrations 0001 to 0019, by name. Later migrations add their own; those are listed in the summary.
+create table test.core_tables as
+  select unnest(array[
+    'industries', 'tenants', 'tenant_members', 'demo_requests', 'clients', 'workers', 'leads', 'jobs', 'notes', 'job_assignments',
+    'job_expenses', 'client_payments', 'work_logs', 'tasks', 'worker_payments', 'documents', 'messages', 'activity', 'automation_settings',
+    'automation_runs', 'consent_records', 'audit_log',
+    'client_people', 'client_secrets', 'lead_handoffs', 'lead_routing', 'task_comments', 'member_state', 'ws_requests']) as relname;
+select test.is((select count(*)::text from pg_class c join pg_namespace n on n.oid = c.relnamespace join test.core_tables k on k.relname = c.relname
+                where n.nspname = 'public' and c.relkind in ('r', 'p')),
+  '29', 'public has the 29 tables of migrations 0001 to 0019') \g /dev/null
+select test.ok(
+  not exists (
+    select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relkind in ('r', 'p') and c.relname not in ('audit_log', 'industries', 'demo_requests', 'client_secrets', 'ws_requests')
+      and not exists (select 1 from pg_attribute a where a.attrelid = c.oid and a.attname = 'extra' and a.atttypid = 'jsonb'::regtype and a.attnotnull)),
+  'every table that holds records of the app has the "extra" column (jsonb, NOT NULL)') \g /dev/null
 
 select test.ok(
   not exists (
@@ -365,7 +413,7 @@ begin
   loop
     execute format('select count(*) filter (where tenant_id = $1), count(*) filter (where tenant_id = $2) from public.%I', r.relname)
       into na, nb using test.id('a'), test.id('b');
-    perform test.ok(na > 0 and nb > 0, format('sample data exists in %s for both companies', r.relname));
+    perform test.ok(na > 0 and nb > 0, format('sample data exists in %s for both companies (a table of a later migration gets its rows from supabase/tests/modules/<name>.seed.sql)', r.relname));
   end loop;
 end $$;
 
@@ -432,7 +480,7 @@ create table test.snapshot_before as table test.snapshot;
 
 do $$
 declare
-  actors constant text[] := array['a_owner', 'a_manager', 'a_staff', 'a_w1', 'a_disabled', 'c_owner', 'nobody'];
+  actors constant text[] := array['a_owner', 'a_manager', 'a_staff', 'a_readonly', 'a_w1', 'a_disabled', 'c_owner', 'nobody'];
   who text;
   r record;
   res text;
@@ -523,7 +571,12 @@ begin
     res := test.as(who, format($q$insert into storage.objects (bucket_id, name) values ('worker-documents', %L)$q$, b_id || '/' || test.id('b.w1') || '/planted.pdf'));
     perform test.is(res, 'error:42501', format('%s cannot upload into the company B folder', who));
   end loop;
-  perform test.ok(checks = 7 * 24, format('isolation loop covered 19 tables and 5 views for 7 people (%s passes)', checks));
+  perform test.ok(
+    checks = array_length(actors, 1) * (
+      select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      join pg_attribute a on a.attrelid = c.oid and a.attname = 'tenant_id' and not a.attisdropped
+      where n.nspname = 'public' and c.relkind in ('r', 'v')) and checks >= 8 * 31,
+    format('isolation loop covered every tenant table and view (26 tables and 5 views, or more) for 8 people (%s passes)', checks));
 end $$;
 
 -- Controls: the very same statements DO return rows for the people who are entitled to them, so the zeros above
@@ -534,7 +587,7 @@ begin
   for r in
     select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
     join pg_attribute a on a.attrelid = c.oid and a.attname = 'tenant_id' and not a.attisdropped
-    where n.nspname = 'public' and c.relkind in ('r', 'v') and c.relname not like 'my\_%' order by 1
+    where n.nspname = 'public' and c.relkind in ('r', 'v') and c.relname not like 'my\_%' and c.relname <> 'client_secrets' order by 1
   loop
     res := test.as('b_owner', format('select 1 from public.%I where tenant_id = %L', r.relname, test.id('b')));
     perform test.ok(res like 'rows:%' and res <> 'rows:0', format('control: the owner of B does read company B rows in %s (%s)', r.relname, res));
@@ -545,6 +598,10 @@ begin
   perform test.is(res, 'rows:1', 'control: a worker of B does read their job in my_jobs');
   res := test.as('b_w1', format('select 1 from public.my_worker_profile where tenant_id = %L', test.id('b')));
   perform test.is(res, 'rows:1', 'control: a worker of B does read their profile in my_worker_profile');
+  -- client_secrets is the one table whose own company cannot read it either: the rows exist, and nobody gets them
+  perform test.ok((select count(*) = 1 from public.client_secrets where tenant_id = test.id('b')), 'control: company B does have a row in client_secrets');
+  res := test.as('b_owner', format('select 1 from public.client_secrets where tenant_id = %L', test.id('b')));
+  perform test.is(res, 'error:42501', 'the owner of B cannot read client_secrets: no role holds a privilege on it');
 end $$;
 
 -- Control: the harness does notice a leak. Inside a transaction that is rolled back, one table gets a careless
@@ -595,22 +652,26 @@ begin
     order by src.relname, c.conname
   loop
     execute format('select id from public.%I where tenant_id = $1 limit 1', k.dst) into target using test.id('b');
-    execute format('select id from public.%I where tenant_id = $1 and %I is not null limit 1', k.src, k.col) into row_id using test.id('a');
+    -- a row of company A, preferably one where the link is already set (a link that is still empty is attacked the same way)
+    execute format('select id from public.%I where tenant_id = $1 order by (%I is null), id limit 1', k.src, k.col) into row_id using test.id('a');
     perform test.ok(target is not null and row_id is not null, format('sample rows exist to test %s.%s -> %s', k.src, k.col, k.dst));
-    if k.src = 'consent_records' then
-      -- consent records cannot be updated at all, so the attempt is a new record that points at company B
-      execute format('select to_jsonb(t) from public.consent_records t where id = $1') into sample using row_id;
+    if k.src in ('consent_records', 'lead_handoffs') then
+      -- consent records and handoffs cannot be updated at all, so the attempt is a new record that points at company B
+      execute format('select to_jsonb(t) from public.%I t where id = $1', k.src) into sample using row_id;
       sample := jsonb_set(jsonb_set(sample, '{id}', to_jsonb(gen_random_uuid())), array[k.col], to_jsonb(target));
       select string_agg(quote_ident(a.attname), ', ') into cols from pg_attribute a
-        where a.attrelid = 'public.consent_records'::regclass and a.attnum > 0 and not a.attisdropped;
-      res := test.as('service', format('insert into public.consent_records (%s) select %s from jsonb_populate_record(null::public.consent_records, %L::jsonb)', cols, cols, sample));
+        where a.attrelid = format('public.%I', k.src)::regclass and a.attnum > 0 and not a.attisdropped;
+      res := test.as('service', format('insert into public.%I (%s) select %s from jsonb_populate_record(null::public.%I, %L::jsonb)', k.src, cols, cols, k.src, sample));
+    elsif k.src = 'client_secrets' then
+      -- no application role, the server key included, may touch this table: the attempt is made as the database owner
+      res := test.try(format('update public.%I set %I = %L where id = %L', k.src, k.col, target, row_id));
     else
       res := test.as('service', format('update public.%I set %I = %L where id = %L', k.src, k.col, target, row_id));
     end if;
     perform test.is(res, 'error:23503', format('%s.%s cannot point at a company B %s row', k.src, k.col, k.dst));
     n := n + 1;
   end loop;
-  perform test.ok(n >= 30, format('%s foreign keys between tenant tables were attacked', n));
+  perform test.ok(n >= 47, format('%s foreign keys between tenant tables were attacked', n));
 end $$;
 
 -- =====================================================================================================================
@@ -707,7 +768,7 @@ select test.is(test.as('c_owner', 'select 1 from public.my_workspaces()'), 'rows
 select test.is(test.as('a_disabled', 'select 1 from public.clients'), 'rows:0', 'a disabled member reads nothing') \g /dev/null
 select test.is(test.as('a_disabled', 'select 1 from public.my_workspaces()'), 'rows:0', 'a disabled member has no workspace') \g /dev/null
 select test.is(test.as('nobody', 'select 1 from public.clients'), 'rows:0', 'a signed-in person without a company reads nothing') \g /dev/null
-select test.is(test.as('nobody', 'select 1 from public.industries'), 'rows:8', 'reference data (the eight industries) is readable when signed in') \g /dev/null
+select test.is(test.as('nobody', 'select 1 from public.industries'), 'rows:9', 'reference data (the nine editions) is readable when signed in') \g /dev/null
 select test.is(test.as('a_owner', $q$update public.industries set product_name = 'X'$q$), 'error:42501', 'reference data cannot be changed from the app') \g /dev/null
 
 -- ---- a closed company locks everyone out
@@ -841,8 +902,8 @@ select test.ok((select position('123456789'::bytea in tax_id_enc) = 0 and positi
 select test.ok(not exists (
     select 1 from pg_attribute a join pg_class c on c.oid = a.attrelid join pg_namespace n on n.oid = c.relnamespace
     where n.nspname = 'public' and c.relkind = 'r' and not a.attisdropped and a.attnum > 0
-      and a.attname ~ '(tax_id|ssn|ein|itin)' and a.attname not in ('tax_id_enc', 'has_tax_id')),
-  'there is no plaintext tax ID column anywhere') \g /dev/null
+      and a.attname ~ '(tax_id|ssn|ein|itin)' and a.attname not in ('tax_id_enc', 'has_tax_id', 'tax_id_type', 'tax_id_last4')),
+  'there is no plaintext tax ID column anywhere (only the encrypted value, its type and its last four digits)') \g /dev/null
 select test.ok(not exists (select 1 from public.audit_log where (coalesce(old_data::text, '') || coalesce(new_data::text, '')) ~ '123456789|123-45-6789|\\\\x'),
   'the audit log holds neither the tax ID nor its ciphertext') \g /dev/null
 select test.is(test.value('a_owner', format('select public.get_worker_tax_id(%L)', test.id('a.w1'))), '123456789', 'owner reads it back: the value round-trips') \g /dev/null

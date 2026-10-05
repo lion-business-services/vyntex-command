@@ -1,0 +1,11 @@
+# REFERENCE ONLY. The namespace of VYNTEX Command (client companies).
+# The "restricted" pod security standard is enforced: a pod that asks for root, extra capabilities or host access
+# is refused by the cluster itself.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vyntex-command
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted

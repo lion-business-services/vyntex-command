@@ -1,0 +1,52 @@
+/* Review requests. Prefix every class with .reviews- and use the design tokens (src/ui/styles.css). */
+.reviews-kpis{margin-bottom:16px}
+.reviews-none{font-family:inherit;font-size:16px;font-weight:650;color:var(--text-2);letter-spacing:0}
+.reviews-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+/* under the list: what was answered on one side, how requests work on the other */
+.reviews-side{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:16px;align-items:start;min-width:0}
+.reviews-side>:only-child{grid-column:1/-1;max-width:720px}
+.reviews-solo{margin-top:16px;max-width:720px}
+@media (max-width:900px){.reviews-side{grid-template-columns:minmax(0,1fr)}}
+.reviews-filters{padding:14px 16px 0;margin-bottom:10px;justify-content:space-between}
+.reviews-tbl td{vertical-align:top}
+.reviews-sub{display:block;margin-top:2px}
+.reviews-stars{display:inline-flex;gap:1px;vertical-align:-2px}
+.reviews-stars svg{width:15px;height:15px;color:var(--line-strong)}
+.reviews-stars svg.on{color:var(--warn);fill:var(--warn)}
+.kpi .reviews-stars svg{width:18px;height:18px}
+.reviews-rate{display:inline-flex;align-items:center;gap:8px}
+.reviews-rate b{font-size:13.5px;white-space:nowrap}
+.reviews-rate.low b{color:var(--warn)}
+.reviews-answer p{margin:4px 0 0;color:var(--text-2);max-width:42ch;overflow-wrap:anywhere}
+.reviews-link{display:inline-flex;align-items:center;gap:6px;margin-top:5px;color:var(--accent);font-weight:650;text-underline-offset:3px}
+.reviews-link svg{width:14px;height:14px}
+.reviews-actions{white-space:nowrap;text-align:right}
+.reviews-actions>*{margin-left:4px;vertical-align:middle}
+@media (max-width:720px){.reviews-actions{text-align:left;white-space:normal}.reviews-actions>*{margin:0}}
+.reviews-bars{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.reviews-bars li{display:grid;grid-template-columns:10px 14px minmax(0,1fr) 22px;gap:7px;align-items:center}
+.reviews-bars svg{width:13px;height:13px;color:var(--warn);fill:var(--warn)}
+.reviews-bar{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.reviews-bar i{display:block;height:100%;background:var(--accent);transform-origin:0 50%;border-radius:99px}
+.reviews-bars .num{text-align:right}
+.reviews-settings .note{margin-top:14px}
+.reviews-rule{margin:14px 0 0;color:var(--text-2)}
+.reviews-rules{margin:6px 0 0;padding-left:18px;font-size:13.5px;display:grid;gap:3px}
+.reviews-url{overflow-wrap:anywhere}
+.reviews-msg{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:10px;line-height:1.5}
+
+/* the page a client sees */
+.reviews-pub-scale{display:flex;gap:8px;flex-wrap:wrap;border:0;margin:0;padding:0}
+.reviews-pub-scale legend{font-size:12.5px;font-weight:700;color:var(--text-2);margin-bottom:6px;padding:0}
+.reviews-pub-star{position:relative;display:grid;place-items:center;gap:2px;width:56px;min-height:64px;border:1px solid var(--line-strong);border-radius:var(--radius);background:var(--surface-2);font-weight:700;transition:border-color var(--motion-fast) var(--ease-vyntex),background var(--motion-fast) var(--ease-vyntex)}
+.reviews-pub-star input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.reviews-pub-star svg{width:22px;height:22px;color:var(--line-strong)}
+.reviews-pub-star.on{border-color:var(--accent);background:var(--accent-soft)}
+.reviews-pub-star.on svg{color:var(--warn);fill:var(--warn)}
+.reviews-pub-star:focus-within{box-shadow:0 0 0 3px var(--accent-soft);border-color:var(--accent)}
+.reviews-pub-public{border-top:1px solid var(--line);padding-top:14px}
+.reviews-pub textarea{width:100%}
+.reviews-cell{min-width:0}
+.reviews-read p{margin:0;display:grid;gap:3px}
+.reviews-read .label{display:block}
+@media (max-width:720px){.reviews-cell{text-align:right}.reviews-answer .reviews-cell{text-align:left}.reviews-answer p{max-width:none}table.tbl.stackable td.reviews-answer{display:block}table.tbl.stackable td.reviews-answer::before{display:block;margin-bottom:2px}table.tbl.stackable td.reviews-actions{display:flex;justify-content:flex-start;flex-wrap:wrap;gap:6px;padding-top:8px}}

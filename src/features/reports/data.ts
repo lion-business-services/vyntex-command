@@ -4,8 +4,10 @@ import type { DemoState, Job, JobStatus, Lang, LeadSource, LeadStage } from '@/d
 import type { TFn } from '@/i18n';
 import type { IndustryPack } from '@/packs/types';
 import { assigneeName, byId, isOpenLead, isOverdue, jobMoney, kpiValues, workerMoney } from '@/domain/selectors';
+import { isLost, isWon, sourcesOf, stagesOf } from '@/domain/config';
 import { fmtDate, monthLabel, toISODate, today } from '@/lib/dates';
 import { money, pct, sum } from '@/lib/money';
+import { toCsv as writeCsv } from '@/features/data/csv';
 
 export type TabId = 'profit' | 'sales' | 'money' | 'work' | 'team';
 export type Period = 'month' | '3m' | 'year' | 'all';
@@ -20,6 +22,9 @@ export const VIEWS: Record<TabId, string[]> = {
   team: ['worker'],
 };
 /** Tabs whose figures depend on the chosen period. The others describe today, or a fixed six-month window. */
+/** The tabs and breakdowns an edition has: one without field workers has no team tab and no "paid to workers" breakdown. */
+export const tabsFor = (pack: IndustryPack): TabId[] => TABS.filter((tb) => tb !== 'team' || pack.usesWorkers);
+export const viewsFor = (pack: IndustryPack, tab: TabId): string[] => VIEWS[tab].filter((v) => v !== 'paidWorkers' || pack.usesWorkers);
 export const HAS_PERIOD: Record<TabId, boolean> = { profit: true, sales: true, money: false, work: false, team: false };
 
 export type CellKind = 'text' | 'money' | 'int' | 'pct';
@@ -44,8 +49,6 @@ export interface Report {
 
 export interface Env { data: DemoState; t: TFn; lang: Lang; pack: IndustryPack; period: Period }
 
-const STAGES: LeadStage[] = ['new', 'contacted', 'scheduled', 'sent', 'won', 'lost'];
-const SOURCES: LeadSource[] = ['website', 'phone', 'referral', 'facebook', 'instagram', 'google', 'other'];
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** First day covered by a period, or '' for all time. "Last 3 months" is this month and the two before it. */
@@ -80,18 +83,20 @@ function profitReport(env: Env, view: string): Report {
     return { price, labor, expenses, profit, margin: price ? profit / price : null };
   };
   const all = totals(jobs);
+  // an edition without field workers has no labor agreed per job: that column, figure and chart series are left out
+  const crew = env.pack.usesWorkers;
   const figures: Figure[] = [
     { label: t('reports.col.price'), value: money(all.price), hint: t('reports.fig.jobs', { n: jobs.length }) },
-    { label: t('reports.col.labor'), value: money(all.labor) },
+    ...(crew ? [{ label: t('reports.col.labor'), value: money(all.labor) }] : []),
     { label: t('reports.col.expenses'), value: money(all.expenses) },
     { label: t('reports.col.profit'), value: money(all.profit), hint: all.margin === null ? undefined : t('reports.fig.margin', { pct: pct(all.margin) }), tone: all.profit < 0 ? 'neg' : undefined },
   ];
   const moneyCols: Col[] = [
-    { key: 'price', label: t('reports.col.price'), kind: 'money' }, { key: 'labor', label: t('reports.col.labor'), kind: 'money' },
+    { key: 'price', label: t('reports.col.price'), kind: 'money' }, ...(crew ? [{ key: 'labor', label: t('reports.col.labor'), kind: 'money' as const }] : []),
     { key: 'expenses', label: t('reports.col.expenses'), kind: 'money' }, { key: 'profit', label: t('reports.col.profit'), kind: 'money' }, { key: 'margin', label: t('reports.col.margin'), kind: 'pct' },
   ];
-  const series: Series[] = [{ label: t('reports.col.labor'), tone: 'info' }, { label: t('reports.col.expenses'), tone: 'violet' }, { label: t('reports.col.profit'), tone: 'ok' }];
-  const split = (x: ReturnType<typeof totals>) => [x.labor, x.expenses, Math.max(0, x.profit)];
+  const series: Series[] = [...(crew ? [{ label: t('reports.col.labor'), tone: 'info' as const }] : []), { label: t('reports.col.expenses'), tone: 'violet' }, { label: t('reports.col.profit'), tone: 'ok' }];
+  const split = (x: ReturnType<typeof totals>) => [...(crew ? [x.labor] : []), x.expenses, Math.max(0, x.profit)];
   const note = t('reports.profit.note');
 
   if (view === 'job') {
@@ -126,7 +131,9 @@ function salesReport(env: Env, view: string): Report {
   const { data, t } = env;
   const from = periodStart(env.period);
   const leads = data.leads.filter((l) => !from || l.created >= from);
-  const won = leads.filter((l) => l.status === 'won'), lost = leads.filter((l) => l.status === 'lost'), open = leads.filter(isOpenLead);
+  // stages and sources are the company's own (src/domain/config.ts)
+  const pack = env.pack; const stages = stagesOf(data, pack).map((s) => s.id); const sources = sourcesOf(data, pack).map((s) => s.id);
+  const won = leads.filter((l) => isWon(data, pack, l.status)), lost = leads.filter((l) => isLost(data, pack, l.status)), open = leads.filter((l) => isOpenLead(l, data));
   const closed = won.length + lost.length;
   const valued = leads.filter((l) => Number(l.value) > 0);
   const figures: Figure[] = [
@@ -137,8 +144,8 @@ function salesReport(env: Env, view: string): Report {
   ];
   const tone: Series[] = [{ label: t('reports.col.leads'), tone: 'accent' }];
   if (view === 'source') {
-    const rows = SOURCES.map((s) => {
-      const list = leads.filter((l) => l.source === s); const w = list.filter((l) => l.status === 'won').length; const lo = list.filter((l) => l.status === 'lost').length;
+    const rows = sources.map((s) => {
+      const list = leads.filter((l) => l.source === s); const w = list.filter((l) => isWon(data, pack, l.status)).length; const lo = list.filter((l) => isLost(data, pack, l.status)).length;
       return { id: s, cells: { label: t('src_' + s), count: list.length, won: w, rate: w + lo ? w / (w + lo) : null, value: sum(list, (l) => l.value) } };
     }).filter((r) => r.cells.count > 0).sort((a, b) => b.cells.count - a.cells.count);
     return {
@@ -148,7 +155,7 @@ function salesReport(env: Env, view: string): Report {
       chart: { type: 'bars', unit: 'int', series: tone, items: rows.map((r) => ({ id: r.id, label: r.cells.label, values: [r.cells.count], tip: String(r.cells.count) })) },
     };
   }
-  const rows = STAGES.map((s) => { const list = leads.filter((l) => l.status === s); return { id: s, cells: { label: t('ls_' + s), count: list.length, share: leads.length ? list.length / leads.length : null, value: sum(list, (l) => l.value) } }; });
+  const rows = stages.map((s) => { const list = leads.filter((l) => l.status === s); return { id: s, cells: { label: t('ls_' + s), count: list.length, share: leads.length ? list.length / leads.length : null, value: sum(list, (l) => l.value) } }; });
   return {
     title: t('reports.view.stage'), figures,
     cols: [{ key: 'label', label: t('reports.col.stage'), kind: 'text' }, { key: 'count', label: t('reports.col.leads'), kind: 'int' }, { key: 'share', label: t('reports.col.share'), kind: 'pct' }, { key: 'value', label: t('reports.col.estValue'), kind: 'money' }],
@@ -170,7 +177,7 @@ function moneyReport(env: Env, view: string): Report {
     { label: t('reports.fig.collectedMonth'), value: money(kpi.collectedMonth), hint: monthName(today().slice(0, 7), lang) },
     { label: t('reports.fig.collected6'), value: money(collected6), hint: t('reports.fig.six') },
     { label: t('reports.fig.outstanding'), value: money(kpi.clientsOwe), hint: t('reports.fig.asOfToday') },
-    { label: t('reports.fig.paidWorkers6'), value: money(paid6), hint: t('reports.fig.six') },
+    ...(env.pack.usesWorkers ? [{ label: t('reports.fig.paidWorkers6'), value: money(paid6), hint: t('reports.fig.six') }] : []),
   ];
   if (view === 'outstanding') {
     const rows = data.clients.map((c) => {
@@ -273,19 +280,16 @@ export function cellText(v: Cell, kind: CellKind, none: string): string {
   if (kind === 'pct') return pct(Number(v));
   return String(v);
 }
+/** A cell as it goes into a file: amounts with two decimals, percentages as plain numbers. Quoting is done by the shared writer. */
 const csvCell = (v: Cell, kind: CellKind): string => {
   if (v === null || v === undefined) return '';
   if (kind === 'money') return (Math.round(Number(v) * 100) / 100).toFixed(2);
   if (kind === 'pct') return (Math.round(Number(v) * 1000) / 10).toFixed(1);
-  if (kind === 'int') return String(v);
-  const s = String(v);
-  // a leading = + - @ would be read as a formula by spreadsheet programs
-  const safe = /^[=+\-@]/.test(s) ? "'" + s : s;
-  return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+  return String(v);
 };
 /** The table in view as CSV text: one header row, the rows, then the total. Percent columns are plain numbers (27.5 = 27.5%). */
 export function toCsv(r: Report): string {
-  const head = r.cols.map((c) => csvCell(c.kind === 'pct' ? `${c.label} (%)` : c.label, 'text'));
-  const line = (cells: Record<string, Cell>) => r.cols.map((c) => csvCell(cells[c.key] ?? null, c.kind)).join(',');
-  return [head.join(','), ...r.rows.map((x) => line(x.cells)), ...(r.total && r.rows.length ? [line(r.total)] : [])].join('\r\n') + '\r\n';
+  const head = r.cols.map((c) => (c.kind === 'pct' ? `${c.label} (%)` : c.label));
+  const line = (cells: Record<string, Cell>) => r.cols.map((c) => csvCell(cells[c.key] ?? null, c.kind));
+  return writeCsv([head, ...r.rows.map((x) => line(x.cells)), ...(r.total && r.rows.length ? [line(r.total)] : [])]);
 }

@@ -1,0 +1,6 @@
+/* Licensing: the list of licenses and registrations by holder. The rest of the screen uses the service-line styles. */
+.licensing-holder h3{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14.5px;margin:0 0 6px}
+.licensing-holder h3 a{color:inherit;text-decoration:none}.licensing-holder h3 a:hover{text-decoration:underline}
+.licensing-add{margin-left:auto}
+.licensing-note{margin-top:14px;max-width:86ch}
+.licensing-list .card-h .seg{flex:none}

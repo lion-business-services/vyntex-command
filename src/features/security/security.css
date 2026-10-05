@@ -1,0 +1,164 @@
+/* Security center, the secure-data tab of a client and the identity check. Tokens only: both brands define every one. */
+.security-tabs{margin-bottom:2px}
+.security-lead{margin:-4px 0 14px;max-width:78ch}
+.security-pad{padding-left:18px;padding-right:18px}
+.card.flush .security-pad.security-lead{margin:0 0 12px}
+.card.flush>p.security-pad:last-child{padding-top:10px;padding-bottom:14px;margin:0}
+.card.flush .filters.security-pad{margin-bottom:10px}
+.security-foot{margin-top:12px}
+.security-h3{margin:18px 0 6px;font-size:14px}
+.security-mono,.security-marker,.security-secret output{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;letter-spacing:.06em}
+.security-why{overflow-wrap:anywhere}
+.security-person{display:inline-flex;align-items:center;gap:7px;min-width:0}
+.security-person>span:last-child{overflow-wrap:anywhere}
+
+/* the label a sample workspace puts on what would be real in a live one */
+.security-sample{display:flex;gap:9px;align-items:flex-start}
+.security-sample svg{flex:none;width:16px;height:16px;margin-top:2px;color:var(--accent)}
+.modal .security-sample{margin-top:12px}
+
+/* people */
+.security-who{display:flex;gap:10px;align-items:center;min-width:0}
+.security-name{font-weight:700;text-decoration:none;overflow-wrap:anywhere}
+a.security-name:hover{text-decoration:underline;text-underline-offset:3px}
+.security-sub{display:block;font-weight:500;overflow-wrap:anywhere}
+.security-role{min-height:38px;padding:4px 8px;width:auto;max-width:100%}
+.security-off td:not(.security-act){opacity:.62}
+.security-act{width:1%;white-space:nowrap}
+.security-people th:first-child,.security-people td:first-child,.security-log th:first-child,.security-log td:first-child{padding-left:18px}
+.security-people th:last-child,.security-people td:last-child,.security-log th:last-child,.security-log td:last-child{padding-right:18px}
+.security-checks{border:0;margin:0;padding:0;display:grid;gap:8px;min-width:0}
+.security-checks legend{padding:0;margin-bottom:6px}
+.security-invite-how{display:flex;gap:8px;align-items:flex-start;margin-top:12px}
+.security-invite-how svg{flex:none;width:16px;height:16px;margin-top:2px;color:var(--text-3)}
+/* laptops where the workspace menu takes its share: the people table stacks like it does on phones */
+@media (min-width:721px) and (max-width:1180px){
+  table.security-people thead{display:none}
+  table.security-people,table.security-people tbody,table.security-people tr,table.security-people td{display:block;width:100%}
+  table.security-people tr{border-bottom:1px solid var(--line);padding:12px 18px}
+  table.security-people tr:last-child{border-bottom:0}
+  table.security-people td{border:0;padding:3px 0!important;text-align:left!important;display:flex;justify-content:space-between;gap:12px;align-items:center}
+  table.security-people td[data-label]::before{content:attr(data-label);font-size:12px;color:var(--text-3);font-weight:650;flex:none}
+  table.security-people td.t1{display:block;font-size:15px;padding-bottom:6px!important}
+  table.security-people td:empty{display:none}
+}
+@media (max-width:1180px){table.tbl.stackable.security-people td.security-act{width:100%;justify-content:flex-end}}
+@media (max-width:720px){table.tbl.stackable.security-people td,table.tbl.stackable.security-log td{align-items:center}.security-role{min-height:40px}}
+
+/* requests and approvals */
+.security-req{align-items:center;flex-wrap:wrap}
+.security-req .grow{flex:1 1 260px;min-width:0}
+.security-req-act{flex:none}
+.security-grant{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.security-grant label{display:flex;flex-direction:column;gap:3px;font-weight:650}
+.security-grant .input{min-height:36px;padding:4px 8px;width:170px}
+.security-more{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.security-more summary{cursor:pointer;font-weight:650;font-size:13.5px;color:var(--text-2)}
+.security-more summary:hover{color:var(--text)}
+.security-more .list{margin-top:6px}
+@media (max-width:640px){.security-grant{align-items:stretch;width:100%}.security-grant .input{width:100%}.security-req-act .btn{min-height:40px}}
+
+/* sign-in rules */
+.security-rule{align-items:center}
+.security-ic{flex:none;width:20px;height:20px;color:var(--text-3)}
+.security-ic.on{color:var(--ok)}
+.security-setting{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.security-setting>div{flex:1 1 240px;min-width:0}
+.security-setting b svg{width:16px;height:16px;vertical-align:-3px;color:var(--text-3)}
+.security-select{width:auto;min-width:150px}
+.security-switch{flex:none;position:relative;width:46px;height:26px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-3);padding:0;transition:background var(--motion-fast) var(--ease-vyntex),border-color var(--motion-fast) var(--ease-vyntex)}
+.security-switch::before{content:"";position:absolute;inset:-8px -4px}
+.security-switch span{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--text-2);transition:transform var(--motion-fast) var(--ease-spring),background var(--motion-fast) var(--ease-vyntex)}
+.security-switch[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.security-switch[aria-checked="true"] span{transform:translateX(20px);background:var(--accent-ink)}
+.security-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:720px){.security-options{grid-template-columns:minmax(0,1fr)}}
+.security-option{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line-strong);border-radius:var(--radius);background:var(--surface-2);cursor:pointer;transition:border-color var(--motion-fast) var(--ease-vyntex),background var(--motion-fast) var(--ease-vyntex)}
+.security-option.on{border-color:var(--accent);background:var(--accent-soft)}
+.security-option input{margin-top:3px;flex:none;width:16px;height:16px}
+.security-option>span{display:grid;gap:3px;min-width:0}
+.security-options+.note{margin-top:12px}
+
+/* roles matrix */
+.security-flush{margin:0 -18px}
+.security-matrix{table-layout:fixed}
+.security-matrix thead th{vertical-align:bottom;white-space:normal;position:sticky;top:0;background:var(--surface);z-index:1}
+.security-matrix thead th:first-child{width:auto;padding-left:18px}
+.security-matrix thead th:not(:first-child),.security-matrix td{width:112px;text-align:center;padding-left:6px;padding-right:6px}
+.security-matrix thead th:last-child,.security-matrix td:last-child{padding-right:14px}
+.security-rolehead{display:inline-flex;align-items:center;gap:5px;justify-content:center;color:var(--text);font-size:12.5px;overflow-wrap:anywhere}
+.security-rolehead svg{width:12px;height:12px;color:var(--text-3);flex:none}
+.security-matrix thead .linkbtn{display:block;margin:2px auto 0;line-height:1}
+.security-matrix thead .linkbtn svg{width:13px;height:13px}
+.security-matrix th[scope="row"]{padding:9px 12px 9px 18px;border-bottom:1px solid var(--line);white-space:normal;font-weight:400}
+.security-capname{display:block;font-size:14px;font-weight:650;color:var(--text)}
+.security-capdesc{display:block;font-size:12.5px;color:var(--text-3);line-height:1.35;margin-top:1px}
+.security-group th{padding:16px 18px 6px;font-size:12px;font-weight:800;color:var(--text-2);border-bottom:1px solid var(--line-strong);text-align:left;background:var(--surface)}
+.security-matrix tbody:first-of-type .security-group th{padding-top:8px}
+.security-matrix td svg{width:17px;height:17px;vertical-align:middle}
+.security-matrix .yes{color:var(--ok)}.security-matrix .no{color:var(--text-3);opacity:.55}
+.security-matrix td input[type=checkbox]{width:18px;height:18px;cursor:pointer;vertical-align:middle}
+.security-matrix td{position:relative}
+/* the tick box is 18px; the tap target is the whole cell */
+.security-matrix.editable td input[type=checkbox]::after{content:"";position:absolute;inset:0}
+.security-matrix.editable td:has(input):hover{background:var(--blue-soft)}
+.security-matrix td[data-role="owner"]{background:var(--neutral-soft)}
+@media (max-width:1180px){.security-matrix thead th:not(:first-child),.security-matrix td{width:84px}}
+@media (max-width:640px){
+  .security-matrix thead th:not(:first-child),.security-matrix td{width:52px;padding-left:2px;padding-right:2px}
+  .security-matrix thead th:last-child,.security-matrix td:last-child{padding-right:8px;width:56px}
+  .security-rolehead{font-size:10.5px;flex-direction:column;gap:2px;overflow-wrap:normal;hyphens:auto}
+  .security-matrix th[scope="row"]{padding:8px 6px 8px 14px}
+  .security-capname{font-size:13px;overflow-wrap:anywhere}
+  .security-capdesc{display:none}
+  .security-group th{padding-left:14px}
+}
+.security-about{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px 24px;margin-top:14px}
+.security-about h3{font-size:13px;margin-bottom:6px}
+.security-about p{font-size:13.5px;line-height:1.7;margin:0 0 6px}
+.security-about .badge{margin-right:4px}
+
+/* offices */
+.security-office{align-items:flex-start}
+.security-office-ic{flex:none;width:36px;height:36px;border-radius:8px;display:grid;place-items:center;background:var(--surface-3);color:var(--text-2);border:1px solid var(--line-strong)}
+.security-office-ic svg{width:18px;height:18px}
+.security-office-use{margin-top:4px}
+
+/* a client's tax ID */
+.security-onfile{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.security-onfile-ic{flex:none;width:44px;height:44px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line)}
+.security-onfile-ic svg{width:22px;height:22px}
+.security-onfile .grow{flex:1 1 220px;min-width:0}
+.security-marker{font-size:22px;font-weight:700;line-height:1.3;color:var(--text)}
+.security-mine{margin-top:16px;padding:14px 16px;border:1px solid var(--line-strong);border-radius:var(--radius);background:var(--surface-2);display:grid;gap:8px}
+.security-mine[data-state="approved"]{border-color:var(--ok);background:var(--ok-soft)}
+.security-mine p{margin:0;overflow-wrap:anywhere}
+
+/* typing a number: masked by the browser, no password field, so no password manager offers to keep it */
+.security-secretfield{display:flex;gap:6px;align-items:center}
+.security-secretfield input{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.08em}
+.security-masked{-webkit-text-security:disc}
+.security-secretfield .iconbtn{flex:none;width:40px;height:40px;border-color:var(--line-strong)}
+.security-quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.security-next{margin-top:16px;padding-top:12px;border-top:1px solid var(--line);display:grid;gap:6px}
+.security-next p{margin:0}
+
+/* the one viewing: a framed panel with its countdown. The value cannot be selected. */
+.security-reveal{margin-top:16px;padding:16px;border:1px solid var(--accent-line);border-radius:var(--radius);background:var(--surface-2);display:grid;gap:12px;box-shadow:var(--shadow-1)}
+.security-timer{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--text-2)}
+.security-timer svg{width:15px;height:15px}
+.security-timer.low{color:var(--bad)}
+.security-meter{height:4px;border-radius:2px;background:var(--surface-4);overflow:hidden}
+.security-meter span{display:block;height:100%;background:var(--accent);transform-origin:left center;transition:transform var(--motion-standard) linear}
+.security-secret{display:grid;gap:2px;padding:14px 16px;border-radius:var(--radius-s);background:var(--surface);border:1px solid var(--line-strong);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.security-secret output{font-size:26px;font-weight:700;line-height:1.3;color:var(--text);overflow-wrap:anywhere}
+.security-reveal p{margin:0}
+.security-reveal .note{margin:0}
+@media (prefers-reduced-motion:reduce){.security-meter span,.security-switch span{transition:none}}
+@media (max-width:640px){.security-marker{font-size:19px}.security-secret output{font-size:21px}.security-reveal .btn,.security-mine .btn,.security-onfile .btn{min-height:40px}}
+
+/* the identity check */
+.security-stepup-lead{display:flex;gap:9px;align-items:flex-start;margin:0}
+.security-stepup-lead svg{flex:none;width:18px;height:18px;margin-top:2px;color:var(--accent)}
+/* unsaved changes in a long matrix: the save bar stays in reach */
+.security-savebar{position:sticky;bottom:0;z-index:2;background:var(--surface-2);border-radius:0 0 var(--radius) var(--radius);border-top-color:var(--line-strong)}

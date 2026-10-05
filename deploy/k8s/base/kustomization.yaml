@@ -1,0 +1,12 @@
+# REFERENCE ONLY. Not applied anywhere. The recommended production path is Vercel + Supabase: read ../README.md first.
+# The pieces shared by both deployments. Never applied on its own: use overlays/vyntex or overlays/lbs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - serviceaccount.yaml
+  - deployment.yaml
+  - service.yaml
+  - networkpolicy.yaml
+  - pdb.yaml
+  - ingress.yaml
+  - cronjobs.yaml

@@ -15,6 +15,8 @@ import { emailSendingRule } from './helpers';
 /* ---------- plan and add-ons ---------- */
 export function PlanSection() {
   const { t, pack, plan, planLabel, lang } = useApp();
+  // this section is only listed where plans apply (see ./panels.ts); without a plan there is nothing to draw
+  if (!plan) return null;
   const plans = plansFor(pack.id);
   const addOns = addOnViews(pack.id, lang, t);
   const users = plan.users === 'unlimited' ? t('settings.team.unlimited') : String(plan.users);

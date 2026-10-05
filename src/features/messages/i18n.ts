@@ -1,8 +1,14 @@
 import type { Dict } from '@/i18n';
+import { inbox } from './i18n-inbox';
 
-// Wording for Messages. Keys under `messages.tpl.` are the starter emails; they are filled in the language chosen for the email.
-// `act.message.demoSent` is the history line written by this module's "send" (see actions.ts).
-export const dict: Dict = {
+// Read straight from the build constant: a review build of LBS Command calls its sample workspace a sample, not a demo.
+declare const __VX_DEPLOY__: string | undefined;
+
+// Wording for Messages. This file holds the list of prepared emails, as the field editions have always had it; the
+// communications center (inbox, conversation, settings) is in ./i18n-inbox.ts. Both are one dictionary (`dict` below).
+// Keys under `messages.tpl.` are the starter messages; they are filled in the language chosen for the message.
+// `act.message.demoSent` is the history line written when an email is "sent" in a sample workspace (src/domain/actions/messages.ts).
+const classic: Dict = {
   en: {
     'messages.title': 'Messages', 'messages.sub': 'Emails to your {clients}: the ones the automations prepare and the ones you write.',
     'messages.compose': 'New email',
@@ -28,7 +34,7 @@ export const dict: Dict = {
     'messages.sentAt': 'Marked as sent in this demo on {date}. Nothing left this browser.', 'messages.sendHint': 'Send marks the email as sent in this demo. Nothing leaves this browser.',
     'messages.inbox.title': 'Two-way inbox', 'messages.inbox.body': 'The idea: replies from your {clients} would be read here, next to the {job} they belong to. It is not built and not part of any plan today, so no inbox is shown.',
     'messages.sms.title': 'Text messages',
-    'act.message.demoSent': 'Email marked as sent in the demo: {subject}',
+    'act.message.demoSent': (typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs') ? 'Email marked as sent in the sample, nothing was sent: {subject}' : 'Email marked as sent in the demo: {subject}',
 
     'messages.tpl.appt': 'Appointment confirmation', 'messages.tpl.estimate': 'Estimate follow-up', 'messages.tpl.payment': 'Payment reminder', 'messages.tpl.thanks': 'Thank you after completion',
     'messages.tpl.there': 'there', 'messages.tpl.yourService': 'your service',
@@ -67,7 +73,7 @@ export const dict: Dict = {
     'messages.sentAt': 'Marcado como enviado en esta demo el {date}. Nada salió de este navegador.', 'messages.sendHint': 'Enviar marca el correo como enviado en esta demo. Nada sale de este navegador.',
     'messages.inbox.title': 'Bandeja de entrada', 'messages.inbox.body': 'La idea: las respuestas de sus {clients} se leerían aquí, junto al {job} al que corresponden. No está construida ni forma parte de ningún plan hoy, por eso no se muestra ninguna bandeja.',
     'messages.sms.title': 'Mensajes de texto',
-    'act.message.demoSent': 'Correo marcado como enviado en la demo: {subject}',
+    'act.message.demoSent': (typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs') ? 'Correo marcado como enviado en la muestra, no se envió nada: {subject}' : 'Correo marcado como enviado en la demo: {subject}',
 
     'messages.tpl.appt': 'Confirmación de cita', 'messages.tpl.estimate': 'Seguimiento de presupuesto', 'messages.tpl.payment': 'Recordatorio de pago', 'messages.tpl.thanks': 'Agradecimiento al terminar',
     'messages.tpl.there': 'qué tal', 'messages.tpl.yourService': 'su servicio',
@@ -82,3 +88,5 @@ export const dict: Dict = {
     'messages.tpl.thanks.body': 'Hola, {name}:\n\nGracias por confiar en {company} para {jobName}. El trabajo quedó terminado.\n\nSi algo necesita atención, responda a este correo o llámenos al {phone} y lo resolvemos.\n\nGracias de nuevo,\n{company}',
   },
 };
+
+export const dict: Dict = { en: { ...classic.en, ...inbox.en }, es: { ...classic.es, ...inbox.es } };

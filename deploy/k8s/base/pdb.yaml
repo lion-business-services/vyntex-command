@@ -1,0 +1,10 @@
+# REFERENCE ONLY. During node maintenance at least one copy of the application keeps running.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: command
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: command

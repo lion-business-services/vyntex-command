@@ -1,0 +1,21 @@
+/* The service-line screens (bookkeeping, payroll, licensing share one layout). Tokens only. */
+.bookkeeping{display:flex;flex-direction:column;gap:16px}
+.bookkeeping>header{margin-bottom:-4px}
+.bookkeeping-linkstack{display:flex;flex-direction:column;gap:8px}
+.bookkeeping-linknote{margin-top:10px;max-width:86ch}
+.bookkeeping-showing{margin:0}
+.bookkeeping-kpis .kpi .v{font-size:24px}
+@media (min-width:700px){.bookkeeping-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:699px){.bookkeeping-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bookkeeping-name{font-weight:700;text-decoration:none}.bookkeeping-name:hover{text-decoration:underline}
+.bookkeeping-pad{padding:0 18px 16px}
+.bookkeeping-pair{align-items:start}
+.bookkeeping-co{display:block}
+.bookkeeping-ico{width:17px;height:17px;vertical-align:-3px;margin-right:7px;color:var(--text-3)}
+.bookkeeping-list{list-style:none;margin:12px 0;padding:0;border:1px solid var(--line);border-radius:var(--radius-s)}
+.bookkeeping-list li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line);font-size:14px}
+.bookkeeping-list li:last-child{border-bottom:0}
+.bookkeeping-list .badge{flex:none}
+@media (max-width:560px){.bookkeeping-list li{flex-direction:column;align-items:flex-start;gap:6px}}
+@media (pointer:coarse),(max-width:980px){.bookkeeping .btn.sm{min-height:40px}}
+.bookkeeping .list a.item{text-decoration:none;color:inherit}

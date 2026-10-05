@@ -5,9 +5,13 @@
 // Numbers are never typed here: {tokens} are filled from the pricing file by lib/pricing.ts callers.
 import type { Dict } from '@/i18n';
 
+// The wording of the plans belongs to the deployment that sells plans. Each list reads the build constant itself, so the
+// bundler leaves the wording out of a deployment without plans (LBS Command).
+declare const __VX_DEPLOY__: string | undefined;
+
 export interface PricingCopy { /** Exact text in config/vyntex-build-pricing.json. */ source: string; key: string; en: string; es: string; /** Internal instruction, never shown to customers. */ internal?: boolean }
 
-export const FEATURE_COPY: PricingCopy[] = [
+export const FEATURE_COPY: PricingCopy[] = (typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs') ? [] : [
   { source: 'Every core feature: leads, jobs, subs, payments, tasks, calendar', key: 'price.f.core', en: 'Every core feature: leads, {jobs}, {workers}, payments, tasks and calendar', es: 'Todas las funciones principales: prospectos, {jobs}, {workers}, pagos, tareas y calendario' },
   { source: 'Contracts, invoices and 1099 report', key: 'price.f.docs', en: 'Agreements, invoices and the 1099 report', es: 'Acuerdos, facturas y el reporte 1099' },
   { source: 'Google Calendar: send items (Add to Google)', key: 'price.f.calSend', en: 'Google Calendar: send any item with "Add to Google"', es: 'Google Calendar: envíe cualquier cita con "Agregar a Google"' },
@@ -28,14 +32,14 @@ export const FEATURE_COPY: PricingCopy[] = [
   { source: 'Automatic client emails, with templates set up during setup', key: 'price.f.templates', en: 'Automatic {client} emails, with your templates set up during setup', es: 'Correos automáticos al {client}, con sus plantillas listas desde la instalación' },
 ];
 
-export const SUPPORT_COPY: PricingCopy[] = [
+export const SUPPORT_COPY: PricingCopy[] = (typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs') ? [] : [
   { source: 'Email or WhatsApp, 1 business day', key: 'price.s.entry', en: 'Support by email or WhatsApp, reply within 1 business day', es: 'Soporte por correo o WhatsApp, respuesta en 1 día hábil' },
   { source: 'Same business day', key: 'price.s.mid', en: 'Support reply the same business day', es: 'Respuesta de soporte el mismo día hábil' },
   { source: 'Priority phone', key: 'price.s.top', en: 'Priority phone support', es: 'Soporte prioritario por teléfono' },
 ];
 
 /** Add-ons, keyed by their id in the pricing file. `source` is the add-on name there. */
-export const ADDON_COPY: (PricingCopy & { id: string; /** Wording of the billing line, when the pricing file has one. */ billing?: { en: string; es: string }; note?: { en: string; es: string } })[] = [
+export const ADDON_COPY: (PricingCopy & { id: string; /** Wording of the billing line, when the pricing file has one. */ billing?: { en: string; es: string }; note?: { en: string; es: string } })[] = (typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs') ? [] : [
   { id: 'client_portal', source: 'VYNTEX Client Portal', key: 'price.a.client_portal', en: 'VYNTEX {Client} Portal', es: 'Portal de {clients} VYNTEX',
     billing: { en: 'Setup plus a monthly fee, on its own invoice line, 12-month term', es: 'Instalación más una mensualidad, en su propia línea de factura, plazo de 12 meses' },
     note: { en: 'Not built yet. Quoted in a consultation. Available with {mid}, {top} and any VYNTEX service.', es: 'Aún no está construido. Se cotiza en una consulta. Disponible con {mid}, {top} y cualquier servicio de VYNTEX.' } },
@@ -49,7 +53,7 @@ export const ADDON_COPY: (PricingCopy & { id: string; /** Wording of the billing
 ];
 
 /** The rules of the pricing file, in the order they appear there. Internal ones are instructions for the team, not for customers. */
-export const RULE_COPY: PricingCopy[] = [
+export const RULE_COPY: PricingCopy[] = (typeof __VX_DEPLOY__ !== 'undefined' && __VX_DEPLOY__ === 'lbs') ? [] : [
   { source: 'Welcome credits are one-time, not cash, apply only to the setup fee of ANOTHER VYNTEX service (website, branding, social media, etc.), expire in 90 days, require an active paid subscription, and cannot be combined. They can never be used on VYNTEX BUILD / VYNTEX CLEAN (setup, monthly fees or add-ons).', key: 'price.r.credit',
     en: 'Welcome credits are one time and are not cash. They apply only to the setup fee of another VYNTEX service (website, branding, social media and similar), expire in 90 days, need an active paid subscription and cannot be combined. They cannot be used on {product} itself: not on setup, monthly fees or add-ons.',
     es: 'Los créditos de bienvenida son por única vez y no son dinero en efectivo. Solo aplican a la instalación de otro servicio de VYNTEX (sitio web, marca, redes sociales y similares), vencen a los 90 días, requieren una suscripción activa y pagada, y no se pueden combinar. No se pueden usar en {product}: ni en la instalación, ni en las mensualidades, ni en los complementos.' },

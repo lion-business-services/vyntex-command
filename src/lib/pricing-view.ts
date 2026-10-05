@@ -8,14 +8,17 @@ import { money } from './money';
 
 function names(industry: IndustryId, lang: Lang) {
   const [entry, mid, top] = plansFor(industry).map((p) => planName(p, lang));
-  return { entry, mid, top, prep: money(addOn('1099_prep').priceUsd), efile: money(addOn('1099_efile_mail').priceUsd) };
+  // an edition without plans, or a deployment without the pricing file, has no names and no prices to fill in
+  const price = (id: string) => { const a = addOn(id); return a ? money(a.priceUsd) : ''; };
+  return { entry: entry ?? '', mid: mid ?? '', top: top ?? '', prep: price('1099_prep'), efile: price('1099_efile_mail') };
 }
 const line = (source: string, t: TFn, params: Record<string, string | number>) => { const k = pricingKey(source); return k ? t(k, params) : source; };
 
 /** The feature list of a plan, worded for the industry and language. */
 export function planFeatures(plan: Plan, industry: IndustryId, lang: Lang, t: TFn): string[] {
   const n = names(industry, lang);
-  const below = plan.tier > 0 ? planName(planByTier(industry, (plan.tier - 1) as 0 | 1), lang) : '';
+  const lower = plan.tier > 0 ? planByTier(industry, (plan.tier - 1) as 0 | 1) : undefined;
+  const below = lower ? planName(lower, lang) : '';
   return plan.features.map((f) => line(f, t, { ...n, below }));
 }
 export const planSupport = (plan: Plan, industry: IndustryId, lang: Lang, t: TFn) => line(plan.support, t, names(industry, lang));

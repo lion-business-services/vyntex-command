@@ -9,45 +9,58 @@ import { Button, Card, Empty, Note, PageHeader, Seg, cx, toast } from '@/ui';
 import { PlanBadge } from '@/app/shared';
 import { planName } from '@/lib/pricing';
 import { today } from '@/lib/dates';
-import { HAS_PERIOD, PERIODS, TABS, VIEWS, buildReport, cellText, toCsv, type Period, type Report, type TabId } from './data';
+import { HAS_PERIOD, PERIODS, buildReport, tabsFor, viewsFor, cellText, toCsv, type Period, type Report, type TabId } from './data';
+import { PRACTICE_TABS, PRACTICE_VIEWS, buildPracticeReport, practiceHasPeriod, type PracticeTab } from './practice';
 import { ReportChart } from './charts';
 import { usePrintInLight } from './print';
+import { downloadCsv } from '@/features/data/csv';
+import { DEPLOY } from '@/config/deployment';
 import './reports.css';
 
-function downloadCsv(name: string, text: string) {
-  // the byte-order mark makes spreadsheet programs read accents correctly
-  const url = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
-  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
+/** A report tab of any edition. */
+type AnyTab = TabId | PracticeTab;
 
 export default function ReportsPage({ id }: PageProps) {
-  const { t, data, lang, pack, can, standing, date } = useApp();
+  const { t, data, lang, pack, can, standing, date, priced } = useApp();
   const route = useRoute();
-  const tab: TabId = TABS.includes(id as TabId) ? (id as TabId) : can('profit') ? 'profit' : 'sales';
+  // a practice has its own set of reports (./practice.ts); the field editions keep theirs (./data.ts)
+  const practice = pack.family === 'practice';
+  const TABS: AnyTab[] = practice ? PRACTICE_TABS : tabsFor(pack);
+  const tab: AnyTab = TABS.includes(id as AnyTab) ? (id as AnyTab) : practice ? 'sales' : can('profit') ? 'profit' : 'sales';
+  const viewsOf = (tb: AnyTab): string[] => (practice ? PRACTICE_VIEWS[tb as PracticeTab] : viewsFor(pack, tb as TabId));
   const by = route.query.get('by') || '';
-  const view = VIEWS[tab].includes(by) ? by : VIEWS[tab][0];
+  const views = viewsOf(tab);
+  const view = views.includes(by) ? by : views[0];
+  const hasPeriod = practice ? practiceHasPeriod(tab as PracticeTab, view) : HAS_PERIOD[tab as TabId];
   const asked = route.query.get('period') as Period | null;
   const period: Period = asked && PERIODS.includes(asked) ? asked : 'all';
-  const path = (tb: TabId, v: string, p: Period) => {
+  const path = (tb: AnyTab, v: string, p: Period) => {
     const q = new URLSearchParams();
-    if (v !== VIEWS[tb][0]) q.set('by', v);
+    if (v !== viewsOf(tb)[0]) q.set('by', v);
     if (p !== 'all') q.set('period', p);
     const s = q.toString();
     return `/reports/${tb}${s ? '?' + s : ''}`;
   };
+  const tabLabel = (tb: AnyTab) => t((practice ? 'reports.ptab.' : 'reports.tab.') + tb);
+  const segLabel = (v: string) => t((practice && tab !== 'profit' ? 'reports.p.seg.' : 'reports.seg.') + v);
 
   const locked = tab === 'profit' && !can('profit');
-  const report: Report | null = useMemo(() => (locked ? null : buildReport(tab, view, { data, t, lang, pack, period: HAS_PERIOD[tab] ? period : 'all' })), [locked, tab, view, data, t, lang, pack, period]);
+  const report: Report | null = useMemo(() => {
+    if (locked) return null;
+    const env = { data, t, lang, pack, period: hasPeriod ? period : 'all' as Period };
+    return practice ? buildPracticeReport(tab as PracticeTab, view, env) : buildReport(tab as TabId, view, env);
+  }, [locked, practice, tab, view, data, t, lang, pack, period, hasPeriod]);
   const profitPlan = standing('profitReports');
 
   usePrintInLight();
 
-  const periodLabel = HAS_PERIOD[tab] ? t('reports.period.' + period) : t(tab === 'money' && view !== 'outstanding' ? 'reports.basis.six' : 'reports.basis.today');
-  const fullTitle = report ? `${t('reports.tab.' + tab)}: ${report.title}` : t('reports.tab.' + tab);
+  const periodLabel = hasPeriod ? t('reports.period.' + period) : t(!practice && tab === 'money' && view !== 'outstanding' ? 'reports.basis.six' : 'reports.basis.today');
+  const fullTitle = report ? `${tabLabel(tab)}: ${report.title}` : tabLabel(tab);
+  // in an edition with its own roles for it, a download is for people who may export records
+  const mayExport = !practice || can('export');
   const csv = () => {
     if (!report) return;
-    const slug = pack.product.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const slug = (DEPLOY.lockedEdition ? DEPLOY.productName : pack.product).toLowerCase().replace(/[^a-z0-9]+/g, '-');
     downloadCsv(`${slug}-${tab}-${view}-${today()}.csv`, toCsv(report));
     if (!PREVIEW) toast(t('reports.csvDone', { n: report.rows.length }));
   };
@@ -56,20 +69,20 @@ export default function ReportsPage({ id }: PageProps) {
     <div className="reports">
       <PageHeader title={t('nav.reports')} sub={t('reports.sub')} actions={
         <div className="row no-print">
-          {HAS_PERIOD[tab] && !locked && (
+          {hasPeriod && !locked && (
             <select className="reports-select" value={period} onChange={(e) => go(path(tab, view, e.target.value as Period))} aria-label={t('reports.period')} data-testid="reports-period">
               {PERIODS.map((p) => <option key={p} value={p}>{t('reports.period.' + p)}</option>)}
             </select>
           )}
-          <Button icon={<LuDownload aria-hidden="true" />} onClick={csv} disabled={!report || !report.rows.length} data-testid="reports-csv">{t('reports.csv')}</Button>
+          {mayExport && <Button icon={<LuDownload aria-hidden="true" />} onClick={csv} disabled={!report || !report.rows.length} data-testid="reports-csv">{t('reports.csv')}</Button>}
           <Button icon={<LuPrinter aria-hidden="true" />} onClick={() => window.print()} disabled={!report} data-testid="reports-print">{t('common.print')}</Button>
         </div>
       } />
 
       <div className="tabs no-print" role="tablist" aria-label={t('nav.reports')}>
         {TABS.map((tb) => (
-          <button key={tb} type="button" role="tab" aria-selected={tb === tab} onClick={() => go(path(tb, VIEWS[tb][0], period))} data-testid={`reports-tab-${tb}`}>
-            {tb === 'profit' && !can('profit') && <LuLock aria-hidden="true" />}{t('reports.tab.' + tb)}
+          <button key={tb} type="button" role="tab" aria-selected={tb === tab} onClick={() => go(path(tb, viewsOf(tb)[0], period))} data-testid={`reports-tab-${tb}`}>
+            {tb === 'profit' && !can('profit') && <LuLock aria-hidden="true" />}{tabLabel(tb)}
           </button>
         ))}
       </div>
@@ -84,7 +97,7 @@ export default function ReportsPage({ id }: PageProps) {
       )}
 
       {locked || !report ? (
-        <Card><Empty title={t('reports.profit.locked')} action={<Button onClick={() => go(path('sales', VIEWS.sales[0], period))}>{t('reports.profit.goSales')}</Button>}>{t('reports.profit.lockedHint', { role: t('role.owner') })}</Empty></Card>
+        <Card><Empty title={t('reports.profit.locked')} action={<Button onClick={() => go(path('sales', viewsOf('sales')[0], period))}>{t('reports.profit.goSales')}</Button>}>{t('reports.profit.lockedHint', { role: t('role.owner') })}</Empty></Card>
       ) : (
         <>
           <dl className="reports-figs" data-testid="reports-figures">
@@ -94,14 +107,14 @@ export default function ReportsPage({ id }: PageProps) {
           </dl>
 
           <div className="reports-bar">
-            {VIEWS[tab].length > 1
-              ? <div className="no-print" data-testid="reports-view"><Seg label={t('reports.breakdown')} value={view} onChange={(v) => go(path(tab, v, period))} options={VIEWS[tab].map((v) => ({ value: v, label: t('reports.seg.' + v) }))} /></div>
+            {views.length > 1
+              ? <div className="no-print" data-testid="reports-view"><Seg label={t('reports.breakdown')} value={view} onChange={(v) => go(path(tab, v, period))} options={views.map((v) => ({ value: v, label: segLabel(v) }))} /></div>
               : <span />}
             <span className="small muted reports-basis">{periodLabel}</span>
           </div>
 
           {!report.rows.length ? (
-            <Card><Empty title={t('reports.empty')} action={HAS_PERIOD[tab] && period !== 'all' ? <Button onClick={() => go(path(tab, view, 'all'))} data-testid="reports-all-time">{t('reports.showAll')}</Button> : undefined}>{t(HAS_PERIOD[tab] && period !== 'all' ? 'reports.emptyPeriod' : 'reports.emptyHint')}</Empty></Card>
+            <Card><Empty title={t('reports.empty')} action={hasPeriod && period !== 'all' ? <Button onClick={() => go(path(tab, view, 'all'))} data-testid="reports-all-time">{t('reports.showAll')}</Button> : undefined}>{t(hasPeriod && period !== 'all' ? 'reports.emptyPeriod' : 'reports.emptyHint')}</Empty>{practice && report.note && <p className="xs dim reports-note reports-emptynote">{report.note}</p>}</Card>
           ) : (
             <div className={cx('reports-pair', report.cols.length <= 4 && 'two')}>
               <Card title={report.title} className="reports-chart-card">
@@ -138,7 +151,8 @@ export default function ReportsPage({ id }: PageProps) {
         </>
       )}
 
-      <p className="reports-custom small muted no-print">{t('reports.custom')} <PlanBadge feature="customWork" /></p>
+      {/* custom reports are a commercial offer: said only where plans and prices apply */}
+      {priced && <p className="reports-custom small muted no-print">{t('reports.custom')} <PlanBadge feature="customWork" /></p>}
     </div>
   );
 }
