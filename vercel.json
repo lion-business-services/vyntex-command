@@ -5,14 +5,11 @@
   "outputDirectory": "dist",
   "cleanUrls": false,
   "trailingSlash": false,
-  "functions": {
-    "api/*.js": {
-      "maxDuration": 30
-    },
-    "api/cron.js": {
-      "maxDuration": 60
-    }
-  },
+     "functions": {
+     "api/*.js": {
+       "maxDuration": 60
+     }
+   },
   "rewrites": [
     {
       "source": "/api/auth/:path*",
